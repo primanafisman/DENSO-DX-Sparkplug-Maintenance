@@ -1,0 +1,2 @@
+import {once} from 'node:events';
+export function exportController(service){return async(req,res)=>{res.type('text/csv; charset=utf-8').set('Content-Disposition','attachment; filename="spm-readings.csv"').set('Cache-Control','private, no-store');for await(const chunk of service.readings(req.validated.query)){if(res.destroyed)break;if(!res.write(chunk))await Promise.race([once(res,'drain'),once(res,'close')]);}res.end();};}

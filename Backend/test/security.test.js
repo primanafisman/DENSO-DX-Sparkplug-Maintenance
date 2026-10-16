@@ -1,0 +1,53 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import request from 'supertest';
+import {config,password,userRepo} from './helpers.js';
+test('auth preserves password whitespace, rejects unknown fields and emits safe envelopes',async()=>{
+  const {createApp}=await import('../src/app.js');
+  const app=createApp({config,repositories:await userRepo()});
+  assert.equal((await request(app).post('/api/v1/auth/login').send({username:'001',password:password.trim()})).status,401);
+  assert.equal((await request(app).post('/api/v1/auth/login').send({username:'001',password,role:'Admin'})).status,422);
+  assert.equal((await request(app).post('/api/v1/auth/login').send({username:'001',password:'😀'.repeat(30)})).status,422);
+  const login=await request(app).post('/api/v1/auth/login').send({username:'001',password});
+  assert.equal(login.status,200);
+  assert.ok(login.headers['set-cookie'].some(c=>c.startsWith('spm_session=')&&c.includes('HttpOnly')));
+  assert.equal(login.body.data.password_hash,undefined);
+  assert.equal(login.body.data.token,undefined);
+  assert.equal(typeof login.body.request_id,'string');
+  assert.equal((await request(app).get('/api/v1/auth/me')).status,401);
+});
+test('csrf signed session binding and cookie mutations require verified header',async()=>{
+  const {createApp}=await import('../src/app.js');
+  const app=createApp({config,repositories:await userRepo()});
+  const agent=request.agent(app);
+  await agent.post('/api/v1/auth/login').send({username:'001',password}).expect(200);
+  await agent.post('/api/v1/auth/logout').expect(403);
+  const token=(await agent.get('/api/v1/auth/csrf').expect(200)).body.data.csrf_token;
+  await agent.post('/api/v1/auth/logout').set('X-CSRF-Token',token+'tampered').expect(403);
+  await agent.post('/api/v1/auth/logout').set('X-CSRF-Token',token).expect(200);
+  await agent.get('/api/v1/auth/me').expect(401);
+});
+test('auth bearer uses full prefix and cannot issue a token to an untrusted browser origin',async()=>{
+  const {createApp}=await import('../src/app.js');
+  const app=createApp({config,repositories:await userRepo()});
+  await request(app).post('/api/v1/auth/token').set('Origin','https://evil.example').send({username:'001',password}).expect(403);
+  const token=(await request(app).post('/api/v1/auth/token').send({username:'001',password}).expect(200)).body.data.access_token;
+  await request(app).get('/api/v1/auth/me').set('Authorization',`Bearer ${token}`).expect(200);
+  await request(app).get('/api/v1/auth/me').set('Authorization',`Bearer ${token}bad`).expect(401);
+});
+test('roles do not allow Viewer mutation and sessions respect disabled users',async()=>{
+  const express=(await import('express')).default;
+  const {createApp}=await import('../src/app.js');
+  const {authenticate}=await import('../src/middleware/authenticate.js');
+  const {authorize}=await import('../src/middleware/authorize.js');
+  const repositories=await userRepo('Viewer');
+  const authApp=createApp({config,repositories});
+  const app=express();
+  const router=express.Router();
+  router.post('/write',authenticate({config,repositories}),authorize('Operator','Admin'),(req,res)=>res.json({ok:true}));
+  app.use('/role-test',router);
+  const {errorHandler}=await import('../src/middleware/errorHandler.js');
+  app.use(errorHandler());
+  const token=(await request(authApp).post('/api/v1/auth/token').send({username:'001',password})).body.data.access_token;
+  await request(app).post('/role-test/write').set('Authorization',`Bearer ${token}`).expect(403);
+});

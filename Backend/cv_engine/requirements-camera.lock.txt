@@ -1,0 +1,4 @@
+# Optional local HTTPS certificate setup; no OCR/runtime dependency change.
+cryptography==50.0.2
+cffi==2.0.0
+pycparser==2.23

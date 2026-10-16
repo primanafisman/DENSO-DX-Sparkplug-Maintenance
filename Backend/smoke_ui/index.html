@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sparkplug Maintenance · Uji integrasi</title><link rel="stylesheet" href="/smoke/styles.css"><link rel="stylesheet" href="/smoke/camera.css"><link rel="stylesheet" href="/smoke/roi-editor.css"></head>
+<body><header><h1>Sparkplug Maintenance</h1><p>Halaman uji integrasi backend · CV lokal</p><nav><button data-go="capture">Foto</button><button data-go="maintenance">Pemeriksaan</button><button data-go="settings">Pengaturan</button><a href="/contracts/openapi.yaml">API</a></nav></header><main>
+<section id="login"><h2>Masuk</h2><label>NPK / username<input id="username" value="SPM-TEST" autocomplete="username"></label><label>Kata sandi<input id="password" type="password" autocomplete="current-password"></label><button id="sign-in">Masuk</button></section>
+<section id="capture" hidden><h2>1 · Line dan foto</h2><div class="fields"><label>Line<input id="line" value="17"></label><label>Tanggal produksi<input id="date" type="date" readonly></label><label>Jadwal otomatis WIB<select id="check-slot" disabled></select><input id="shift" type="hidden"></label><label>Sampler<input id="sampler" value="Ldr"></label></div><p id="server-time" role="status">Memeriksa waktu server...</p><div class="capture-guide"><div class="guide-gauge">Gauge analog / display digital</div><div class="guide-label">Label nama alat / nama test</div></div><p>Sertakan seluruh gauge dan label di bawahnya. Hadapkan kamera tegak lurus, fokuskan angka atau jarum, hindari silau.</p><p id="camera-help"></p><p id="https-help" hidden>Untuk bingkai langsung di kamera HP, pasang <a href="/local-camera-ca.cer">sertifikat kamera lokal</a> pada HP, lalu <a id="https-link">buka kamera melalui HTTPS lokal</a>. Panduan: docs/deployment/local-camera.md.</p><label>Mode pengambilan<select id="camera-mode"><option value="instrument">Alat langsung · disarankan</option><option value="monitor">Uji foto layar monitor</option></select></label><p id="monitor-tip" hidden>Perbesar foto di monitor; seluruh gauge dan label tetap terlihat. Geser jarak HP sedikit bila muncul pola garis/gelombang. Hindari flash dan tunggu fokus. Mode web memilih satu foto dari beberapa tangkapan.</p><button id="open-camera">Buka kamera</button><input id="camera-native" type="file" accept="image/*" capture="environment" hidden><label class="upload">Upload foto<input id="upload" type="file" accept="image/jpeg,image/png,image/webp"></label><div id="camera-panel" hidden><div class="camera"><video id="camera" autoplay playsinline muted></video><div id="camera-guides" class="camera-guides"><div data-camera-guide="gauge"><span>Gauge / angka utuh</span><i aria-hidden="true">+</i></div><div data-camera-guide="label">Label nama alat / test</div></div></div><p>Hadapkan kamera tegak lurus, fokuskan angka/jarum; hindari pantulan cahaya.</p><p id="camera-quality" role="status" aria-live="polite"></p><p id="camera-capture-status" role="status"></p><button id="take-photo" disabled>Ambil foto</button><button id="camera-native-fallback">Kamera bawaan HP</button><button id="close-camera">Tutup kamera</button></div><p id="upload-status" role="status"></p></section>
+<section id="processing" hidden aria-busy="true"><div class="spinner" aria-hidden="true"></div><h2>Sedang menganalisis foto</h2><p id="analysis-stage" role="status" aria-live="polite"></p><ol class="stages"><li id="stage-uploading">Mengirim foto</li><li id="stage-discovering">Mencari gauge dan nama alat</li><li id="stage-running">Membaca angka / jarum dengan CV lokal</li><li id="stage-complete">Menyiapkan hasil dan crop</li></ol><p id="analysis-elapsed"></p><p>Tunggu sampai hasil tampil. Nilai disimpan setelah Anda memeriksa dan mengonfirmasi.</p><button id="cancel-analysis">Kembali / ganti foto</button></section><section id="crop" hidden>
+  <h2>2 · Atur crop dan alat</h2>
+  <p class="roi-intro">Pasangkan kotak hijau dengan gauge atau angka. Kotak kuning untuk label nama alat tepat di bawahnya.</p>
+  <div id="roi-editor">
+    <div class="roi-tools" role="group" aria-label="Pilih area yang diatur">
+      <button type="button" data-roi-tool="gauge" aria-pressed="true"><span class="roi-dot"></span>1 · Gauge / angka</button>
+      <button type="button" data-roi-tool="label" aria-pressed="false"><span class="roi-dot roi-dot-label"></span>2 · Label nama alat</button>
+    </div>
+    <div class="roi-drag-modes" role="group" aria-label="Pilih fungsi seret">
+      <button type="button" data-roi-drag="box" aria-pressed="true">Geser kotak</button>
+      <button type="button" data-roi-drag="photo" aria-pressed="false">Geser foto</button>
+    </div>
+    <div class="roi-stage" data-roi-stage aria-label="Editor crop foto">
+      <img id="photo-preview" alt="Foto asli indikator dan label nama alat" draggable="false">
+      <div class="roi-box is-active" data-roi-box="gauge" tabindex="0" role="group">
+        <span class="roi-box-title">Gauge / angka</span>
+        <button type="button" class="roi-box-handle" data-roi-handle="nw" aria-label="Ubah sudut kiri atas gauge"></button>
+        <button type="button" class="roi-box-handle" data-roi-handle="ne" aria-label="Ubah sudut kanan atas gauge"></button>
+        <button type="button" class="roi-box-handle" data-roi-handle="sw" aria-label="Ubah sudut kiri bawah gauge"></button>
+        <button type="button" class="roi-box-handle" data-roi-handle="se" aria-label="Ubah sudut kanan bawah gauge"></button>
+      </div>
+      <div class="roi-box roi-box-label" data-roi-box="label" tabindex="0" role="group">
+        <span class="roi-box-title">Label nama alat</span>
+        <button type="button" class="roi-box-handle" data-roi-handle="nw" aria-label="Ubah sudut kiri atas label"></button>
+        <button type="button" class="roi-box-handle" data-roi-handle="ne" aria-label="Ubah sudut kanan atas label"></button>
+        <button type="button" class="roi-box-handle" data-roi-handle="sw" aria-label="Ubah sudut kiri bawah label"></button>
+        <button type="button" class="roi-box-handle" data-roi-handle="se" aria-label="Ubah sudut kanan bawah label"></button>
+      </div>
+    </div>
+    <p class="roi-hint" data-roi-drag-help>Seret tengah kotak untuk memindahkan. Tarik bulatan sudut untuk mengubah ukuran. Untuk menggeser foto yang diperbesar, pilih “Geser foto”.</p>
+    <div class="roi-controls">
+      <div class="roi-control-heading"><strong data-roi-active-name>Area gauge</strong><small>Geser pelan dengan tombol arah</small></div>
+      <div class="roi-control-grid" role="group" aria-label="Pindahkan dan ubah ukuran area terpilih">
+        <button type="button" class="roi-size" data-roi-size="out" aria-label="Perbesar area crop">＋ Area</button>
+        <button type="button" data-roi-nudge="up" aria-label="Geser area ke atas">↑</button>
+        <button type="button" class="roi-size" data-roi-size="in" aria-label="Perkecil area crop">− Area</button>
+        <button type="button" data-roi-nudge="left" aria-label="Geser area ke kiri">←</button>
+        <span class="roi-center">Geser<br>area</span>
+        <button type="button" data-roi-nudge="right" aria-label="Geser area ke kanan">→</button>
+        <span></span><button type="button" data-roi-nudge="down" aria-label="Geser area ke bawah">↓</button><span></span>
+      </div>
+      <div class="roi-zoom-controls" role="group" aria-label="Perbesaran tampilan foto">
+        <button type="button" data-roi-zoom="out" aria-label="Perkecil tampilan foto">− Foto</button>
+        <output data-roi-zoom-value aria-label="Perbesaran foto">1.0×</output>
+        <button type="button" data-roi-zoom="in" aria-label="Perbesar tampilan foto">＋ Foto</button>
+        <button type="button" data-roi-zoom="reset">Reset foto</button>
+      </div>
+    </div>
+    <p class="roi-hint" data-roi-status role="status">Hijau: gauge · Kuning: label nama alat. Kedua area diatur terpisah.</p>
+  </div>
+  <label>Alat terdaftar<select id="equipment"></select></label><p id="label-info"></p>
+  <div class="fields"><label>Jenis<select id="kind"><option value="auto">Otomatis</option><option value="digital">Digital</option><option value="analog">Analog 0–1 MPa</option></select></label><label>Satuan<select id="unit"><option>MPa</option><option>mm</option><option>kN</option><option>N</option><option>bar</option></select></label><label>Minimum<input id="minimum" type="number" value="0" step="any"></label><label>Maksimum<input id="maximum" type="number" value="1" step="any"></label><label>Desimal<input id="decimals" type="number" value="3" min="0" max="6"></label><label>Toleransi<input id="tolerance" type="number" value="0.01" step="any"></label></div>
+  <details class="roi-advanced"><summary>Koordinat crop lanjutan</summary>
+    <fieldset><legend>Gauge · posisi dan ukuran 0–1</legend><div class="fields"><label>Kiri<input id="roi-x" type="number" value="0" min="0" max="1" step="0.01"></label><label>Atas<input id="roi-y" type="number" value="0" min="0" max="1" step="0.01"></label><label>Lebar<input id="roi-width" type="number" value="1" min="0.01" max="1" step="0.01"></label><label>Tinggi<input id="roi-height" type="number" value="1" min="0.01" max="1" step="0.01"></label></div></fieldset>
+    <fieldset><legend>Label nama alat · posisi dan ukuran 0–1</legend><label><input id="label-enabled" type="checkbox"> Gunakan area label terpisah</label><div class="fields"><label>Kiri<input id="label-x" type="number" value="0" min="0" max="1" step="0.01"></label><label>Atas<input id="label-y" type="number" value="0.7" min="0" max="1" step="0.01"></label><label>Lebar<input id="label-width" type="number" value="1" min="0.01" max="1" step="0.01"></label><label>Tinggi<input id="label-height" type="number" value="0.3" min="0.01" max="1" step="0.01"></label></div></fieldset>
+  </details>
+  <button id="preview-crop">Lihat hasil crop gauge</button>
+  <img id="adjustment-preview" alt="Pratinjau crop gauge sesuai posisi terbaru" hidden>
+  <div class="roi-action-row"><button id="analyze">Baca ulang setelah koreksi</button><button data-go="capture">Kembali</button></div>
+</section>
+<section id="result" hidden><h2>3 · Hasil dan konfirmasi</h2><div id="read-value" class="value"></div><p id="confidence"></p><p id="capture-result-note"></p><h3>Crop gauge / display</h3><img id="crop-preview" alt="Crop yang dibaca"><div id="label-preview-panel" hidden><h3>Crop label nama alat</h3><img id="label-preview" alt="Crop label yang dibaca"></div><p id="result-label"></p><details><summary>Detail pembacaan</summary><pre id="reason"></pre></details><label>Nama alat<select id="confirm-equipment"></select></label><label>Pemeriksaan<select id="check"></select></label><label>Sampel / tahap<input id="sample" value="n1"><small>Untuk selisih: n1:before atau n1:after.</small></label><label>Nilai akhir<input id="final-value" type="number" step="any"></label><label>Alasan koreksi / pemeriksaan<input id="correction"></label><label><input id="identity-verified" type="checkbox"> Saya sudah memeriksa nama alat</label><label><input id="value-verified" type="checkbox"> Saya sudah memeriksa angka pada foto</label><button id="confirm">Konfirmasi dan simpan</button><button data-go="crop">Perbaiki crop</button><p id="saved" role="status"></p></section>
+<section id="maintenance" hidden><h2>Pemeriksaan maintenance</h2><label>Pilih pemeriksaan<select id="maintenance-check"></select></label><p id="requirements"></p><label>Interval<select id="interval"></select></label><label>Kondisi<select id="trigger"></select></label><div id="observations"></div><button id="save-maintenance">Simpan pemeriksaan</button><p id="maintenance-status" role="status"></p></section>
+<section id="settings" hidden><h2>Pengaturan alat · Admin</h2><p>Nama, alias label, satuan, batas fisik, presisi dan ID pemeriksaan membantu deteksi dan integrasi.</p><label>Alat yang diedit<select id="edit-equipment"></select></label><label>Nama<input id="asset-name"></label><label>Kode<input id="asset-code"></label><label>Alias (pisahkan koma)<input id="asset-aliases"></label><label>Line / area<input id="asset-area" value="17"></label><label>Jenis alat<select id="asset-type"><option value="pressure_gauge">Pressure gauge</option><option value="caliper">Jangka sorong</option><option value="gasket_gauge">Gasket gauge</option><option value="height_gauge">Height gauge</option><option value="dial_indicator">Dial indicator</option><option value="other">Lainnya</option></select></label><label>ID pemeriksaan (pisahkan koma)<input id="asset-checks"></label><p>Profil menggunakan satuan, minimum, maksimum, desimal dan toleransi pada langkah Crop.</p><label><input id="asset-active" type="checkbox" checked> Alat aktif</label><button id="save-equipment">Simpan alat</button><p>Pengaturan interval, metode dan standar lengkap tersedia pada API untuk tim frontend.</p></section>
+</main><dialog id="error-dialog"><h2>Perlu diperiksa</h2><p id="error-message"></p><button id="close-error">Tutup</button></dialog><script type="module" src="/smoke/app.js"></script></body></html>

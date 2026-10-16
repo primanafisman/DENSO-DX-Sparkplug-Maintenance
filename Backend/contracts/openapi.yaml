@@ -1,0 +1,4713 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Sparkplug Maintenance API",
+    "version": "1.0.0",
+    "description": "Only LOCAL_CV. ROI coordinates reference EXIF-oriented originals. Analog pressure: black needle, 0–1 MPa, three-decimal interpolation, no ±0.001 accuracy claim. Partial labels are suggestions requiring operator identity confirmation. Single worker/API process; TTL/restart invalidates temporary IDs. Database schemas never leak into frontend payloads."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Runtime information",
+        "operationId": "get__health",
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "summary": "Runtime information",
+        "operationId": "get__ready",
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/capabilities": {
+      "get": {
+        "summary": "Runtime information",
+        "operationId": "get__api_v1_capabilities",
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/local-camera-ca.cer": {
+      "get": {
+        "summary": "Download public local camera CA when development HTTPS is enabled",
+        "operationId": "get__local_camera_ca_cer",
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/x-x509-ca-cert": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/maintenance/schedule": {
+      "get": {
+        "summary": "Current server-clock WIB shift and latest inspection start",
+        "operationId": "get__api_v1_maintenance_schedule",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ServerSchedule"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "summary": "Sign in",
+        "operationId": "post__api_v1_auth_login",
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/User"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/token": {
+      "post": {
+        "summary": "Sign in",
+        "operationId": "post__api_v1_auth_token",
+        "security": [],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/TokenResponse"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/csrf": {
+      "get": {
+        "summary": "Session information",
+        "operationId": "get__api_v1_auth_csrf",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CsrfToken"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "summary": "Session information",
+        "operationId": "get__api_v1_auth_me",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/User"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "summary": "Sign out",
+        "operationId": "post__api_v1_auth_logout",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for cookie-authenticated writes, issued by GET auth/csrf."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Logout"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/instruments": {
+      "get": {
+        "summary": "Paginated equipment",
+        "operationId": "get__api_v1_instruments",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "created_at_desc",
+                "created_at_asc"
+              ],
+              "default": "created_at_desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/InstrumentPage"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Admin creates equipment",
+        "operationId": "post__api_v1_instruments",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for cookie-authenticated writes, issued by GET auth/csrf."
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/InstrumentResponse"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstrumentInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/instruments/{id}": {
+      "get": {
+        "summary": "Equipment profile",
+        "operationId": "get__api_v1_instruments__id_",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/InstrumentResponse"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Admin updates equipment",
+        "operationId": "put__api_v1_instruments__id_",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for cookie-authenticated writes, issued by GET auth/csrf."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/InstrumentResponse"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstrumentInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/instruments/{id}/calibrations": {
+      "get": {
+        "summary": "Immutable calibration versions",
+        "operationId": "get__api_v1_instruments__id__calibrations",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CalibrationPage"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Admin calibrates analog equipment",
+        "operationId": "post__api_v1_instruments__id__calibrations",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for cookie-authenticated writes, issued by GET auth/csrf."
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CalibrationResponse"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalibrationInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/photos": {
+      "post": {
+        "summary": "Upload original photo and production context",
+        "operationId": "post__api_v1_photos",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for cookie-authenticated writes, issued by GET auth/csrf."
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/PhotoMetadata"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "image",
+                  "context"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "context": {
+                    "type": "string",
+                    "description": "JSON-serialized Context object."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/photos/{id}/discovery": {
+      "post": {
+        "summary": "Propose indicator and label crops",
+        "operationId": "post__api_v1_photos__id__discovery",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for cookie-authenticated writes, issued by GET auth/csrf."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Discovery"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscoveryInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/photos/{id}/crop": {
+      "post": {
+        "summary": "Authorized temporary crop preview",
+        "operationId": "post__api_v1_photos__id__crop",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for cookie-authenticated writes, issued by GET auth/csrf."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ROI"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analysis-jobs": {
+      "post": {
+        "summary": "Submit 1–12 ROIs for local analysis",
+        "operationId": "post__api_v1_analysis_jobs",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for cookie-authenticated writes, issued by GET auth/csrf."
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Job"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analysis-jobs/{id}": {
+      "get": {
+        "summary": "Poll terminal or in-progress job",
+        "operationId": "get__api_v1_analysis_jobs__id_",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Job"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/readings/confirm": {
+      "post": {
+        "summary": "Operator verifies identity/value/context and persists evidence",
+        "operationId": "post__api_v1_readings_confirm",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for cookie-authenticated writes, issued by GET auth/csrf."
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ReadingResponse"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmationInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/readings": {
+      "get": {
+        "summary": "Paginated confirmed history",
+        "operationId": "get__api_v1_readings",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "created_at_desc",
+                "created_at_asc"
+              ],
+              "default": "created_at_desc"
+            }
+          },
+          {
+            "name": "line",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "instrument_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "production_date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "shift",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "night"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ReadingPage"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/readings/{id}/evidence/{variant}": {
+      "get": {
+        "summary": "Authorized original/crop evidence",
+        "operationId": "get__api_v1_readings__id__evidence__variant_",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "variant",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/readings/export.csv": {
+      "get": {
+        "summary": "Formula-safe streamed CSV",
+        "operationId": "get__api_v1_readings_export_csv",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "created_at_desc",
+                "created_at_asc"
+              ],
+              "default": "created_at_desc"
+            }
+          },
+          {
+            "name": "line",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "instrument_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "production_date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "shift",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "night"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "UTF-8 CSV",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/maintenance/catalog": {
+      "get": {
+        "summary": "44 reviewed checklist/chart definitions and source gaps",
+        "operationId": "get__api_v1_maintenance_catalog",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/MaintenanceCatalog"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/maintenance/settings": {
+      "get": {
+        "summary": "Line/sampler/date configuration",
+        "operationId": "get__api_v1_maintenance_settings",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/MaintenanceSettings"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Admin updates settings",
+        "operationId": "put__api_v1_maintenance_settings",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for cookie-authenticated writes, issued by GET auth/csrf."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SavedSettings"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/maintenance/definitions/{id}": {
+      "put": {
+        "summary": "Admin updates versioned methods/specifications",
+        "operationId": "put__api_v1_maintenance_definitions__id_",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for cookie-authenticated writes, issued by GET auth/csrf."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/MaintenanceDefinition"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinitionUpdate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/maintenance/records": {
+      "get": {
+        "summary": "Paginated OK/NG history",
+        "operationId": "get__api_v1_maintenance_records",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 512
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "created_at_desc",
+                "created_at_asc"
+              ],
+              "default": "created_at_desc"
+            }
+          },
+          {
+            "name": "line",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "production_date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "shift",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "night"
+              ]
+            }
+          },
+          {
+            "name": "definition_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/MaintenancePage"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Evaluate required samples and save OK/NG",
+        "operationId": "post__api_v1_maintenance_records",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for cookie-authenticated writes, issued by GET auth/csrf."
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/MaintenanceRecord"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaintenanceInput"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "digital",
+              "analog"
+            ]
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "MPa",
+              "mm",
+              "kN",
+              "N",
+              "bar"
+            ]
+          },
+          "minimum": {
+            "type": "number"
+          },
+          "maximum": {
+            "type": "number"
+          },
+          "decimals": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 6
+          },
+          "tolerance": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "kind",
+          "unit",
+          "minimum",
+          "maximum",
+          "decimals",
+          "tolerance"
+        ],
+        "additionalProperties": false
+      },
+      "ROI": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMaximum": true,
+            "maximum": 1
+          },
+          "y": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMaximum": true,
+            "maximum": 1
+          },
+          "width": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "maximum": 1
+          },
+          "height": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "width",
+          "height"
+        ],
+        "additionalProperties": false
+      },
+      "Context": {
+        "type": "object",
+        "properties": {
+          "line": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "production_date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "shift": {
+            "type": "string",
+            "enum": [
+              "day",
+              "night"
+            ]
+          },
+          "sampler": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "line",
+          "production_date",
+          "shift",
+          "sampler"
+        ],
+        "additionalProperties": false
+      },
+      "JobInput": {
+        "type": "object",
+        "properties": {
+          "image_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "client_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "roi": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number",
+                      "minimum": 0,
+                      "exclusiveMaximum": true,
+                      "maximum": 1
+                    },
+                    "y": {
+                      "type": "number",
+                      "minimum": 0,
+                      "exclusiveMaximum": true,
+                      "maximum": 1
+                    },
+                    "width": {
+                      "type": "number",
+                      "exclusiveMinimum": true,
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "height": {
+                      "type": "number",
+                      "exclusiveMinimum": true,
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y",
+                    "width",
+                    "height"
+                  ],
+                  "additionalProperties": false
+                },
+                "label_roi": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number",
+                      "minimum": 0,
+                      "exclusiveMaximum": true,
+                      "maximum": 1
+                    },
+                    "y": {
+                      "type": "number",
+                      "minimum": 0,
+                      "exclusiveMaximum": true,
+                      "maximum": 1
+                    },
+                    "width": {
+                      "type": "number",
+                      "exclusiveMinimum": true,
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "height": {
+                      "type": "number",
+                      "exclusiveMinimum": true,
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y",
+                    "width",
+                    "height"
+                  ],
+                  "additionalProperties": false
+                },
+                "instrument_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "calibration_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "profile": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "auto",
+                        "digital",
+                        "analog"
+                      ]
+                    },
+                    "unit": {
+                      "type": "string",
+                      "enum": [
+                        "MPa",
+                        "mm",
+                        "kN",
+                        "N",
+                        "bar"
+                      ]
+                    },
+                    "minimum": {
+                      "type": "number"
+                    },
+                    "maximum": {
+                      "type": "number"
+                    },
+                    "decimals": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 6
+                    },
+                    "tolerance": {
+                      "type": "number",
+                      "exclusiveMinimum": true,
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "unit",
+                    "minimum",
+                    "maximum",
+                    "decimals",
+                    "tolerance"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "client_id",
+                "roi",
+                "profile"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 12
+          },
+          "area": {
+            "type": "string",
+            "maxLength": 80,
+            "default": ""
+          }
+        },
+        "required": [
+          "image_id",
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "LoginInput": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 72
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "additionalProperties": false
+      },
+      "InstrumentInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 60,
+            "default": ""
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "maxItems": 20,
+            "default": []
+          },
+          "area": {
+            "type": "string",
+            "maxLength": 80,
+            "default": ""
+          },
+          "instrument_type": {
+            "type": "string",
+            "enum": [
+              "pressure_gauge",
+              "caliper",
+              "height_gauge",
+              "gasket_gauge",
+              "dial_indicator",
+              "other"
+            ],
+            "default": "other"
+          },
+          "active": {
+            "type": "boolean",
+            "default": true
+          },
+          "profile": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "digital",
+                  "analog"
+                ]
+              },
+              "unit": {
+                "type": "string",
+                "enum": [
+                  "MPa",
+                  "mm",
+                  "kN",
+                  "N",
+                  "bar"
+                ]
+              },
+              "minimum": {
+                "type": "number"
+              },
+              "maximum": {
+                "type": "number"
+              },
+              "decimals": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 6
+              },
+              "tolerance": {
+                "type": "number",
+                "exclusiveMinimum": true,
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "kind",
+              "unit",
+              "minimum",
+              "maximum",
+              "decimals",
+              "tolerance"
+            ],
+            "additionalProperties": false
+          },
+          "maintenance_check_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 44,
+            "default": []
+          }
+        },
+        "required": [
+          "name",
+          "profile"
+        ],
+        "additionalProperties": false
+      },
+      "CalibrationInput": {
+        "type": "object",
+        "properties": {
+          "image_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "roi": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number",
+                "minimum": 0,
+                "exclusiveMaximum": true,
+                "maximum": 1
+              },
+              "y": {
+                "type": "number",
+                "minimum": 0,
+                "exclusiveMaximum": true,
+                "maximum": 1
+              },
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": true,
+                "minimum": 0,
+                "maximum": 1
+              },
+              "height": {
+                "type": "number",
+                "exclusiveMinimum": true,
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ],
+            "additionalProperties": false
+          },
+          "pivot": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "y": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ],
+            "additionalProperties": false
+          },
+          "scale_points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "y": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "value": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "value"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 6,
+            "maxItems": 6
+          },
+          "clockwise": {
+            "type": "boolean",
+            "default": true
+          },
+          "resolution": {
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0,
+            "maximum": 1,
+            "default": 0.01
+          }
+        },
+        "required": [
+          "image_id",
+          "roi",
+          "pivot",
+          "scale_points"
+        ],
+        "additionalProperties": false
+      },
+      "ConfirmationInput": {
+        "type": "object",
+        "properties": {
+          "analysis_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "instrument_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "final_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^-?\\d{1,9}(\\.\\d{1,6})?$"
+              }
+            ]
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "identity_verified": {
+            "type": "boolean"
+          },
+          "context": {
+            "type": "object",
+            "properties": {
+              "line": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "production_date": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "shift": {
+                "type": "string",
+                "enum": [
+                  "day",
+                  "night"
+                ]
+              },
+              "sampler": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              }
+            },
+            "required": [
+              "line",
+              "production_date",
+              "shift",
+              "sampler"
+            ],
+            "additionalProperties": false
+          },
+          "check_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "sample_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "default": ""
+          },
+          "confirmation_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "analysis_id",
+          "instrument_id",
+          "final_value",
+          "verified",
+          "identity_verified",
+          "context",
+          "check_id",
+          "sample_key",
+          "confirmation_id"
+        ],
+        "additionalProperties": false
+      },
+      "MaintenanceInput": {
+        "type": "object",
+        "properties": {
+          "definition_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "context": {
+            "type": "object",
+            "properties": {
+              "line": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "production_date": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "shift": {
+                "type": "string",
+                "enum": [
+                  "day",
+                  "night"
+                ]
+              },
+              "sampler": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              }
+            },
+            "required": [
+              "line",
+              "production_date",
+              "shift",
+              "sampler"
+            ],
+            "additionalProperties": false
+          },
+          "interval": {
+            "type": "string",
+            "enum": [
+              "per_shift",
+              "weekly",
+              "every_4_hours",
+              "daily"
+            ]
+          },
+          "trigger": {
+            "type": "string",
+            "enum": [
+              "routine",
+              "dandori",
+              "start_process"
+            ]
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "observations": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "sample_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OK",
+                        "NG"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "sample_id",
+                    "status"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "sample_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "reading_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    }
+                  },
+                  "required": [
+                    "sample_id",
+                    "reading_id"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "sample_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "before_reading_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "after_reading_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    }
+                  },
+                  "required": [
+                    "sample_id",
+                    "before_reading_id",
+                    "after_reading_id"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "definition_id",
+          "context",
+          "interval",
+          "trigger",
+          "checked_at",
+          "observations"
+        ],
+        "additionalProperties": false
+      },
+      "SettingsInput": {
+        "type": "object",
+        "properties": {
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 100
+          },
+          "allowed_samplers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 100
+          },
+          "night_rollover_hour": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 23
+          }
+        },
+        "required": [
+          "lines",
+          "allowed_samplers",
+          "night_rollover_hour"
+        ],
+        "additionalProperties": false
+      },
+      "DefinitionUpdate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "standard_text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "method_text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "tool": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "MPa",
+              "mm",
+              "kN",
+              "N",
+              "bar"
+            ],
+            "nullable": true
+          },
+          "limits": {
+            "type": "object",
+            "properties": {
+              "minimum": {
+                "type": "number"
+              },
+              "maximum": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "minimum",
+              "maximum"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "intervals": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "per_shift",
+                "weekly",
+                "every_4_hours",
+                "daily"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 4
+          },
+          "triggers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "routine",
+                "dandori",
+                "start_process"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 3
+          },
+          "review_reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "name",
+          "standard_text",
+          "method_text",
+          "tool",
+          "unit",
+          "limits",
+          "intervals",
+          "triggers",
+          "review_reason"
+        ],
+        "additionalProperties": false
+      },
+      "DiscoveryInput": {
+        "type": "object",
+        "properties": {
+          "area": {
+            "type": "string",
+            "maxLength": 80,
+            "default": ""
+          }
+        },
+        "additionalProperties": false
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "Viewer",
+              "Operator",
+              "Admin"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "role"
+        ]
+      },
+      "CsrfToken": {
+        "type": "object",
+        "properties": {
+          "csrf_token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "csrf_token"
+        ]
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "token_type": {
+            "type": "string",
+            "enum": [
+              "Bearer"
+            ]
+          },
+          "expires_in": {
+            "type": "integer"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "access_token",
+          "token_type",
+          "expires_in",
+          "user"
+        ]
+      },
+      "Logout": {
+        "type": "object",
+        "properties": {
+          "signed_out": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "signed_out"
+        ]
+      },
+      "InstrumentResponse": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 60,
+            "default": ""
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "maxItems": 20,
+            "default": []
+          },
+          "area": {
+            "type": "string",
+            "maxLength": 80,
+            "default": ""
+          },
+          "instrument_type": {
+            "type": "string",
+            "enum": [
+              "pressure_gauge",
+              "caliper",
+              "height_gauge",
+              "gasket_gauge",
+              "dial_indicator",
+              "other"
+            ],
+            "default": "other"
+          },
+          "active": {
+            "type": "boolean",
+            "default": true
+          },
+          "profile": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "auto",
+                  "digital",
+                  "analog"
+                ]
+              },
+              "unit": {
+                "type": "string",
+                "enum": [
+                  "MPa",
+                  "mm",
+                  "kN",
+                  "N",
+                  "bar"
+                ]
+              },
+              "minimum": {
+                "type": "number"
+              },
+              "maximum": {
+                "type": "number"
+              },
+              "decimals": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 6
+              },
+              "tolerance": {
+                "type": "number",
+                "exclusiveMinimum": true,
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "kind",
+              "unit",
+              "minimum",
+              "maximum",
+              "decimals",
+              "tolerance"
+            ],
+            "additionalProperties": false
+          },
+          "maintenance_check_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 44,
+            "default": []
+          },
+          "id": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "code",
+          "aliases",
+          "area",
+          "instrument_type",
+          "active",
+          "profile",
+          "maintenance_check_ids",
+          "revision",
+          "created_at"
+        ],
+        "additionalProperties": false
+      },
+      "InstrumentPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstrumentResponse"
+            }
+          },
+          "next_cursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ]
+      },
+      "CalibrationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "instrument_id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "number"
+          },
+          "profile_snapshot": {
+            "$ref": "#/components/schemas/Profile"
+          },
+          "source_hash": {
+            "type": "string"
+          },
+          "template_hash": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "pivot": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          },
+          "scale_points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                },
+                "value": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "value"
+              ]
+            },
+            "minItems": 6,
+            "maxItems": 6
+          },
+          "clockwise": {
+            "type": "boolean"
+          },
+          "resolution": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "instrument_id",
+          "version",
+          "profile_snapshot",
+          "source_hash",
+          "template_hash",
+          "created_at",
+          "pivot",
+          "scale_points",
+          "clockwise",
+          "resolution"
+        ]
+      },
+      "CalibrationPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalibrationResponse"
+            }
+          },
+          "next_cursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ]
+      },
+      "Confidence": {
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "probability_correct": {
+            "type": "number",
+            "nullable": true
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "valid",
+          "level"
+        ]
+      },
+      "ReadingResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "confirmation_id": {
+            "type": "string"
+          },
+          "analysis_id": {
+            "type": "string"
+          },
+          "instrument_id": {
+            "type": "string"
+          },
+          "instrument_snapshot": {
+            "$ref": "#/components/schemas/InstrumentResponse"
+          },
+          "profile_snapshot": {
+            "$ref": "#/components/schemas/Profile"
+          },
+          "final_value": {
+            "type": "string",
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "description": "Exact formatted decimal; do not convert to a binary floating value for storage."
+          },
+          "raw_prediction": {
+            "type": "number",
+            "nullable": true
+          },
+          "corrected": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "context": {
+            "$ref": "#/components/schemas/Context"
+          },
+          "check_id": {
+            "type": "string"
+          },
+          "sample_key": {
+            "type": "string"
+          },
+          "actor_id": {
+            "type": "string"
+          },
+          "confirmed_at": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "evidence_available": {
+            "type": "boolean"
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/Confidence"
+          },
+          "algorithm_version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "confirmation_id",
+          "analysis_id",
+          "instrument_id",
+          "instrument_snapshot",
+          "profile_snapshot",
+          "final_value",
+          "raw_prediction",
+          "corrected",
+          "reason",
+          "context",
+          "check_id",
+          "sample_key",
+          "actor_id",
+          "confirmed_at",
+          "created_at",
+          "evidence_available"
+        ]
+      },
+      "ReadingPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReadingResponse"
+            }
+          },
+          "next_cursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ]
+      },
+      "MaintenanceDefinition": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "definition_version": {
+            "type": "integer"
+          },
+          "source_number": {
+            "type": "integer",
+            "nullable": true
+          },
+          "display_order": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "group": {
+            "type": "string"
+          },
+          "process": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "visual",
+              "functional",
+              "numeric",
+              "difference"
+            ]
+          },
+          "input_method": {
+            "type": "string",
+            "enum": [
+              "ok_ng",
+              "photo",
+              "photo_difference"
+            ]
+          },
+          "standard_text": {
+            "type": "string"
+          },
+          "method_text": {
+            "type": "string"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "requirement_tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "label"
+              ]
+            }
+          },
+          "intervals": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "per_shift",
+                "weekly",
+                "every_4_hours",
+                "daily"
+              ]
+            }
+          },
+          "triggers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "interval_guide": {
+            "type": "object",
+            "properties": {
+              "interval": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "day": {
+                "type": "object",
+                "properties": {
+                  "times": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "time": {
+                          "type": "string"
+                        },
+                        "day_offset": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "time",
+                        "day_offset"
+                      ]
+                    }
+                  },
+                  "window": {
+                    "type": "object",
+                    "properties": {},
+                    "required": [],
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "times",
+                  "window"
+                ]
+              },
+              "night": {
+                "type": "object",
+                "properties": {
+                  "times": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "time": {
+                          "type": "string"
+                        },
+                        "day_offset": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "time",
+                        "day_offset"
+                      ]
+                    }
+                  },
+                  "window": {
+                    "type": "object",
+                    "properties": {},
+                    "required": [],
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "times",
+                  "window"
+                ]
+              },
+              "note": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "interval",
+              "description",
+              "day",
+              "night",
+              "note"
+            ]
+          },
+          "default_sampler": {
+            "type": "string"
+          },
+          "shifts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "day",
+                "night"
+              ]
+            }
+          },
+          "samples": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "label"
+              ]
+            }
+          },
+          "sample_count": {
+            "type": "integer"
+          },
+          "unit": {
+            "type": "string",
+            "nullable": true
+          },
+          "limits": {
+            "type": "object",
+            "properties": {
+              "minimum": {
+                "type": "number"
+              },
+              "maximum": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "minimum",
+              "maximum"
+            ],
+            "nullable": true
+          },
+          "resolution": {
+            "type": "number",
+            "nullable": true
+          },
+          "fixture_count": {
+            "type": "integer",
+            "nullable": true
+          },
+          "source": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "number": {
+                "type": "integer",
+                "nullable": true
+              }
+            },
+            "required": [
+              "file",
+              "number"
+            ]
+          },
+          "review_notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "outcome_guide": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "definition_version",
+          "source_number",
+          "display_order",
+          "name",
+          "group",
+          "process",
+          "kind",
+          "input_method",
+          "standard_text",
+          "method_text",
+          "tool",
+          "requirement_tags",
+          "requirements",
+          "intervals",
+          "triggers",
+          "interval_guide",
+          "default_sampler",
+          "shifts",
+          "samples",
+          "sample_count",
+          "unit",
+          "limits",
+          "resolution",
+          "fixture_count",
+          "source",
+          "review_notes",
+          "outcome_guide"
+        ]
+      },
+      "MaintenanceCatalog": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MaintenanceDefinition"
+            }
+          },
+          "count": {
+            "type": "integer"
+          },
+          "source_gaps": {
+            "type": "object",
+            "properties": {
+              "missing_rows": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "clipped_row": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "missing_rows",
+              "clipped_row"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "count",
+          "source_gaps"
+        ]
+      },
+      "MaintenanceSettings": {
+        "type": "object",
+        "properties": {
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 100
+          },
+          "allowed_samplers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 100
+          },
+          "night_rollover_hour": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 23
+          }
+        },
+        "required": [
+          "lines",
+          "allowed_samplers",
+          "night_rollover_hour"
+        ],
+        "additionalProperties": false
+      },
+      "SavedSettings": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "value": {
+            "$ref": "#/components/schemas/MaintenanceSettings"
+          },
+          "version": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "value",
+          "version",
+          "created_at"
+        ]
+      },
+      "SampleOutcome": {
+        "type": "object",
+        "properties": {
+          "sample_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OK",
+              "NG"
+            ]
+          },
+          "value": {
+            "type": "number"
+          },
+          "reading_id": {
+            "type": "string"
+          },
+          "before_reading_id": {
+            "type": "string"
+          },
+          "after_reading_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sample_id",
+          "status"
+        ]
+      },
+      "MaintenanceRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "definition_id": {
+            "type": "string"
+          },
+          "context": {
+            "$ref": "#/components/schemas/Context"
+          },
+          "interval": {
+            "type": "string"
+          },
+          "trigger": {
+            "type": "string"
+          },
+          "checked_at": {
+            "type": "string"
+          },
+          "observations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sample_id": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "OK",
+                    "NG"
+                  ]
+                },
+                "reading_id": {
+                  "type": "string"
+                },
+                "before_reading_id": {
+                  "type": "string"
+                },
+                "after_reading_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "sample_id"
+              ]
+            }
+          },
+          "actor_id": {
+            "type": "string"
+          },
+          "definition_snapshot": {
+            "$ref": "#/components/schemas/MaintenanceDefinition"
+          },
+          "settings_snapshot": {
+            "$ref": "#/components/schemas/MaintenanceSettings"
+          },
+          "outcomes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SampleOutcome"
+            }
+          },
+          "overall_status": {
+            "type": "string",
+            "enum": [
+              "OK",
+              "NG"
+            ]
+          },
+          "saved_at": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "definition_id",
+          "context",
+          "interval",
+          "trigger",
+          "checked_at",
+          "observations",
+          "actor_id",
+          "definition_snapshot",
+          "settings_snapshot",
+          "outcomes",
+          "overall_status",
+          "saved_at",
+          "created_at"
+        ]
+      },
+      "MaintenancePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MaintenanceRecord"
+            }
+          },
+          "next_cursor": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ]
+      },
+      "PhotoMetadata": {
+        "type": "object",
+        "required": [
+          "image_id",
+          "source_hash",
+          "source_width",
+          "source_height",
+          "preview_width",
+          "preview_height",
+          "expires_at",
+          "context"
+        ],
+        "properties": {
+          "image_id": {
+            "type": "string"
+          },
+          "source_hash": {
+            "type": "string"
+          },
+          "source_width": {
+            "type": "integer"
+          },
+          "source_height": {
+            "type": "integer"
+          },
+          "preview_width": {
+            "type": "integer"
+          },
+          "preview_height": {
+            "type": "integer"
+          },
+          "expires_at": {
+            "type": "number",
+            "description": "Unix seconds"
+          },
+          "context": {
+            "$ref": "#/components/schemas/Context"
+          }
+        }
+      },
+      "Candidate": {
+        "type": "object",
+        "properties": {
+          "readable": {
+            "type": "boolean"
+          },
+          "value": {
+            "type": "number",
+            "nullable": true
+          },
+          "unit": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "digital",
+              "analog",
+              "unknown"
+            ]
+          },
+          "raw_text": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "AnalysisResult": {
+        "type": "object",
+        "properties": {
+          "analysis_id": {
+            "type": "string"
+          },
+          "client_id": {
+            "type": "string"
+          },
+          "candidate": {
+            "$ref": "#/components/schemas/Candidate"
+          },
+          "validated_prediction": {
+            "type": "number",
+            "nullable": true
+          },
+          "confidence": {
+            "type": "object",
+            "properties": {
+              "valid": {
+                "type": "boolean"
+              },
+              "level": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              },
+              "probability_correct": {
+                "type": "number",
+                "nullable": true,
+                "description": "Not calibrated; normally null."
+              },
+              "reasons": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "roi": {
+            "$ref": "#/components/schemas/ROI"
+          },
+          "label_roi": {
+            "$ref": "#/components/schemas/ROI"
+          },
+          "label": {
+            "type": "object"
+          },
+          "overlay": {
+            "type": "object"
+          },
+          "method": {
+            "type": "string"
+          },
+          "processing_method": {
+            "type": "string",
+            "enum": [
+              "LOCAL_CV"
+            ]
+          },
+          "error": {
+            "type": "object",
+            "nullable": true
+          }
+        }
+      },
+      "Job": {
+        "type": "object",
+        "required": [
+          "job_id",
+          "status",
+          "processed",
+          "total",
+          "results",
+          "expires_at"
+        ],
+        "properties": {
+          "job_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed",
+              "expired"
+            ]
+          },
+          "processed": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnalysisResult"
+            }
+          },
+          "expires_at": {
+            "type": "number"
+          }
+        }
+      },
+      "Discovery": {
+        "type": "object",
+        "properties": {
+          "instruments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "client_id": {
+                  "type": "string"
+                },
+                "roi": {
+                  "$ref": "#/components/schemas/ROI"
+                },
+                "label_roi": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number",
+                      "minimum": 0,
+                      "exclusiveMaximum": true,
+                      "maximum": 1
+                    },
+                    "y": {
+                      "type": "number",
+                      "minimum": 0,
+                      "exclusiveMaximum": true,
+                      "maximum": 1
+                    },
+                    "width": {
+                      "type": "number",
+                      "exclusiveMinimum": true,
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "height": {
+                      "type": "number",
+                      "exclusiveMinimum": true,
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y",
+                    "width",
+                    "height"
+                  ],
+                  "additionalProperties": false,
+                  "nullable": true
+                },
+                "kind_hint": {
+                  "type": "string"
+                },
+                "display_type": {
+                  "type": "string"
+                },
+                "observed_unit": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "observed_decimals": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "suggested_profile": {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "auto",
+                        "digital",
+                        "analog"
+                      ]
+                    },
+                    "unit": {
+                      "type": "string",
+                      "enum": [
+                        "MPa",
+                        "mm",
+                        "kN",
+                        "N",
+                        "bar"
+                      ]
+                    },
+                    "minimum": {
+                      "type": "number"
+                    },
+                    "maximum": {
+                      "type": "number"
+                    },
+                    "decimals": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 6
+                    },
+                    "tolerance": {
+                      "type": "number",
+                      "exclusiveMinimum": true,
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "unit",
+                    "minimum",
+                    "maximum",
+                    "decimals",
+                    "tolerance"
+                  ],
+                  "additionalProperties": false,
+                  "nullable": true
+                },
+                "profile_source": {
+                  "type": "string",
+                  "enum": [
+                    "registered-equipment",
+                    "observed-unit-default-range",
+                    "display-default",
+                    "manual-required"
+                  ]
+                },
+                "requires_profile_confirmation": {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                },
+                "label": {
+                  "type": "object"
+                },
+                "instrument": {
+                  "type": "object",
+                  "nullable": true
+                },
+                "requires_confirmation": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "confidence_calibrated": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ServerSchedule": {
+        "type": "object",
+        "required": [
+          "server_time",
+          "timezone",
+          "calendar_date",
+          "production_date",
+          "shift",
+          "shift_label",
+          "slot_id",
+          "slot_label",
+          "starts_at",
+          "next_starts_at",
+          "schedule"
+        ],
+        "properties": {
+          "server_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "timezone": {
+            "type": "string",
+            "enum": [
+              "Asia/Jakarta"
+            ]
+          },
+          "calendar_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "production_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "slot_id": {
+            "type": "string"
+          },
+          "shift": {
+            "type": "string",
+            "enum": [
+              "day",
+              "night"
+            ]
+          },
+          "shift_label": {
+            "type": "string"
+          },
+          "slot_label": {
+            "type": "string"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "next_starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "schedule": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "object",
+              "required": [
+                "slot_id",
+                "shift",
+                "shift_label",
+                "slot_label",
+                "start_time"
+              ],
+              "properties": {
+                "slot_id": {
+                  "type": "string"
+                },
+                "shift": {
+                  "type": "string",
+                  "enum": [
+                    "day",
+                    "night"
+                  ]
+                },
+                "shift_label": {
+                  "type": "string"
+                },
+                "slot_label": {
+                  "type": "string"
+                },
+                "start_time": {
+                  "type": "string",
+                  "pattern": "^\\d{2}:\\d{2}$"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "success",
+          "message",
+          "code",
+          "request_id"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "request_id": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "spm_session"
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

@@ -1,0 +1,1 @@
+export function publicReading(record){const {evidence,analysis,request_fingerprint,analysis_binding_fingerprint,evidence_key,...publicData}=record;return {...publicData,evidence_available:!!evidence,confidence:analysis?.confidence,algorithm_version:analysis?.method};}

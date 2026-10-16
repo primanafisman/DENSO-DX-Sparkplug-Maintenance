@@ -1,0 +1,297 @@
+{
+  "info": {
+    "name": "Sparkplug Maintenance",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8100"
+    },
+    {
+      "key": "username",
+      "value": ""
+    },
+    {
+      "key": "password",
+      "value": ""
+    },
+    {
+      "key": "api_token",
+      "value": ""
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{api_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Runtime information",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/health",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Runtime information",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/ready",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Runtime information",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/capabilities",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Download public local camera CA when development HTTPS is enabled",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/local-camera-ca.cer",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Current server-clock WIB shift and latest inspection start",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/maintenance/schedule",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Sign in",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/v1/auth/login",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Sign in",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/v1/auth/token",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs.",
+        "auth": {
+          "type": "noauth"
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\":\"{{username}}\",\"password\":\"{{password}}\"}"
+        }
+      }
+    },
+    {
+      "name": "Session information",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/auth/csrf",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Session information",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/auth/me",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Sign out",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/v1/auth/logout",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Paginated equipment",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/instruments",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Admin creates equipment",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/v1/instruments",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Equipment profile",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/instruments/{id}",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Admin updates equipment",
+      "request": {
+        "method": "PUT",
+        "url": "{{base_url}}/api/v1/instruments/{id}",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Immutable calibration versions",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/instruments/{id}/calibrations",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Admin calibrates analog equipment",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/v1/instruments/{id}/calibrations",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Upload original photo and production context",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/v1/photos",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Propose indicator and label crops",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/v1/photos/{id}/discovery",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Authorized temporary crop preview",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/v1/photos/{id}/crop",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Submit 1–12 ROIs for local analysis",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/v1/analysis-jobs",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Poll terminal or in-progress job",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/analysis-jobs/{id}",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Operator verifies identity/value/context and persists evidence",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/v1/readings/confirm",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Paginated confirmed history",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/readings",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Authorized original/crop evidence",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/readings/{id}/evidence/{variant}",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Formula-safe streamed CSV",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/readings/export.csv",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "44 reviewed checklist/chart definitions and source gaps",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/maintenance/catalog",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Line/sampler/date configuration",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/maintenance/settings",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Admin updates settings",
+      "request": {
+        "method": "PUT",
+        "url": "{{base_url}}/api/v1/maintenance/settings",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Admin updates versioned methods/specifications",
+      "request": {
+        "method": "PUT",
+        "url": "{{base_url}}/api/v1/maintenance/definitions/{id}",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Paginated OK/NG history",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/maintenance/records",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Evaluate required samples and save OK/NG",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/v1/maintenance/records",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    }
+  ]
+}

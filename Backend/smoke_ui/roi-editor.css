@@ -1,0 +1,56 @@
+#roi-editor{margin:18px 0 22px;border:1px solid #c9dcd2;border-radius:16px;overflow:hidden;background:#f5faf7}
+#roi-editor .roi-tools{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px}
+#roi-editor .roi-drag-modes{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 12px}
+#roi-editor .roi-drag-modes button{background:#e4efe8;color:#315543;border:1px solid #bdd3c7;font-size:13px;padding:10px 6px}
+#roi-editor .roi-drag-modes button[aria-pressed=true]{background:#355d4c;color:white;border-color:#355d4c}
+#roi-editor button{margin:0;min-height:46px;font-size:14px;font-weight:650;line-height:1.25;touch-action:manipulation}
+#roi-editor .roi-tools button{background:white;color:#355648;border:1px solid #bdd3c7;padding:11px 6px}
+#roi-editor .roi-tools button[aria-pressed=true]{background:#17694e;color:white;border-color:#17694e;box-shadow:0 0 0 2px #a5d2bc}
+#roi-editor .roi-tools button[data-roi-tool=label][aria-pressed=true]{background:#7b5910;border-color:#7b5910;box-shadow:0 0 0 2px #efd288}
+#roi-editor .roi-dot{display:inline-block;width:10px;height:10px;background:#54f4bd;border-radius:50%;margin-right:5px;border:1px solid #117b56}
+#roi-editor .roi-dot-label{background:#ffd369;border-color:#8a6514}
+#roi-editor .roi-stage{position:relative;width:100%;height:440px;height:clamp(300px,58svh,510px);overflow:hidden;background:#12241f;touch-action:none;user-select:none;-webkit-user-select:none;isolation:isolate}
+#roi-editor #photo-preview{position:absolute;display:block;max-width:none;max-height:none;object-fit:fill;pointer-events:none;-webkit-user-drag:none;image-orientation:from-image}
+#roi-editor .roi-box{position:absolute;box-sizing:border-box;border:2px solid #5ff6c0;color:#5ff6c0;cursor:move;outline:none;z-index:1;box-shadow:0 0 0 1px #05251c88}
+#roi-editor .roi-box-label{border-color:#ffd369;color:#ffd369}
+#roi-editor .roi-box.is-active{border-width:3px;z-index:3;background:#37e8ae0b}
+#roi-editor .roi-box.is-proposal{border-style:dashed}
+#roi-editor .roi-box:focus-visible{outline:3px solid white;outline-offset:5px}
+#roi-editor .roi-box-title{position:absolute;left:-2px;top:-26px;background:#164f3eea;color:#ecfff7;padding:4px 9px;font-size:12px;line-height:18px;white-space:nowrap;border-radius:6px 6px 0 0;pointer-events:none}
+#roi-editor .roi-box-label .roi-box-title{background:#74520dea;color:#fff8e5}
+#roi-editor .roi-box-handle{position:absolute;width:40px;height:40px;min-height:40px;padding:0;border:0;background:transparent;visibility:hidden;color:inherit;border-radius:50%}
+#roi-editor .roi-box-handle:after{content:"";position:absolute;inset:11px;border-radius:50%;background:currentColor;border:2px solid white;box-shadow:0 1px 5px #0009}
+#roi-editor .is-active .roi-box-handle{visibility:visible}
+#roi-editor .roi-box-handle:focus-visible{outline:2px solid white;outline-offset:0}
+#roi-editor [data-roi-handle=nw]{left:-21px;top:-21px;cursor:nwse-resize}
+#roi-editor [data-roi-handle=ne]{right:-21px;top:-21px;cursor:nesw-resize}
+#roi-editor [data-roi-handle=sw]{left:-21px;bottom:-21px;cursor:nesw-resize}
+#roi-editor [data-roi-handle=se]{right:-21px;bottom:-21px;cursor:nwse-resize}
+#roi-editor .roi-stage.is-zoomed{cursor:grab}
+#roi-editor .roi-stage.is-dragging{cursor:grabbing}
+#roi-editor .roi-stage.is-photo-mode .roi-box{cursor:grab}
+#roi-editor .roi-stage.is-photo-mode .roi-box-handle{visibility:hidden}
+#roi-editor .roi-stage.is-photo-mode.is-dragging .roi-box{cursor:grabbing}
+#roi-editor .roi-controls{padding:14px 12px 12px}
+#roi-editor .roi-control-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;font-size:14px}
+#roi-editor .roi-control-heading small{font-size:12px}
+#roi-editor .roi-control-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#roi-editor .roi-control-grid button{background:white;color:#1a5e47;border:1px solid #c1d7c9;padding:10px 5px}
+#roi-editor .roi-control-grid [data-roi-nudge]{font-size:22px;padding:5px}
+#roi-editor .roi-control-grid .roi-size{font-size:13px}
+#roi-editor .roi-control-grid .roi-center{display:flex;align-items:center;justify-content:center;text-align:center;color:#547465;font-size:12px;line-height:1.4}
+#roi-editor .roi-zoom-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid #d6e5dc;margin-top:14px;padding-top:12px}
+#roi-editor .roi-zoom-controls button{background:#e4efe8;color:#1b5640;border:1px solid #c1d7c9;padding:8px 12px}
+#roi-editor .roi-zoom-controls [data-roi-zoom=reset]{margin-left:auto;font-size:12px}
+#roi-editor .roi-zoom-controls output{font-variant-numeric:tabular-nums;font-size:13px;min-width:34px;text-align:center}
+#roi-editor .roi-hint{padding:0 14px;font-size:13px;line-height:1.55;color:#365c4a}
+#roi-editor [data-roi-status]{margin-bottom:14px}
+#crop .roi-intro{color:#4e6e5c;line-height:1.5;font-size:14px}
+#crop .roi-advanced{border:1px solid #d2e1d8;border-radius:12px;padding:14px;margin:18px 0}
+#crop .roi-advanced summary{cursor:pointer;font-weight:650;min-height:24px}
+#crop .roi-advanced fieldset{margin-top:14px;padding:12px}
+#crop .roi-advanced legend{font-size:13px}
+#crop #preview-crop{background:#e8f2ec;color:#205b44}
+#crop .roi-action-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+#crop .roi-action-row button{margin:0}
+@media(max-width:420px){#roi-editor .roi-stage{height:clamp(310px,55svh,430px)}#roi-editor .roi-control-heading{font-size:13px}#roi-editor .roi-control-heading small{max-width:135px;text-align:right}#roi-editor .roi-box-title{font-size:11px;padding:3px 6px}#crop .roi-advanced{padding:12px}#crop .roi-action-row button:first-child{width:100%}}

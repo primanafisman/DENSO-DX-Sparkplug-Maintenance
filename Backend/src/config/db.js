@@ -1,0 +1,2 @@
+import {Sequelize} from 'sequelize';
+export function connectDatabase(config){const db=config.database;if(!['sqlite','mysql','mssql'].includes(db.dialect))throw new Error('Unsupported database adapter.');return new Sequelize({dialect:db.dialect,storage:db.storage,host:db.host,port:db.port,database:db.database,username:db.username,password:db.password,logging:config.sqlLogger||false,pool:{max:5,min:0,idle:10000},retry:{max:2},dialectOptions:db.dialect==='mssql'?{options:{encrypt:true,trustServerCertificate:false}}:{}});}

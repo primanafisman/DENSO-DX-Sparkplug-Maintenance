@@ -1,0 +1,9 @@
+import {z} from 'zod';
+export const id=z.string().min(1).max(64);
+export const roi=z.object({x:z.number().finite().min(0).lt(1),y:z.number().finite().min(0).lt(1),width:z.number().finite().positive().max(1),height:z.number().finite().positive().max(1)}).strict().refine(r=>r.x+r.width<=1.000000001&&r.y+r.height<=1.000000001,'ROI outside image.');
+export const profile=z.object({kind:z.enum(['auto','digital','analog']),unit:z.enum(['MPa','mm','kN','N','bar']),minimum:z.number().finite(),maximum:z.number().finite(),decimals:z.number().int().min(0).max(6),tolerance:z.number().finite().positive().max(1)}).strict().refine(p=>p.maximum>p.minimum,'Invalid physical range.').refine(p=>p.kind!=='analog'||(p.unit==='MPa'&&p.minimum===0&&p.maximum===1),'Analog supports 0–1 MPa only.');
+export const context=z.object({line:z.string().trim().min(1).max(64),production_date:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v=>{const date=new Date(v+'T00:00:00Z');return Number.isFinite(date.valueOf())&&date.toISOString().slice(0,10)===v;},'Invalid date.'),shift:z.enum(['day','night']),sampler:z.string().trim().min(1).max(64)}).strict();
+export const photoInput=z.object({context}).strict();
+export const discoveryInput=z.object({area:z.string().max(80).default('')}).strict();
+export const analysisItem=z.object({client_id:id,roi,label_roi:roi.optional(),instrument_id:id.optional(),calibration_id:id.optional(),profile}).strict();
+export const jobInput=z.object({image_id:id,items:z.array(analysisItem).min(1).max(12),area:z.string().max(80).default('')}).strict().refine(j=>new Set(j.items.map(i=>i.client_id)).size===j.items.length,'Client IDs must be unique.');

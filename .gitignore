@@ -1,0 +1,24 @@
+# Application-specific rules are in Backend/.gitignore.
+.DS_Store
+Thumbs.db
+.env
+.env.*
+!.env.example
+node_modules/
+.venv/
+runtime/
+output/
+release/
+.superpowers/
+coverage/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.log
+*.sqlite
+*.sqlite3
+*.db
+*.pem
+*.key
+*.pfx
+*.p12

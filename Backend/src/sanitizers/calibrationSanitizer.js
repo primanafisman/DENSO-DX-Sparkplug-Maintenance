@@ -1,0 +1,1 @@
+export function publicCalibration(record){const {engine_snapshot,...data}=record;return {...data,pivot:engine_snapshot.pivot,scale_points:engine_snapshot.scale_points,clockwise:engine_snapshot.clockwise,resolution:engine_snapshot.resolution};}

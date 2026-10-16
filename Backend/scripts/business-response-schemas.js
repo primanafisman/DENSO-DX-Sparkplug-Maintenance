@@ -1,0 +1,29 @@
+export function addBusinessSchemas(schemas){
+  const string={type:'string'},number={type:'number'},integer={type:'integer'},boolean={type:'boolean'};
+  const strings={type:'array',items:string},ref=name=>({$ref:'#/components/schemas/'+name});
+  const object=(properties,required=Object.keys(properties))=>({type:'object',properties,required});
+  const nullable=schema=>({...schema,nullable:true});
+  const status={type:'string',enum:['OK','NG']};
+  const page=name=>object({items:{type:'array',items:ref(name)},next_cursor:nullable(string)});
+  schemas.User=object({id:string,username:string,role:{type:'string',enum:['Viewer','Operator','Admin']}});
+  schemas.CsrfToken=object({csrf_token:string});
+  schemas.TokenResponse=object({access_token:string,token_type:{type:'string',enum:['Bearer']},expires_in:integer,user:ref('User')});
+  schemas.Logout=object({signed_out:boolean});
+  schemas.InstrumentResponse={...schemas.InstrumentInput,properties:{...schemas.InstrumentInput.properties,id:string,revision:integer,created_at:string},required:['id','name','code','aliases','area','instrument_type','active','profile','maintenance_check_ids','revision','created_at']};
+  schemas.InstrumentPage=page('InstrumentResponse');
+  const point=object({x:number,y:number}),scalePoint=object({x:number,y:number,value:number});
+  schemas.CalibrationResponse=object({id:string,instrument_id:string,version:number,profile_snapshot:ref('Profile'),source_hash:string,template_hash:string,created_at:string,pivot:point,scale_points:{type:'array',items:scalePoint,minItems:6,maxItems:6},clockwise:boolean,resolution:number});
+  schemas.CalibrationPage=page('CalibrationResponse');
+  schemas.Confidence=object({valid:boolean,level:{type:'string',enum:['low','medium','high']},probability_correct:nullable(number),reasons:strings},['valid','level']);
+  schemas.ReadingResponse=object({id:string,confirmation_id:string,analysis_id:string,instrument_id:string,instrument_snapshot:ref('InstrumentResponse'),profile_snapshot:ref('Profile'),final_value:{type:'string',pattern:'^-?\\d+(\\.\\d+)?$',description:'Exact formatted decimal; do not convert to a binary floating value for storage.'},raw_prediction:nullable(number),corrected:boolean,reason:string,context:ref('Context'),check_id:string,sample_key:string,actor_id:string,confirmed_at:string,created_at:string,evidence_available:boolean,confidence:ref('Confidence'),algorithm_version:string},['id','confirmation_id','analysis_id','instrument_id','instrument_snapshot','profile_snapshot','final_value','raw_prediction','corrected','reason','context','check_id','sample_key','actor_id','confirmed_at','created_at','evidence_available']);
+  schemas.ReadingPage=page('ReadingResponse');
+  const schedule=object({interval:string,description:string,day:object({times:{type:'array',items:object({time:string,day_offset:integer})},window:nullable(object({},[]))}),night:object({times:{type:'array',items:object({time:string,day_offset:integer})},window:nullable(object({},[]))}),note:string});
+  schemas.MaintenanceDefinition=object({id:string,definition_version:integer,source_number:nullable(integer),display_order:integer,name:string,group:string,process:string,kind:{type:'string',enum:['visual','functional','numeric','difference']},input_method:{type:'string',enum:['ok_ng','photo','photo_difference']},standard_text:string,method_text:string,tool:string,requirement_tags:strings,requirements:{type:'array',items:object({id:string,label:string})},intervals:{type:'array',items:{type:'string',enum:['per_shift','weekly','every_4_hours','daily']}},triggers:strings,interval_guide:schedule,default_sampler:string,shifts:{type:'array',items:{type:'string',enum:['day','night']}},samples:{type:'array',items:object({id:string,label:string})},sample_count:integer,unit:nullable(string),limits:nullable(object({minimum:number,maximum:number})),resolution:nullable(number),fixture_count:nullable(integer),source:object({file:string,number:nullable(integer)}),review_notes:strings,outcome_guide:string});
+  schemas.MaintenanceCatalog=object({items:{type:'array',items:ref('MaintenanceDefinition')},count:integer,source_gaps:object({missing_rows:{type:'array',items:integer},clipped_row:integer})});
+  schemas.MaintenanceSettings={...schemas.SettingsInput};
+  schemas.SavedSettings=object({id:string,value:ref('MaintenanceSettings'),version:integer,created_at:string});
+  schemas.SampleOutcome=object({sample_id:string,status,value:number,reading_id:string,before_reading_id:string,after_reading_id:string},['sample_id','status']);
+  schemas.MaintenanceRecord=object({id:string,definition_id:string,context:ref('Context'),interval:string,trigger:string,checked_at:string,observations:{type:'array',items:object({sample_id:string,status,reading_id:string,before_reading_id:string,after_reading_id:string},['sample_id'])},actor_id:string,definition_snapshot:ref('MaintenanceDefinition'),settings_snapshot:ref('MaintenanceSettings'),outcomes:{type:'array',items:ref('SampleOutcome')},overall_status:status,saved_at:string,created_at:string});
+  schemas.MaintenancePage=page('MaintenanceRecord');
+  return schemas;
+}
