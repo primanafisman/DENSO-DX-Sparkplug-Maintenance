@@ -1,5 +1,6 @@
 import { snapshotPhoto } from '../model/photoFile';
 import { sameProfile } from '../model/profileCompatibility';
+import { matchRegisteredLabel } from '../model/registeredLabel';
 import { useEffect, useRef } from 'react';
 import { useStore } from 'zustand';
 import { useNavigate } from 'react-router-dom';
@@ -144,21 +145,11 @@ export function createCaptureFlow({
         gaugeUrl: gauge ? URL.createObjectURL(gauge) : '',
         labelUrl: label ? URL.createObjectURL(label) : '',
       });
-      const match = job.results[0].label;
-      if (
-        !state.instrument &&
-        match?.level === 'high' &&
-        !match.conflict &&
-        match.requires_operator_selection === false &&
-        typeof match.suggested_id === 'string'
-      ) {
-        const asset = state.instruments.find(
-          (a) =>
-            a.id === match.suggested_id &&
-            a.active &&
-            a.measurement_mode !== 'visual' &&
-            a.condition !== 'not_working' &&
-            a.profile,
+      if (!state.instrument) {
+        const asset = matchRegisteredLabel(
+          job.results[0].label,
+          state.instruments,
+          photo.context.line,
         );
         if (asset)
           store.setState({
@@ -215,7 +206,9 @@ export function createCaptureFlow({
         instruments = instrumentResponse.value;
       const proposed =
         discovery.instruments.find(
-          (p) => p.instrument?.id && p.profile_source === 'registered-equipment',
+          (p) =>
+            (p.instrument?.id && p.profile_source === 'registered-equipment') ||
+            matchRegisteredLabel(p.label, instruments, photo.context.line),
         ) ?? discovery.instruments[0];
       const instrument =
         (proposed?.profile_source === 'registered-equipment'
@@ -227,7 +220,7 @@ export function createCaptureFlow({
                 a.condition !== 'not_working' &&
                 a.profile,
             )
-          : null) ?? null;
+          : null) ?? matchRegisteredLabel(proposed?.label, instruments, photo.context.line);
       store.setState({
         discovery,
         instruments,
@@ -305,7 +298,10 @@ export function createCaptureFlow({
     const p = store.getState().discovery?.instruments[index];
     if (!p) return;
     const id = invalidate();
-    const asset = store.getState().instruments.find((a) => a.id === p.instrument?.id) ?? null;
+    const state = store.getState();
+    const asset =
+      state.instruments.find((a) => a.id === p.instrument?.id) ??
+      matchRegisteredLabel(p.label, state.instruments, state.photo?.context.line ?? '');
     store.setState({
       proposalIndex: index,
       roi: p.roi,

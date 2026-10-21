@@ -375,3 +375,105 @@ it('auto and digital profile kinds reuse a known digital result when all physica
   });
   expect(api.submit).toHaveBeenCalledTimes(1);
 });
+
+it.each(['B3601', '  mc   lowering 2  '])(
+  'complete registered label %s selects equipment before the single CV job',
+  async (text) => {
+    const { engine, api, state } = setup(),
+      registered = fixtureInstrument({
+        id: 'matched',
+        name: text.trim().startsWith('B') ? 'B3601' : 'MC Lowering 2',
+        profile: { ...profile, kind: 'digital' },
+        maintenance_check_ids: ['check'],
+      });
+    api.instruments.mockResolvedValueOnce([registered]);
+    api.discover.mockResolvedValueOnce({
+      instruments: [
+        {
+          client_id: 'indicator',
+          roi: { x: 0, y: 0, width: 1, height: 1 },
+          label_roi: null,
+          instrument: null,
+          label: { raw_text: text },
+          suggested_profile: profile,
+          profile_source: 'display-default',
+          requires_confirmation: true,
+          requires_profile_confirmation: true,
+          kind_hint: 'digital',
+        },
+      ],
+      warnings: [],
+      confidence_calibrated: false,
+    });
+    await engine.upload(new File(['x'], 'label.jpg', { type: 'image/jpeg' }));
+    expect(state.getState().instrument?.id).toBe('matched');
+    expect(api.submit.mock.calls[0][1][0].instrument_id).toBe('matched');
+    expect(api.submit.mock.calls[0][1][0].profile).toEqual(registered.profile);
+    expect(api.submit).toHaveBeenCalledTimes(1);
+  },
+);
+it('complete label text found in the reading fills identity without changing a rejected measurement', async () => {
+  const { engine, api, state } = setup(),
+    registered = fixtureInstrument({ id: 'b3601', name: 'B3601', profile });
+  api.instruments.mockResolvedValueOnce([registered]);
+  api.discover.mockResolvedValueOnce({
+    instruments: [
+      {
+        client_id: 'indicator',
+        roi: { x: 0, y: 0, width: 1, height: 1 },
+        label_roi: null,
+        instrument: null,
+        suggested_profile: profile,
+        profile_source: 'display-default',
+        requires_confirmation: true,
+        requires_profile_confirmation: true,
+        kind_hint: 'digital',
+      },
+    ],
+    warnings: [],
+    confidence_calibrated: false,
+  });
+  api.submit.mockResolvedValueOnce({
+    ...job,
+    results: [
+      {
+        ...job.results[0],
+        label: { raw_text: 'B3601' },
+        validated_prediction: null,
+        confidence: { valid: false, level: 'low' },
+      },
+    ],
+  });
+  await engine.upload(new File(['x'], 'late-label.jpg', { type: 'image/jpeg' }));
+  expect(state.getState().instrument?.id).toBe('b3601');
+  expect(state.getState().result?.confidence.valid).toBe(false);
+  expect(state.getState().result?.validated_prediction).toBeNull();
+  expect(api.submit).toHaveBeenCalledTimes(1);
+});
+it('a registered text label on a later detected indicator selects that indicator and its crop', async () => {
+  const { engine, api, state } = setup(),
+    registered = fixtureInstrument({ id: 'b3601', name: 'B3601', profile }),
+    roi = { x: 0.5, y: 0.1, width: 0.4, height: 0.5 };
+  api.instruments.mockResolvedValueOnce([registered]);
+  const base = {
+    client_id: 'unknown',
+    roi: { x: 0, y: 0, width: 0.3, height: 0.3 },
+    label_roi: null,
+    instrument: null,
+    suggested_profile: profile,
+    profile_source: 'display-default' as const,
+    requires_confirmation: true as const,
+    requires_profile_confirmation: true as const,
+    kind_hint: 'digital',
+  };
+  api.discover.mockResolvedValueOnce({
+    instruments: [base, { ...base, client_id: 'registered', roi, label: { raw_text: 'B3601' } }],
+    warnings: [],
+    confidence_calibrated: false,
+  });
+  await engine.upload(new File(['x'], 'multiple.jpg', { type: 'image/jpeg' }));
+  expect(state.getState().proposalIndex).toBe(1);
+  expect(state.getState().instrument?.id).toBe('b3601');
+  expect(api.submit.mock.calls[0][1][0].roi).toEqual(roi);
+  expect(api.submit).toHaveBeenCalledTimes(1);
+});

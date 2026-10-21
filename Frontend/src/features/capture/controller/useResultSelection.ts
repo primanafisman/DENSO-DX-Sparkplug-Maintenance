@@ -7,7 +7,14 @@ export function useResultSelection() {
     catalog = useCatalog(),
     store = useInspectionStore();
   const checks = catalog.data?.items.filter((d) => d.input_method !== 'ok_ng') ?? [];
-  const candidates = state.instruments;
+  const equipment = state.instruments.filter(
+    (a) =>
+      a.active && a.profile && a.measurement_mode !== 'visual' && a.condition !== 'not_working',
+  );
+  const selectedCheck = store.draft?.definition;
+  const candidates = selectedCheck
+    ? equipment.filter((a) => a.maintenance_check_ids.includes(selectedCheck.id))
+    : equipment;
   const locked = !!state.pending || !!state.reading || store.saveState !== 'editing';
   useEffect(() => {
     if (!state.instrument || !catalog.data || locked) return;
@@ -34,8 +41,7 @@ export function useResultSelection() {
     const definition = checks.find((d) => d.id === id) ?? null;
     store.setDefinition(definition);
     if (!definition || state.instrument?.maintenance_check_ids.includes(definition.id)) return;
-    const linked = candidates.filter((a) => a.maintenance_check_ids.includes(definition.id));
-    await engine.selectInstrument(linked.length === 1 ? linked[0] : null);
+    await engine.selectInstrument(null);
   }
   return { checks, candidates, locked, selectInstrument, selectCheck };
 }

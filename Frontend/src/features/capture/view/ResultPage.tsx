@@ -107,9 +107,27 @@ export function ResultPage() {
               </Field>
             )}
             <div className="field-row">
+              <Field label="Pemeriksaan">
+                <select
+                  disabled={selection.locked}
+                  value={store.draft?.definition?.id ?? ''}
+                  onChange={(e) => void selection.selectCheck(e.target.value)}
+                >
+                  <option value="">Pilih pemeriksaan</option>
+                  {checks.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
               <Field
                 label="Nama alat"
-                hint="Label adalah saran; identitas tetap dikonfirmasi operator."
+                hint={
+                  store.draft?.definition
+                    ? 'Hanya alat yang terhubung ke pemeriksaan ini. Identitas tetap dikonfirmasi operator.'
+                    : 'Pilih alat atau pemeriksaan. Label yang cocok mengisi pilihan secara otomatis.'
+                }
               >
                 <select
                   disabled={selection.locked}
@@ -125,21 +143,13 @@ export function ResultPage() {
                   ))}
                 </select>
               </Field>
-              <Field label="Pemeriksaan">
-                <select
-                  disabled={selection.locked}
-                  value={store.draft?.definition?.id ?? ''}
-                  onChange={(e) => void selection.selectCheck(e.target.value)}
-                >
-                  <option value="">Pilih pemeriksaan</option>
-                  {checks.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-              </Field>
             </div>
+            {store.draft?.definition && !candidates.length && (
+              <p className="info-note">
+                Belum ada alat aktif yang terhubung ke pemeriksaan ini. Admin perlu mengaturnya di
+                Peralatan.
+              </p>
+            )}
             {state.requiresReanalysis && (
               <p className="info-note">
                 Profil alat berbeda dari pembacaan foto ini. Hasil di atas tetap memakai satuan
@@ -151,11 +161,13 @@ export function ResultPage() {
                 Baca ulang dengan profil alat
               </Button>
             )}
-            {state.instrument && !state.instrument.maintenance_check_ids.length && (
-              <p className="info-note">
-                Alat ini belum ditautkan ke pemeriksaan. Atur hubungan alat di Peralatan.
-              </p>
-            )}
+            {state.instrument &&
+              !checks.some((d) => state.instrument!.maintenance_check_ids.includes(d.id)) && (
+                <p className="info-note">
+                  Alat ini belum ditautkan ke pemeriksaan angka yang aktif. Admin dapat mengatur
+                  hubungan alat di Peralatan.
+                </p>
+              )}
             {state.instrument?.condition === 'unknown' && (
               <p className="info-note">
                 Kondisi alat belum tercatat. Periksa kelayakan alat sebelum konfirmasi.
