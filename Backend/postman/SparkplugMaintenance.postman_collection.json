@@ -292,6 +292,78 @@
         "url": "{{base_url}}/api/v1/maintenance/records",
         "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
       }
+    },
+    {
+      "name": "Scoped maintenance summary",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/maintenance/summary",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Scoped maintenance report",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/maintenance/report",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Scoped maintenance spc",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/maintenance/spc",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Scoped maintenance spc/subgroups",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/maintenance/spc/subgroups",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Scoped maintenance export.csv",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/maintenance/export.csv",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "List immutable saved SPC baselines",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/maintenance/spc-baselines",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Admin freezes server-calculated baseline",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/v1/maintenance/spc-baselines",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Read saved baseline",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/maintenance/spc-baselines/{id}",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Admin reads immutable standard revisions",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/maintenance/definitions/{id}/revisions",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
     }
   ]
 }

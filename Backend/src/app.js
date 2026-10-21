@@ -20,6 +20,7 @@ import {instrumentRoutes} from './routes/instrumentRoutes.js';
 import {readingRoutes} from './routes/readingRoutes.js';
 import {createMaintenanceService} from './services/maintenanceService.js';
 import {maintenanceRoutes} from './routes/maintenanceRoutes.js';
+import {reportRoutes} from './routes/reportRoutes.js';
 export function createApp({config,repositories,cvClient,clock=()=>Date.now(),logger}){
   const app=express(),revoked=new Map();app.disable('x-powered-by');
   app.use((req,res,next)=>{res.locals.requestId=randomUUID();res.set('X-Request-ID',res.locals.requestId);next();});
@@ -41,6 +42,7 @@ export function createApp({config,repositories,cvClient,clock=()=>Date.now(),log
   app.use('/api/v1/readings',readingRoutes(dependencies,authenticated,readings));
   const maintenance=createMaintenanceService(dependencies);
   app.use('/api/v1/maintenance',maintenanceRoutes(dependencies,authenticated,maintenance));
+  app.use('/api/v1/maintenance',reportRoutes(dependencies,authenticated));
   const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
   app.get('/',(req,res)=>{res.set('Cache-Control','no-store');res.sendFile(path.join(root,'smoke_ui','index.html'));});
   app.use('/smoke',express.static(path.join(root,'smoke_ui'),{index:false,dotfiles:'deny',setHeaders:res=>res.set('Cache-Control','no-store')}));
