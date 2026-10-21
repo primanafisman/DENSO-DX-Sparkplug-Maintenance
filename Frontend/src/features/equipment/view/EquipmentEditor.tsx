@@ -1,4 +1,5 @@
 import { useForm } from 'react-hook-form';
+import { useRef } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { Instrument, MaintenanceDefinition } from '../../../shared/lib/contracts';
 import { equipmentSchema } from '../model/schemas';
@@ -25,14 +26,14 @@ export function EquipmentEditor({
     resolver: zodResolver(equipmentSchema),
     defaultValues: {
       name: equipment?.name ?? '',
-      code: equipment?.code ?? '',
-      aliases: equipment?.aliases?.join(', ') ?? '',
+      code: equipment?.code || equipment?.name || '',
+      aliases: equipment?.aliases?.length ? equipment.aliases.join(', ') : (equipment?.name ?? ''),
       area: equipment?.area ?? '',
       instrument_type: equipment?.instrument_type ?? 'other',
       active: equipment?.active ?? true,
       measurement_mode: equipment?.measurement_mode ?? 'numeric',
       condition: equipment?.condition ?? 'unknown',
-      condition_reason: '',
+      condition_reason: 'Perubahan kondisi melalui pengaturan peralatan.',
       kind: p?.kind ?? 'auto',
       unit: p?.unit ?? 'MPa',
       minimum: p?.minimum ?? 0,
@@ -43,11 +44,17 @@ export function EquipmentEditor({
     },
   });
   const mode = form.watch('measurement_mode'),
-    condition = form.watch('condition'),
     calibrations = useCalibrationHistory(equipment?.id);
-  const allowed = definitions.filter((d) =>
-    mode === 'visual' ? d.input_method === 'ok_ng' : d.input_method !== 'ok_ng',
-  );
+  const automatic = useRef({
+    code: !equipment?.code || equipment.code === equipment.name,
+    aliases:
+      !equipment?.aliases?.length ||
+      (equipment.aliases.length === 1 && equipment.aliases[0] === equipment.name),
+  });
+  const nameField = form.register('name');
+  const allowed = definitions
+    .filter((d) => (mode === 'visual' ? d.input_method === 'ok_ng' : d.input_method !== 'ok_ng'))
+    .sort((a, b) => a.name.localeCompare(b.name, 'id', { sensitivity: 'base', numeric: true }));
   return (
     <div className="modal-backdrop">
       <section
@@ -64,14 +71,6 @@ export function EquipmentEditor({
         </div>
         <form
           onSubmit={form.handleSubmit((v) => {
-            if (
-              equipment &&
-              v.condition !== (equipment.condition ?? 'unknown') &&
-              !v.condition_reason.trim()
-            ) {
-              form.setError('condition_reason', { message: 'Isi alasan perubahan kondisi.' });
-              return;
-            }
             onSave({
               ...v,
               check_ids: v.check_ids.filter((id) => allowed.some((d) => d.id === id)),
@@ -81,17 +80,63 @@ export function EquipmentEditor({
           <h3 className="section-title">Identitas alat</h3>
           <div className="field-row">
             <Field label="Nama alat">
-              <input {...form.register('name')} required />
+              <input
+                {...nameField}
+                onChange={(e) => {
+                  void nameField.onChange(e);
+                  if (automatic.current.code)
+                    form.setValue('code', e.target.value, { shouldDirty: true });
+                  if (automatic.current.aliases)
+                    form.setValue('aliases', e.target.value, { shouldDirty: true });
+                }}
+                required
+              />
             </Field>
-            <Field label="Nomor / kode alat">
-              <input {...form.register('code')} />
-            </Field>
-            <Field label="Alias pada label">
-              <input {...form.register('aliases')} placeholder="Pisahkan dengan koma" />
-            </Field>
-            <Field label="Line / area">
-              <input {...form.register('area')} />
-            </Field>
+          </div>
+          <details className="identity-details">
+            <summary>Detail identitas alat</summary>
+            <p className="muted">
+              Nomor dan alias mengikuti Nama alat. Buka detail untuk memakai identitas berbeda. Area
+              kosong berlaku untuk semua line.
+            </p>
+            <div className="field-row">
+              <Field label="Nomor / kode alat">
+                <input
+                  {...form.register('code', {
+                    onChange: () => {
+                      automatic.current.code = false;
+                    },
+                  })}
+                />
+              </Field>
+              <Field label="Alias pada label">
+                <input
+                  {...form.register('aliases', {
+                    onChange: () => {
+                      automatic.current.aliases = false;
+                    },
+                  })}
+                  placeholder="Pisahkan dengan koma"
+                />
+              </Field>
+              <Field label="Line / area">
+                <input {...form.register('area')} />
+              </Field>
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                const name = form.getValues('name');
+                form.setValue('code', name);
+                form.setValue('aliases', name);
+                automatic.current = { code: true, aliases: true };
+              }}
+            >
+              Samakan dengan Nama Alat
+            </Button>
+          </details>
+          <div className="field-row">
             <Field label="Tipe alat">
               <select {...form.register('instrument_type')}>
                 <option value="pressure_gauge">Pressure gauge</option>
@@ -118,15 +163,6 @@ export function EquipmentEditor({
                 <option value="working">Berfungsi</option>
                 <option value="not_working">Tidak berfungsi</option>
               </select>
-            </Field>
-            <Field label="Alasan perubahan kondisi">
-              <input
-                {...form.register('condition_reason')}
-                required={!!equipment && condition !== (equipment.condition ?? 'unknown')}
-              />
-              {form.formState.errors.condition_reason && (
-                <small>{form.formState.errors.condition_reason.message}</small>
-              )}
             </Field>
           </div>
           <label className="check-label">
@@ -189,7 +225,7 @@ export function EquipmentEditor({
           )}
           <hr className="divider" />
           <h3 className="section-title">Pemeriksaan terhubung</h3>
-          <div className="linked-checks">
+          <div className="linked-checks" data-testid="linked-checks">
             {allowed.map((d) => (
               <label className="check-label" key={d.id}>
                 <input type="checkbox" value={d.id} {...form.register('check_ids')} />

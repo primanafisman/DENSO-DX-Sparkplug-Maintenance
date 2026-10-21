@@ -45,7 +45,6 @@ export function DefinitionEditor({
       sample_count: d.sample_count,
       interval: d.intervals[0],
       description: d.interval_guide.description,
-      review_reason: '',
     },
   });
   const kind = form.watch('kind'),
@@ -60,17 +59,17 @@ export function DefinitionEditor({
   const revisions = useDefinitionRevisions(d.id, showRevisions);
   const submit = (v: DefinitionForm) => {
     if (!shifts.length) {
-      form.setError('review_reason', { message: 'Pilih minimal satu shift.' });
+      form.setError('root', { message: 'Pilih minimal satu shift.' });
       return;
     }
     if (slotIds.some((id) => !shifts.includes(id.startsWith('day-') ? 'day' : 'night'))) {
-      form.setError('review_reason', {
+      form.setError('root', {
         message: 'Slot waktu harus sesuai dengan shift yang dipilih.',
       });
       return;
     }
     if (v.interval === 'weekly' && slotIds.length && !weekdays.length) {
-      form.setError('review_reason', { message: 'Pilih hari pemeriksaan mingguan.' });
+      form.setError('root', { message: 'Pilih hari pemeriksaan mingguan.' });
       return;
     }
     onSave({
@@ -94,7 +93,9 @@ export function DefinitionEditor({
       occurrence_rule: slotIds.length
         ? { slot_ids: slotIds, ...(weekdays.length ? { weekdays } : {}) }
         : null,
-      review_reason: v.review_reason,
+      review_reason: creating
+        ? 'Pembuatan pemeriksaan melalui Pengaturan.'
+        : 'Pembaruan standar dan metode melalui Pengaturan.',
     });
   };
   return (
@@ -294,9 +295,6 @@ export function DefinitionEditor({
                 ))}
             </fieldset>
           )}
-          <Field label="Alasan revisi">
-            <textarea {...form.register('review_reason')} required />
-          </Field>
           {Object.values(form.formState.errors).map((e, i) => (
             <p className="source-note" key={i}>
               {e.message}

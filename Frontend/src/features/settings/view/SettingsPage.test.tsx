@@ -6,7 +6,7 @@ import { renderApp } from '../../../test/render';
 import { envelope, fixtureDefinition, fixtureInstrument } from '../../../test/fixtures';
 import { SettingsPage } from './SettingsPage';
 import { DefinitionEditor } from './DefinitionEditor';
-it('settings preserve structured source guidance and require a revision reason', async () => {
+it('settings preserve source guidance without requesting a revision reason', async () => {
   server.use(
     http.get('/api/v1/instruments', () =>
       HttpResponse.json(envelope({ items: [], next_cursor: null })),
@@ -37,7 +37,7 @@ it('settings preserve structured source guidance and require a revision reason',
   renderApp(<SettingsPage />);
   expect(await screen.findByText('Periksa jadwal dari sumber')).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: 'Edit EE Cutting' }));
-  expect(screen.getByLabelText('Alasan revisi')).toBeRequired();
+  expect(screen.queryByLabelText('Alasan revisi')).not.toBeInTheDocument();
   expect(screen.getByDisplayValue('1 kali per shift')).toBeVisible();
 });
 
@@ -106,9 +106,6 @@ it('admin adds a linked inspection and removes it from active options while reta
     target: { value: 'Lihat dan raba' },
   });
   fireEvent.click(await dialog.findByLabelText('Kaliper'));
-  fireEvent.change(dialog.getByLabelText('Alasan revisi'), {
-    target: { value: 'Tambahan disetujui' },
-  });
   fireEvent.click(dialog.getByRole('button', { name: 'Tambah pemeriksaan' }));
   await waitFor(() =>
     expect(created).toMatchObject({
@@ -119,11 +116,8 @@ it('admin adds a linked inspection and removes it from active options while reta
   );
   const row = (await screen.findByText('Packing tambahan')).closest('tr')!;
   fireEvent.click(within(row).getByRole('button', { name: 'Hapus dari pilihan' }));
-  fireEvent.change(screen.getByLabelText('Alasan perubahan status'), {
-    target: { value: 'Tidak digunakan' },
-  });
   fireEvent.click(screen.getByRole('button', { name: 'Simpan status' }));
-  await waitFor(() => expect(status).toEqual({ active: false, review_reason: 'Tidak digunakan' }));
+  await waitFor(() => expect(status).toEqual({ active: false, review_reason: expect.any(String) }));
   expect(await screen.findByText('Nonaktif')).toBeVisible();
 });
 it('weekly edit sends explicit weekdays and retains original paper time guidance', async () => {
@@ -142,15 +136,12 @@ it('weekly edit sends explicit weekdays and retains original paper time guidance
   fireEvent.click(screen.getByText('Waktu pemeriksaan dan sumber'));
   fireEvent.click(screen.getByLabelText('Shift 1 · 07:45'));
   fireEvent.click(screen.getByLabelText('Sen'));
-  fireEvent.change(screen.getByLabelText('Alasan revisi'), {
-    target: { value: 'Metode direvisi' },
-  });
   fireEvent.click(screen.getByRole('button', { name: 'Simpan revisi' }));
   await waitFor(() => expect(save).toHaveBeenCalled());
   const body = save.mock.calls[0][0];
   expect(body.occurrence_rule).toEqual({ slot_ids: ['day-0745'], weekdays: [1] });
   expect(body.interval_guide.day.times).toEqual([{ time: '09:45', day_offset: 0 }]);
-  expect(body.review_reason).toBe('Metode direvisi');
+  expect(body.review_reason).toEqual(expect.any(String));
 });
 it('clearing all occurrence slots explicitly resets the saved rule', async () => {
   const save = vi.fn();
@@ -165,7 +156,6 @@ it('clearing all occurrence slots explicitly resets the saved rule', async () =>
   );
   fireEvent.click(screen.getByText('Waktu pemeriksaan dan sumber'));
   fireEvent.click(screen.getByLabelText('Shift 1 · 07:45'));
-  fireEvent.change(screen.getByLabelText('Alasan revisi'), { target: { value: 'Reset jadwal' } });
   fireEvent.click(screen.getByRole('button', { name: 'Simpan revisi' }));
   await waitFor(() => expect(save).toHaveBeenCalled());
   expect(save.mock.calls[0][0].occurrence_rule).toBeNull();
@@ -207,9 +197,6 @@ it('settings add or remove active lines1 to17 and sampler options through contro
   fireEvent.change(screen.getByLabelText('Tambah sampler'), { target: { value: 'Leader 2' } });
   fireEvent.click(screen.getByRole('button', { name: 'Tambah sampler' }));
   fireEvent.click(screen.getByRole('button', { name: 'Hapus sampler Ldr' }));
-  fireEvent.change(screen.getByLabelText('Alasan perubahan pengaturan'), {
-    target: { value: 'Aktifkan line dan sampler.' },
-  });
   fireEvent.click(screen.getByRole('button', { name: /Simpan pengaturan/ }));
   await waitFor(() => expect(saved?.lines).toEqual(['1']));
   expect(saved?.allowed_samplers).toEqual(['Leader 2']);

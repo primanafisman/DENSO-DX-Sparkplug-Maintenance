@@ -5,6 +5,43 @@ import { server } from '../../../test/server';
 import { renderApp } from '../../../test/render';
 import { envelope, fixtureInstrument, fixtureDefinition } from '../../../test/fixtures';
 import { EquipmentPage } from './EquipmentPage';
+it('orders the complete registry by code by default and allows sorting by equipment name', async () => {
+  server.use(
+    http.get('/api/v1/auth/me', () =>
+      HttpResponse.json(envelope({ id: 'a', username: 'Admin', role: 'Admin' })),
+    ),
+    http.get('/api/v1/maintenance/catalog', () =>
+      HttpResponse.json(envelope({ items: [], count: 0 })),
+    ),
+    http.get('/api/v1/instruments', ({ request }) =>
+      HttpResponse.json(
+        envelope(
+          new URL(request.url).searchParams.get('cursor')
+            ? {
+                items: [
+                  fixtureInstrument({ id: 'a', code: 'A1', name: 'Beta' }),
+                  fixtureInstrument({ id: 'b', code: 'B10', name: 'Alpha' }),
+                ],
+                next_cursor: null,
+              }
+            : {
+                items: [fixtureInstrument({ id: 'z', code: 'B2', name: 'Zeta' })],
+                next_cursor: 'next-page',
+              },
+        ),
+      ),
+    ),
+  );
+  renderApp(<EquipmentPage />);
+  await screen.findByText('B10');
+  const codes = () =>
+    [...document.querySelectorAll('tbody tr')].map((row) => row.querySelector('td')?.textContent);
+  expect(codes()).toEqual(['A1', 'B2', 'B10']);
+  fireEvent.click(screen.getByRole('button', { name: 'Urutkan berdasarkan Peralatan' }));
+  expect(codes()).toEqual(['B10', 'A1', 'B2']);
+  fireEvent.click(screen.getByRole('button', { name: 'Urutkan berdasarkan Peralatan' }));
+  expect(codes()).toEqual(['B2', 'A1', 'B10']);
+});
 it('visual tools hide numeric fields, unknown condition is honest and registry search reaches server', async () => {
   const queries: string[] = [];
   server.use(

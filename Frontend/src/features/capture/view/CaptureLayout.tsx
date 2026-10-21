@@ -2,6 +2,7 @@ import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { CaptureContext } from '../controller/captureContext';
 import { useCaptureFlow } from '../controller/useCaptureFlow';
 import { useInspectionStore } from '../../maintenance/model/inspectionStore';
+import { InspectionGuidance } from '../../maintenance/view/InspectionGuidance';
 export function CaptureLayout() {
   const flow = useCaptureFlow(),
     draft = useInspectionStore((s) => s.draft),
@@ -22,7 +23,9 @@ export function CaptureLayout() {
           </span>
         ))}
       </div>
-      <Outlet />
+      <InspectionGuidance>
+        <Outlet />
+      </InspectionGuidance>
     </CaptureContext.Provider>
   );
 }

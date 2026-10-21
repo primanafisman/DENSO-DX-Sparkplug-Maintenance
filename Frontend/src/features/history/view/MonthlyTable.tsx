@@ -28,7 +28,7 @@ export function MonthlyTable({
           <caption className="sr-only">Catatan pemeriksaan bulanan</caption>
           <thead>
             <tr>
-              <th className="frozen-col">Pemeriksaan / alat</th>
+              <th className="frozen-col">No. · Pemeriksaan / alat</th>
               <th>Shift</th>
               {dates.map((d) => (
                 <th key={d}>{d.slice(8)}</th>
@@ -37,8 +37,9 @@ export function MonthlyTable({
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.row_id}>
+              <tr key={row.row_id} data-check-number={row.check_number}>
                 <th className="frozen-col">
+                  <span className="history-check-number">{row.check_number ?? '—'}</span>
                   <Link
                     to={
                       '/riwayat/' +

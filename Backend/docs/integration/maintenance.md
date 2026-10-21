@@ -11,3 +11,8 @@ Satu analysis dan satu foto sumber per alat hanya dapat mengisi satu pengukuran.
 Tanggal produksi dihitung WIB (Asia/Jakarta). Default night rollover12:00 adalah pengaturan lokal yang harus disesuaikan prosedur lapangan; pengecekan actual time menyilang tengah malam memakai production date malam sebelumnya. Settings menyimpan daftar line/sampler dan rollover hour; tidak mengubah context foto yang telah dianalisis.
 
 Importer konfigurasi hanya membaca ekspor JSON yang dipilih operator, dengan dry-run default. Tidak membaca/memindahkan database PanelReader lama secara otomatis. Data pribadi/historical migration merupakan operasi terpisah.
+
+
+check_number adalah urutan aplikasi tetap1–44 untuk katalog awal dan45+ untuk tambahan. source_number tetap nomor sumber kertas asli. GET catalog dan report menyertakan field ini; report mengurutkan sebelum paging. Definisi custom lama diselesaikan menurut urutan created_at/id dan nomor yang sudah dialokasikan, lalu dinormalisasi pada revisi baru tanpa menulis ulang arsip lama. Nomor pada record baru mengikuti definisi, sedangkan row laporan lama dapat memakai pemetaan ID untuk nomor tampilan saja. Gunakan definition_id untuk integrasi, bukan nomor urut.
+
+Frontend sederhana tidak lagi meminta alasan revisi/kondisi secara manual; deskripsi audit otomatis tetap dikirim melalui field yang sudah ada. Persetujuan standar pada popup merupakan alur UI dan tidak mengganti autentikasi, versi definisi atau konfirmasi bacaan di API. equipment.code mendukung panjang100 karakter agar sama dengan Nama alat secara default.

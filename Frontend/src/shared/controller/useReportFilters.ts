@@ -5,7 +5,11 @@ import { settingsApi } from '../../features/settings/model/api';
 import { monthRange, monthLabel } from '../lib/format';
 export function useReportFilters() {
   const [params, setParams] = useSearchParams(),
-    schedule = useQuery({ queryKey: ['schedule'], queryFn: inspectionApi.schedule }),
+    schedule = useQuery({
+      queryKey: ['schedule'],
+      queryFn: inspectionApi.schedule,
+      refetchInterval: 60000,
+    }),
     settings = useQuery({ queryKey: ['settings'], queryFn: settingsApi.settings });
   const serverMonth = schedule.data?.production_date.slice(0, 7),
     raw = params.get('month'),
@@ -34,6 +38,7 @@ export function useReportFilters() {
       })
     : [];
   return {
+    serverSchedule: schedule.data,
     productionDate: schedule.data?.production_date,
     month,
     line,

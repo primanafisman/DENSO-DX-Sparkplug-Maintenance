@@ -4150,7 +4150,7 @@
           },
           "code": {
             "type": "string",
-            "maxLength": 60,
+            "maxLength": 100,
             "default": ""
           },
           "aliases": {
@@ -5537,7 +5537,7 @@
           },
           "code": {
             "type": "string",
-            "maxLength": 60,
+            "maxLength": 100,
             "default": ""
           },
           "aliases": {
@@ -6238,6 +6238,10 @@
           "outcome_guide": {
             "type": "string"
           },
+          "check_number": {
+            "type": "integer",
+            "nullable": true
+          },
           "active": {
             "type": "boolean"
           },
@@ -6607,7 +6611,7 @@
               },
               "code": {
                 "type": "string",
-                "maxLength": 60,
+                "maxLength": 100,
                 "default": ""
               },
               "aliases": {
@@ -7076,7 +7080,7 @@
           },
           "code": {
             "type": "string",
-            "maxLength": 60,
+            "maxLength": 100,
             "default": ""
           },
           "aliases": {
@@ -7520,6 +7524,10 @@
               "outcome_guide": {
                 "type": "string"
               },
+              "check_number": {
+                "type": "integer",
+                "nullable": true
+              },
               "active": {
                 "type": "boolean"
               },
@@ -7667,6 +7675,10 @@
       "ChecksheetRow": {
         "type": "object",
         "properties": {
+          "check_number": {
+            "type": "integer",
+            "nullable": true
+          },
           "row_id": {
             "type": "string"
           },
@@ -7754,6 +7766,7 @@
           }
         },
         "required": [
+          "check_number",
           "row_id",
           "definition_id",
           "definition_version",

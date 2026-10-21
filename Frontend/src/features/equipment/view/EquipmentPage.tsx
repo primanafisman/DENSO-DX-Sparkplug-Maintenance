@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Plus, Search, Pencil } from 'lucide-react';
+import { Plus, Search, Pencil, ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import type { Instrument } from '../../../shared/lib/contracts';
 import { useSession } from '../../auth/controller/useSession';
 import { useEquipment } from '../controller/useEquipment';
 import { useCatalog } from '../../settings/controller/useSettings';
+import { equipmentFrequency } from '../model/equipmentOrder';
+import type { EquipmentSort, EquipmentSortKey } from '../model/equipmentOrder';
 import { EquipmentEditor } from './EquipmentEditor';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import {
@@ -20,9 +22,9 @@ export function EquipmentPage() {
     [condition, setCondition] = useState(''),
     [selected, setSelected] = useState<Instrument | null | undefined>(undefined);
   const { user } = useSession(),
-    equipment = useEquipment({ q, ...(condition ? { condition } : {}) }),
     catalog = useCatalog(),
-    definitions = catalog.data?.items ?? [];
+    definitions = catalog.data?.items ?? [],
+    equipment = useEquipment({ q, ...(condition ? { condition } : {}) }, definitions);
   return (
     <>
       <PageHeader
@@ -77,12 +79,42 @@ export function EquipmentPage() {
             <table>
               <thead>
                 <tr>
-                  <th>NOMOR / KODE</th>
-                  <th>PERALATAN</th>
-                  <th>INPUT</th>
-                  <th>KONDISI</th>
-                  <th>STATUS</th>
-                  <th>FREKUENSI PEMERIKSAAN</th>
+                  <SortHeading
+                    field="code"
+                    label="Nomor / kode"
+                    sort={equipment.sort}
+                    onSort={equipment.sortBy}
+                  />
+                  <SortHeading
+                    field="name"
+                    label="Peralatan"
+                    sort={equipment.sort}
+                    onSort={equipment.sortBy}
+                  />
+                  <SortHeading
+                    field="input"
+                    label="Input"
+                    sort={equipment.sort}
+                    onSort={equipment.sortBy}
+                  />
+                  <SortHeading
+                    field="condition"
+                    label="Kondisi"
+                    sort={equipment.sort}
+                    onSort={equipment.sortBy}
+                  />
+                  <SortHeading
+                    field="active"
+                    label="Status"
+                    sort={equipment.sort}
+                    onSort={equipment.sortBy}
+                  />
+                  <SortHeading
+                    field="frequency"
+                    label="Frekuensi pemeriksaan"
+                    sort={equipment.sort}
+                    onSort={equipment.sortBy}
+                  />
                   <th />
                 </tr>
               </thead>
@@ -90,7 +122,7 @@ export function EquipmentPage() {
                 {equipment.items.map((a) => (
                   <tr key={a.id}>
                     <td>
-                      <strong>{a.code || '—'}</strong>
+                      <strong>{a.code || a.name}</strong>
                     </td>
                     <td>
                       {a.name}
@@ -126,13 +158,7 @@ export function EquipmentPage() {
                       </Badge>
                     </td>
                     <td>
-                      <small>
-                        {definitions
-                          .filter((d) => a.maintenance_check_ids.includes(d.id))
-                          .map((d) => d.interval_guide.description)
-                          .filter((v, i, a) => a.indexOf(v) === i)
-                          .join(' · ') || 'Belum dihubungkan'}
-                      </small>
+                      <small>{equipmentFrequency(a, definitions)}</small>
                     </td>
                     <td>
                       {user?.role === 'Admin' && (
@@ -154,15 +180,6 @@ export function EquipmentPage() {
             </table>
           </div>
         )}
-        {equipment.hasNextPage && (
-          <Button
-            variant="secondary"
-            onClick={() => equipment.fetchNextPage()}
-            disabled={equipment.isFetchingNextPage}
-          >
-            Muat berikutnya
-          </Button>
-        )}
       </Card>
       {selected !== undefined && (
         <EquipmentEditor
@@ -181,5 +198,32 @@ export function EquipmentPage() {
         />
       )}
     </>
+  );
+}
+
+function SortHeading({
+  field,
+  label,
+  sort,
+  onSort,
+}: {
+  field: EquipmentSortKey;
+  label: string;
+  sort: EquipmentSort;
+  onSort: (key: EquipmentSortKey) => void;
+}) {
+  const selected = sort.key === field,
+    Icon = selected ? (sort.direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
+  return (
+    <th aria-sort={selected ? (sort.direction === 'asc' ? 'ascending' : 'descending') : 'none'}>
+      <button
+        className="table-sort-button"
+        aria-label={'Urutkan berdasarkan ' + label}
+        onClick={() => onSort(field)}
+      >
+        {label}
+        <Icon size={15} />
+      </button>
+    </th>
   );
 }

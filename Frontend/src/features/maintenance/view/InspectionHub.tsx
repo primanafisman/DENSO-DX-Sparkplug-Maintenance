@@ -175,7 +175,7 @@ export function InspectionHub() {
             {filtered.map((d) => (
               <article className="inspection-option" key={d.id}>
                 <div className="check-number">
-                  {d.source_number ?? <ClipboardCheck size={20} />}
+                  {d.check_number ?? d.source_number ?? <ClipboardCheck size={20} />}
                 </div>
                 <div className="inspection-option-body">
                   <div className="row wrap">

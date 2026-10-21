@@ -7,7 +7,7 @@ Konfigurasi rilis lokal 1.1; cocokkan dengan kontrak OpenAPI Backend/contracts/o
 - Port awal: Node8100, CV privat8101, HTTPS lokal8443 bila diaktifkan. Frontend menggunakan Node, bukan akses langsung ke Python atau database.
 - Pengaturan memuat line, sampler, master Type produk dan revisi definisi pemeriksaan. Shift mengikuti waktu server Asia/Jakarta: 07:45,12:45 Shift1;21:15,01:15 Shift2. Tanggal produksi malam menggunakan pengaturan rollover server.
 - Instalasi baru menawarkan line1–17 dan sampler awal Ldr. Di Pengaturan → Line, sampler & Type, Admin mencentang line aktif serta menambah/menghapus sampler. Dashboard dan pemeriksaan hanya menawarkan pilihan tersimpan; daftar kosong menonaktifkan pilihan, bukan membuka input bebas. Penghapusan pilihan tidak menghapus catatan historis.
-- Peralatan: nomor/kode, nama, alias label, area, jenis, kondisi fisik, enabled dan parameter fisik. Alat visual tidak memerlukan profil angka. Kondisi Tidak berfungsi memblokir pengukuran numerik baru; menonaktifkan alat tidak menghapus sejarah.
+- Peralatan: Nama alat menjadi input identitas utama. Nomor/kode dan alias otomatis mengikuti nama; buka Detail identitas alat untuk identitas berbeda atau line/area khusus (area kosong berarti bersama). Jenis, kondisi fisik, enabled dan parameter fisik tetap dapat diatur. Alat visual tidak memerlukan profil angka. Kondisi Tidak berfungsi memblokir pengukuran numerik baru; menonaktifkan alat tidak menghapus sejarah.
 - Standar penerimaan, metode, sampel dan frekuensi berada pada definisi pemeriksaan yang ditautkan ke alat. Rentang fisik alat bukan batas OK/NG proses.
 - Type pada laporan adalah varian produk. Riwayat tanpa Type menampilkan Tidak tercatat. Type, standar, alat dan kalibrasi yang tidak kompatibel dipisahkan dalam laporan SPC.
 - Nama label yang cocok adalah saran dari master; identitas dan angka tetap dikonfirmasi operator. Label parsial/ambigu tidak boleh memilih alat secara diam-diam.
@@ -45,3 +45,19 @@ Baseline tersimpan membekukan batas kontrol; statistik periode yang sedang dilih
 ## Database perusahaan
 
 SQLite adalah database lokal yang diuji. MySQL/SQL Server disediakan melalui adapter Backend; pemasangan driver tidak sama dengan verifikasi koneksi perusahaan. Integrasi memerlukan host/port/database/user, TLS, hak akses, backup dan migrasi yang ditinjau administrator. Frontend tetap menggunakan API yang sama.
+
+## Panduan, identitas dan urutan tampilan
+
+Standar dan metode tampil dalam tabel sebelum OK/NG maupun foto. Popup awal wajib dikonfirmasi “Saya mengerti”; penerimaan berlaku selama sesi pemeriksaan dan versi standar yang sama, termasuk beberapa sampel. Versi/sesi baru meminta pemahaman ulang. Pemeriksaan cepat tanpa pilihan awal meminta pemahaman setelah identitas/pemeriksaan diketahui. Popup ini tidak memanggil CV dan tidak menyimpan hasil otomatis. Nilai master Zero/Plus/Minus dan catatan sumber tetap ditampilkan persis, tanpa menebak batas yang hilang.
+
+Pengaturan tidak meminta Alasan revisi atau Alasan perubahan kondisi. API tetap menerima deskripsi audit otomatis dari aplikasi, sehingga jejak revisi dan otorisasi Admin tetap ada. Nomor alat mendukung100 karakter mengikuti batas Nama alat. Detail identitas yang diubah manual tidak ditimpa saat nama kemudian diedit; tombol Samakan dengan Nama Alat mengaktifkan pengisian otomatis kembali.
+
+Daftar Pemeriksaan terhubung pada editor alat disusun menurut abjad nama. Daftar Peralatan memuat seluruh halaman hasil pencarian lalu mengurutkan kode/nomor secara A–Z dengan urutan angka wajar (B2 sebelum B10). Header Nomor/kode, Peralatan, Input, Kondisi, Status dan Frekuensi dapat ditekan untuk urut naik/turun. Pengurutan tidak mengubah data master.
+
+Riwayat memakai check_number1–44 yang tetap untuk katalog awal, terpisah dari source_number pada foto kertas. Filter bulan/line dan perubahan nama tidak mengubah nomor ini. Nomor tambahan mulai45 dan tidak dipakai ulang ketika pemeriksaan dinonaktifkan. Definisi/riwayat lama mempertahankan snapshot asli; nomor tampilan dapat diambil dari ID definisi yang sama.
+
+## Ringkasan dan perangkat
+
+Sidebar desktop/tablet menampilkan ikon dengan nama aksesibel, tooltip dan penanda merah menu aktif. Nama halaman tetap terlihat di header. Tablet mempertahankan sasaran sentuh minimal48px dan halaman menggulir normal; layar HP memakai navigasi bawah. Grafik/status monitoring desktop ditata dua kolom dengan panel tabel bergulir dan tinggi grafik mengikuti viewport pendek.
+
+Jadwal aktif menunjukkan shift/sesi dari waktu server serta jumlah pemeriksaan sudah/belum untuk line terpilih. Bila hanya satu line aktif, line itu ditampilkan eksplisit. Bila beberapa line aktif dan filter Semua line dipilih, pilih satu line untuk memuat kewajiban jadwal; aplikasi tidak mengasumsikan line pertama. Jumlah ini berbeda dari Total catatan dan OK/NG bulanan. Mengganti bulan/shift laporan tidak mengubah label shift saat ini. Saat jadwal berganti, angka jadwal lama disembunyikan sampai data jadwal baru cocok. Gagal/memuat data menampilkan tanda — dan pemulihan, bukan nol palsu.

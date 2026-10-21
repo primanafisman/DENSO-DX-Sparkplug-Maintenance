@@ -6,10 +6,17 @@ import { renderApp } from '../../../test/render';
 import { envelope, meta, schedule, fixtureDefinition } from '../../../test/fixtures';
 import { SummaryPage } from '../../dashboard/view/SummaryPage';
 import { HistoryPage } from './HistoryPage';
+import { chartLayout } from '../../../test/chartLayout';
+chartLayout();
 const scope = { production_date_from: '2026-10-01', production_date_to: '2026-10-31' };
 function setup() {
   server.use(
     http.get('/api/v1/maintenance/schedule', () => HttpResponse.json(envelope(schedule))),
+    http.get('/api/v1/maintenance/due', () =>
+      HttpResponse.json(
+        envelope({ schedule, line: '17', items: [], completed_count: 2, pending_count: 3 }),
+      ),
+    ),
     http.get('/api/v1/maintenance/settings', () =>
       HttpResponse.json(
         envelope({ lines: ['17'], allowed_samplers: ['Ldr'], night_rollover_hour: 7 }),

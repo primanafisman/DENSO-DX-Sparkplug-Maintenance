@@ -82,6 +82,9 @@ it('visual samples must all be chosen and explicit save uses the frozen server c
     }),
   );
   renderApp(<VisualCheckPage />);
+  expect(screen.getByRole('dialog', { name: 'Pahami standar sebelum mulai' })).toBeVisible();
+  expect(screen.queryByRole('button', { name: 'Sampel 1 OK' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Saya mengerti, mulai pemeriksaan' }));
   expect(screen.getByRole('button', { name: 'Simpan pemeriksaan' })).toBeDisabled();
   fireEvent.click(screen.getByRole('button', { name: 'Sampel 1 OK' }));
   expect(saved).not.toHaveBeenCalled();

@@ -116,3 +116,13 @@ Kecocokan label terdaftar dapat memilih alat dan pemeriksaan terkait tanpa mengi
 Frontend juga membandingkan satu baris label lengkap dengan `Instrument.name`, `code` dan `aliases`, pada line yang sama atau area kosong. Kecocokan unik dapat memilih alat walau respons OCR hanya memuat `raw_text` tanpa ID. Teks parsial/ambigu/konflik atau identitas hanya angka tidak dipilih otomatis. Penentuan pemeriksaan selalu menggunakan `maintenance_check_ids` terhadap katalog aktif, tanpa menebak standar dari nama/jenis alat.
 
 Pilihan Pemeriksaan mendahului Nama alat. Saat pemeriksaan belum dipilih, daftar alat angka aktif tidak dibatasi relasi; setelah dipilih, daftar difilter berdasarkan `maintenance_check_ids`. Alat lama yang tidak terkait dikosongkan. Operator tetap memilih identitas jika label tidak cocok, termasuk ketika hasil filter hanya satu alat. Mengubah pilihan ini tidak memanggil endpoint analisis.
+
+## Nomor tampilan, panduan dan audit formulir
+
+MaintenanceDefinition dan ChecksheetRow menyediakan check_number (integer/null): urutan katalog awal1–44, pemeriksaan tambahan45+. Gunakan definition_id untuk relasi dan permintaan; check_number hanya untuk tampilan. source_number tetap menyimpan nomor kertas asli, termasuk celah sumber. Endpoint laporan mengurutkan berdasarkan check_number sebelum paging, lalu identitas/peralatan/versi/shift agar stabil. Riwayat asli tidak ditulis ulang untuk menambah field ini.
+
+Acknowledgement panduan merupakan state lokal UI dengan kunci session_id+definition_id+definition_version. Tidak ada field baru yang wajib dikirim pada POST. UI harus menampilkan standard_text, method_text, requirements, limits terstruktur, sample dan outcome_guide dari definisi; jangan menghitung batas master yang hanya tertulis di teks. Quick photo memblokir konfirmasi setelah definisi terpilih sampai standar dipahami.
+
+Formulir otomatis mengirim review_reason dan condition_reason deskriptif. Backend tetap mempertahankan audit/revisi dan validasi yang sama. equipment.code sekarang maksimal100 karakter agar dapat mengikuti equipment.name. Alias otomatis sama dengan Nama alat, termasuk nama yang memiliki koma; alias berbeda dapat diedit di detail.
+
+Monitoring memakai /maintenance/schedule dan /maintenance/due secara berkala. Jangan menampilkan jumlah due lama dengan shift/sesi baru: bandingkan schedule.starts_at penuh, bukan hanya slot_id yang berulang setiap hari. Jumlah catatan bulanan dari /maintenance/summary tidak boleh dipakai sebagai jumlah kewajiban selesai. Frontend ini mengambil semua halaman pencarian peralatan sebelum pengurutan lokal agar urutan konsisten melampaui halaman pertama.

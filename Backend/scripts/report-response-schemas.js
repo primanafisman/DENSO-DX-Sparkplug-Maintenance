@@ -19,7 +19,7 @@ export function addReportSchemas(s){
   s.InstrumentSnapshot={...s.InstrumentResponse,required:['id','name']};
   s.EvidenceRef=obj({reading_id:str,variant:{type:'string',enum:['original','crop']}});
   s.Occurrence=obj({id:str,checked_at:str,context:ref('Context'),slot_id:nstr,overall_status:{type:'string',enum:['OK','NG']},outcomes:arr('SampleOutcome'),definition_snapshot:nullRef('MaintenanceDefinition'),product_snapshot:nullRef('ProductSnapshot'),instruments:arr('InstrumentSnapshot'),evidence:arr('EvidenceRef'),numeric_summary:nullable(obj({complete:bool,xbar:nnum,r:nnum}))});
-  s.ChecksheetRow=obj({row_id:str,definition_id:str,definition_version:int,name:str,equipment_id:nstr,equipment_name:nstr,shift:{type:'string',enum:['day','night']},unit:nstr,standard:obj({text:str,minimum:nnum,maximum:nnum}),input_method:{type:'string',enum:['ok_ng','photo','photo_difference']},cells:{type:'array',items:obj({date:str,occurrences:arr('Occurrence'),count:int})}});
+  s.ChecksheetRow=obj({check_number:{type:'integer',nullable:true},row_id:str,definition_id:str,definition_version:int,name:str,equipment_id:nstr,equipment_name:nstr,shift:{type:'string',enum:['day','night']},unit:nstr,standard:obj({text:str,minimum:nnum,maximum:nnum}),input_method:{type:'string',enum:['ok_ng','photo','photo_difference']},cells:{type:'array',items:obj({date:str,occurrences:arr('Occurrence'),count:int})}});
   s.ChecksheetPage=obj({meta:ref('ReportMeta'),rows:arr('ChecksheetRow'),next_cursor:nstr});
   s.ControlLimits=obj({center_x:nnum,center_r:nnum,ucl_x:nnum,lcl_x:nnum,ucl_r:nnum,lcl_r:nnum});
   s.Capability=obj({method:{type:'string',enum:['paper_stdev_s','within_rbar_d2']},sigma:nnum,cp:nnum,cpk:nnum,reason:nstr,provisional:bool});

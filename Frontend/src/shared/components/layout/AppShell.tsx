@@ -28,8 +28,13 @@ export function AppShell() {
     <div className="app-shell">
       <aside className={'sidebar ' + (menu ? 'sidebar-open' : '')}>
         <div className="sidebar-brand">
-          <div className="brand-mark">DENSO</div>
-          <strong>Sparkplug Maintenance</strong>
+          <div
+            className="rail-brand"
+            title="DENSO · Sparkplug Maintenance"
+            aria-label="DENSO Sparkplug Maintenance"
+          >
+            D<span aria-hidden="true">.</span>
+          </div>
         </div>
         <nav aria-label="Navigasi utama">
           {links.map((link) => (
@@ -37,17 +42,17 @@ export function AppShell() {
               key={link.to}
               to={link.to}
               end={link.to === '/'}
+              title={link.label}
               onClick={() => setMenu(false)}
             >
               <link.icon size={21} />
-              <span>{link.label}</span>
+              <span className="sr-only">{link.label}</span>
             </NavLink>
           ))}
         </nav>
-        <div className="sidebar-footer">
+        <div className="sidebar-footer" title="CV lokal · Tanpa API AI">
           <CheckCircle2 size={18} />
-          <span>CV lokal</span>
-          <span className="muted">Tanpa API AI</span>
+          <span className="sr-only">CV lokal · Tanpa API AI</span>
         </div>
       </aside>
       <div className="app-main">
@@ -60,12 +65,15 @@ export function AppShell() {
             >
               <Menu />
             </button>
-            <span className="muted">Workspace</span>
-            <span className="crumb">/</span>
-            <strong>{current.label}</strong>
+            <div className="workspace-title">
+              <span>DENSO · Sparkplug Maintenance</span>
+              <strong>{current.label}</strong>
+            </div>
           </div>
           <div className="row">
-            <span className="environment-tag">LOCAL WORKSPACE</span>
+            <span className="environment-tag local-mode" role="status" aria-label="Mode pembacaan">
+              <CheckCircle2 size={15} /> CV lokal
+            </span>
             <UserCircle size={23} />
             <span className="user-name">
               {session.user?.username}

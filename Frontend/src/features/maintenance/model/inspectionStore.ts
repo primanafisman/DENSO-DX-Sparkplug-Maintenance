@@ -8,6 +8,7 @@ import type {
   ConfirmedReading,
 } from '../../../shared/lib/contracts';
 import { newId } from '../../../shared/lib/id';
+import { inspectionGuidanceKey } from './guidance';
 export type InspectionDraft = {
   definition: MaintenanceDefinition | null;
   context: Context;
@@ -29,6 +30,8 @@ export const useInspectionStore = create<{
   draft: InspectionDraft | null;
   lastRecord: MaintenanceRecord | null;
   saveState: 'editing' | 'saving' | 'uncertain';
+  guidanceAcknowledgement: string | null;
+  acknowledgeGuidance: (key: string) => void;
   setSaveState: (state: 'editing' | 'saving' | 'uncertain') => void;
   start: (input: StartInput) => void;
   setDefinition: (definition: MaintenanceDefinition | null) => void;
@@ -44,17 +47,29 @@ export const useInspectionStore = create<{
   draft: null,
   lastRecord: null,
   saveState: 'editing',
+  guidanceAcknowledgement: null,
+  acknowledgeGuidance: (key) => {
+    const draft = get().draft;
+    if (draft && inspectionGuidanceKey(draft.session_id, draft.definition) === key)
+      set({ guidanceAcknowledgement: key });
+  },
   setSaveState: (saveState) => set({ saveState }),
   start: (input) =>
     set({
       draft: { ...structuredClone(input), observations: [], session_id: newId() },
       lastRecord: null,
       saveState: 'editing',
+      guidanceAcknowledgement: null,
     }),
   setDefinition: (definition) => {
     const d = get().draft;
     if (d)
       set({
+        guidanceAcknowledgement:
+          d.definition?.id === definition?.id &&
+          d.definition?.definition_version === definition?.definition_version
+            ? get().guidanceAcknowledgement
+            : null,
         draft: {
           ...d,
           definition,
@@ -106,8 +121,10 @@ export const useInspectionStore = create<{
       },
     });
   },
-  complete: (lastRecord) => set({ lastRecord, draft: null, saveState: 'editing' }),
-  reset: () => set({ draft: null, lastRecord: null, saveState: 'editing' }),
+  complete: (lastRecord) =>
+    set({ lastRecord, draft: null, saveState: 'editing', guidanceAcknowledgement: null }),
+  reset: () =>
+    set({ draft: null, lastRecord: null, saveState: 'editing', guidanceAcknowledgement: null }),
 }));
 export function nextCapture(d: InspectionDraft): CaptureInput | null {
   if (!d.definition)

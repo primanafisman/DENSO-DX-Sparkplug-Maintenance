@@ -27,6 +27,5 @@ export const definitionFormSchema = z.object({
   sample_count: z.number().int().min(1).max(20),
   interval: z.enum(['per_shift', 'weekly', 'every_4_hours', 'daily']),
   description: z.string().min(1),
-  review_reason: z.string().trim().min(1),
 });
 export type DefinitionForm = z.infer<typeof definitionFormSchema>;

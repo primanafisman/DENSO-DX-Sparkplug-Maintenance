@@ -1,8 +1,8 @@
 import { z } from 'zod';
 export const equipmentSchema = z
   .object({
-    name: z.string().trim().min(1),
-    code: z.string(),
+    name: z.string().trim().min(1).max(100),
+    code: z.string().max(100),
     aliases: z.string(),
     area: z.string(),
     instrument_type: z.enum([

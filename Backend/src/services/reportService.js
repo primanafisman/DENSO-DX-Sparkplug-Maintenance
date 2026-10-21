@@ -1,3 +1,4 @@
+import {createDefinitionService} from './definitionService.js';
 import {AppError} from '../errors/AppError.js';
 import {summaryQuery} from '../validations/reportValidation.js';
 import {normalizeScope,page} from './reporting/reportScope.js';
@@ -47,7 +48,7 @@ export function createReportService({repositories,clock}){
       const {entries,meta}=await load(input),options=(await repositories.settings.get('maintenance-settings'))?.value??{};
       return buildSummary(entries,meta,scheduleAt(clock(),options).production_date);
     },
-    async checksheet(input,options={}){const {entries,meta,normalized}=await load(input,options.cursor),rows=page(buildChecksheet(entries),normalized,options);return {meta,rows:rows.items,next_cursor:rows.next_cursor};},
+    async checksheet(input,options={}){const {entries,meta,normalized}=await load(input,options.cursor),numbers=new Map((await createDefinitionService({repositories,clock}).all()).map(d=>[d.id,d.check_number])),rows=page(buildChecksheet(entries,numbers),normalized,options);return {meta,rows:rows.items,next_cursor:rows.next_cursor};},
     async spc(input,options){const report=await spc(input,options);return {...report,cohorts:report.cohorts.map(({_groups,...c})=>c)};},
     async subgroups(input,{cohort_id,limit=50,cursor,method}={}){const normalized=normalizeScope(input,clock,cursor);const report=await spc({...normalized.scope,as_of:normalized.as_of},{method});const cohort=report.cohorts.find(c=>c.cohort_id===cohort_id);if(!cohort)throw new AppError(404,'COHORT_NOT_FOUND','Report cohort not found.');const result=page([...cohort._groups,...cohort.incomplete.map(g=>({...g,values:[],xbar:null,r:null}))],{scope:{...normalized.scope,cohort_id},as_of:normalized.as_of},{limit,cursor});return {meta:report.meta,...result};},
   };

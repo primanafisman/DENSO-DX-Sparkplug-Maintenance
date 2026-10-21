@@ -5,6 +5,7 @@ import { useCapture } from '../controller/captureContext';
 import { useCamera } from '../controller/useCamera';
 import { CameraGuide } from './CameraGuide';
 import { useInspectionStore } from '../../maintenance/model/inspectionStore';
+import { useInspectionGuidance } from '../../maintenance/controller/useInspectionGuidance';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { Card, Button, Loading, ErrorDialog, Badge } from '../../../shared/components/ui';
 const stages = {
@@ -18,6 +19,7 @@ const stages = {
 };
 export function CapturePage() {
   const { state, engine } = useCapture(),
+    guidance = useInspectionGuidance(),
     camera = useCamera(),
     draft = useInspectionStore((s) => s.draft),
     upload = useRef<HTMLInputElement>(null),
@@ -28,11 +30,11 @@ export function CapturePage() {
     auto = useRef(false);
   const busy = ['uploading', 'locating', 'queued', 'reading'].includes(state.stage);
   useEffect(() => {
-    if (params.get('source') === 'camera' && !auto.current) {
+    if (guidance.understood && params.get('source') === 'camera' && !auto.current) {
       auto.current = true;
       void camera.start();
     }
-  }, [params, camera]);
+  }, [params, camera, guidance.understood]);
   const chosen = async (files: FileList | null) => {
     const file = files?.[0];
     if (file) {

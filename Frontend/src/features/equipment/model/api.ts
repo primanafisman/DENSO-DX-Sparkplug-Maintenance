@@ -12,15 +12,18 @@ export function equipmentBody(v: EquipmentForm) {
   return {
     name: v.name,
     code: v.code,
-    aliases: v.aliases
-      .split(/[,\n]/)
-      .map((s) => s.trim())
-      .filter(Boolean),
+    aliases:
+      v.aliases.trim() === v.name.trim()
+        ? [v.name.trim()]
+        : v.aliases
+            .split(/[,\n]/)
+            .map((s) => s.trim())
+            .filter(Boolean),
     area: v.area,
     instrument_type: v.instrument_type,
     active: v.active,
     condition: v.condition,
-    condition_reason: v.condition_reason,
+    condition_reason: v.condition_reason || 'Perubahan kondisi melalui pengaturan peralatan.',
     measurement_mode: v.measurement_mode,
     maintenance_check_ids: v.check_ids,
     profile:
@@ -37,9 +40,10 @@ export function equipmentBody(v: EquipmentForm) {
   };
 }
 export const equipmentApi = {
-  async list(filters: EquipmentFilters, cursor?: string) {
+  async list(filters: EquipmentFilters, cursor?: string, signal?: AbortSignal) {
     const data = await read<Page<Instrument>>('/instruments', {
-      params: { ...filters, limit: 50, cursor },
+      params: { ...filters, limit: 100, cursor },
+      signal,
     });
     instrumentPageSchema.parse(data);
     return data;

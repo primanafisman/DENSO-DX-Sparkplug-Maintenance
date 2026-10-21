@@ -5,3 +5,7 @@ test('equipment remains editable with custom inspection links beyond the origina
  assert.equal(instrumentInput.safeParse({name:'Gauge',profile,maintenance_check_ids:Array.from({length:45},(_,i)=>'check-'+i)}).success,true);
  assert.equal(instrumentInput.safeParse({name:'Gauge',profile,maintenance_check_ids:Array.from({length:501},(_,i)=>'check-'+i)}).success,false);
 });
+test('the default equipment code supports the complete100-character name',()=>{
+ const name='Gauge '+ 'A'.repeat(80);
+ assert.equal(instrumentInput.safeParse({name,code:name,aliases:[name],profile}).success,true);
+});

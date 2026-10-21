@@ -35,8 +35,7 @@ function GeneralSettings({
     [samplers, setSamplers] = useState(initial.allowed_samplers),
     [newSampler, setNewSampler] = useState(''),
     [rollover, setRollover] = useState(initial.night_rollover_hour),
-    [products, setProducts] = useState<ProductType[]>(initial.product_types ?? []),
-    [reason, setReason] = useState('');
+    [products, setProducts] = useState<ProductType[]>(initial.product_types ?? []);
   const change = (id: string, patch: Partial<ProductType>) =>
     setProducts(products.map((p) => (p.id === id ? { ...p, ...patch } : p)));
   return (
@@ -50,7 +49,7 @@ function GeneralSettings({
           allowed_samplers: samplers,
           night_rollover_hour: rollover,
           product_types: products,
-          review_reason: reason,
+          review_reason: 'Pembaruan pengaturan operasional.',
         });
       }}
     >
@@ -216,9 +215,6 @@ function GeneralSettings({
         )}
         {admin && (
           <>
-            <Field label="Alasan perubahan pengaturan">
-              <input value={reason} onChange={(e) => setReason(e.target.value)} required />
-            </Field>
             <Button type="submit" disabled={pending}>
               <Save size={17} />
               {pending ? 'Menyimpan…' : 'Simpan pengaturan'}
@@ -234,8 +230,7 @@ export function SettingsPage() {
     { user } = useSession(),
     [tab, setTab] = useState('standards'),
     [selected, setSelected] = useState<MaintenanceDefinition | null>(null),
-    [statusTarget, setStatusTarget] = useState<MaintenanceDefinition | null>(null),
-    [statusReason, setStatusReason] = useState('');
+    [statusTarget, setStatusTarget] = useState<MaintenanceDefinition | null>(null);
   const admin = user?.role === 'Admin';
   return (
     <>
@@ -331,7 +326,6 @@ export function SettingsPage() {
                           variant="secondary"
                           onClick={() => {
                             state.setDefinitionStatus.reset();
-                            setStatusReason('');
                             setStatusTarget(d);
                           }}
                         >
@@ -401,19 +395,15 @@ export function SettingsPage() {
                   {
                     id: statusTarget.id,
                     active: statusTarget.active === false,
-                    review_reason: statusReason,
+                    review_reason:
+                      statusTarget.active === false
+                        ? 'Pemeriksaan diaktifkan melalui Pengaturan.'
+                        : 'Pemeriksaan dinonaktifkan melalui Pengaturan.',
                   },
                   { onSuccess: () => setStatusTarget(null) },
                 );
               }}
             >
-              <Field label="Alasan perubahan status">
-                <input
-                  required
-                  value={statusReason}
-                  onChange={(e) => setStatusReason(e.target.value)}
-                />
-              </Field>
               <ErrorMessage error={state.setDefinitionStatus.error} />
               <div className="actions">
                 <Button type="button" variant="secondary" onClick={() => setStatusTarget(null)}>
