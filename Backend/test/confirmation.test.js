@@ -9,14 +9,14 @@ import {context,profile,item} from './support.js';
 test('confirmation requires identity, context binding and reason, and duplicate retries stay idempotent',async()=>{
   const {createReadingService}=await import('../src/services/readingService.js');const {repo,close}=await database();const directory=await fs.mkdtemp(path.join(os.tmpdir(),'spm-evidence-'));const bytes=Buffer.from('original');const source_hash=createHash('sha256').update(bytes).digest('hex');
   const asset={id:'g1',name:'Gauge',active:true,profile,maintenance_check_ids:['check1']};await repo.instruments.create(asset);
-  const snapshot={submitted:{...item,instrument_id:'g1'},instrument_snapshot:asset,context,photo:{bytes,mimeType:'image/jpeg',source_hash},result:{candidate:{value:.438,unit:'MPa'},confidence:{valid:true},validated_prediction:.438,method:'local'}};
+  const snapshot={submitted:{...item,instrument_id:'g1',calibration_id:'cal-v1',calibration:{template_hash:'template'}},instrument_snapshot:asset,context,photo:{bytes,mimeType:'image/jpeg',source_hash},result:{candidate:{value:.438,unit:'MPa'},confidence:{valid:true},validated_prediction:.438,method:'local'}};
   const service=createReadingService({config:{runtimeDir:directory},repositories:repo,clock:()=>Date.now()}, {getResult:()=>snapshot},{crop:async()=>({bytes,mimeType:'image/jpeg'})});const actor={id:'u1',role:'Operator'};
   const input={analysis_id:'a1',instrument_id:'g1',final_value:.438,verified:true,identity_verified:true,context,check_id:'check1',sample_key:'n1',reason:'',confirmation_id:'confirm1'};
   try{
     await assert.rejects(service.confirm({...input,identity_verified:false},actor),/identity/i);
     await assert.rejects(service.confirm({...input,context:{...context,line:'99'}},actor),/context/i);
     await assert.rejects(service.confirm({...input,final_value:.43},actor),/reason/i);
-    const saved=await service.confirm(input,actor);assert.equal(saved.final_value,'0.438');
+    const saved=await service.confirm(input,actor);assert.equal(saved.final_value,'0.438');assert.deepEqual(saved.calibration_snapshot,{id:'cal-v1',template_hash:'template'});
     assert.equal((await service.confirm(input,actor)).id,saved.id);
     await assert.rejects(service.confirm({...input,final_value:.43,reason:'corrected'},actor),/conflict|different/i);
     await assert.rejects(service.confirm({...input,confirmation_id:'rebound',sample_key:'n2'},actor),/analysis|sample|already/i);
