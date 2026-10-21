@@ -1,0 +1,26 @@
+{
+  "png": "D:\\ChatGPT Projects\\Sparkplug Maintenance\\Frontend\\docs\\design\\previews\\history-spc-detail-v3.png",
+  "svg": "D:\\ChatGPT Projects\\Sparkplug Maintenance\\Frontend\\docs\\design\\previews\\history-spc-detail-v3.svg",
+  "statistics": {
+    "subgroups": 7,
+    "n": 4,
+    "N": 28,
+    "sum_x": 125.96,
+    "sum_xbar": 31.490000000000002,
+    "sum_r": 0.15999999999999748,
+    "grand_mean": 4.498571428571428,
+    "rbar": 0.022857142857142496,
+    "s_overall": 0.01297127473512002,
+    "3s": 0.03891382420536006,
+    "6s": 0.07782764841072012,
+    "sigma_within": 0.011101089294386836,
+    "cp_paper_s": 2.569780843750274,
+    "cpk_paper_s": 2.533069688839537,
+    "ucl_x": 4.5152342857142855,
+    "lcl_x": 4.481908571428571,
+    "ucl_r": 0.05215999999999918,
+    "lcl_r": 0.0,
+    "r_max": 0.03000000000000025
+  },
+  "source": "synthetic fixture only"
+}
