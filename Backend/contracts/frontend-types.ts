@@ -6,7 +6,7 @@ export type CheckSlot={slot_id:string;shift:'day'|'night';shift_label:string;slo
 export type ServerSchedule={server_time:string;timezone:'Asia/Jakarta';calendar_date:string;production_date:string;shift:'day'|'night';shift_label:string;slot_id:string;slot_label:string;starts_at:string;next_starts_at:string;schedule:CheckSlot[]};
 export type ROI={x:number;y:number;width:number;height:number};
 export type Profile={kind:GaugeKind;unit:'MPa'|'mm'|'kN'|'N'|'bar';minimum:number;maximum:number;decimals:number;tolerance:number};
-export type DiscoveredIndicator={client_id:string;roi:ROI;label_roi:ROI|null;kind_hint:string;display_type?:string;observed_unit?:Profile['unit']|null;observed_decimals?:number|null;instrument:Instrument|null;suggested_profile:Profile|null;profile_source:'registered-equipment'|'observed-unit-default-range'|'display-default'|'manual-required';requires_profile_confirmation:true;requires_confirmation:true};
+export type DiscoveredIndicator={client_id:string;roi:ROI;label_roi:ROI|null;kind_hint:string;label?:Record<string,unknown>;display_type?:string;observed_unit?:Profile['unit']|null;observed_decimals?:number|null;instrument:Instrument|null;suggested_profile:Profile|null;profile_source:'registered-equipment'|'observed-unit-default-range'|'display-default'|'manual-required';requires_profile_confirmation:true;requires_confirmation:true};
 export type Discovery={instruments:DiscoveredIndicator[];warnings:string[];confidence_calibrated:false};
 export type AnalysisItem={client_id:string;roi:ROI;label_roi?:ROI;instrument_id?:string;calibration_id?:string;profile:Profile};
 export type Photo={image_id:string;source_hash:string;source_width:number;source_height:number;preview_width:number;preview_height:number;expires_at:number;context:Context};
@@ -29,3 +29,4 @@ export type MaintenanceObservation={sample_id:string;status:'OK'|'NG'}|{sample_i
 export type SampleOutcome=MaintenanceObservation&{status:'OK'|'NG';value?:number};
 export type MaintenanceRecord={id:string;definition_id:string;context:Context;interval:Interval;trigger:string;checked_at:string;observations:MaintenanceObservation[];actor_id:string;definition_snapshot:MaintenanceDefinition;settings_snapshot:MaintenanceSettings;outcomes:SampleOutcome[];overall_status:'OK'|'NG';saved_at:string;created_at:string;product_snapshot?:ProductSnapshot|null;instrument_snapshot?:Instrument|null;schedule_snapshot?:{slot_id:string;starts_at:string;schedule_version:number;timezone:'Asia/Jakarta'}};
 export type * from './report-types';
+

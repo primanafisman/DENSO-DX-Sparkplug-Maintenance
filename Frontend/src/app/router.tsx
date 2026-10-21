@@ -1,4 +1,9 @@
 import {createBrowserRouter,Navigate,Outlet} from 'react-router-dom';
+import {CaptureLayout} from '../features/capture/view/CaptureLayout';
+import {CapturePage} from '../features/capture/view/CapturePage';
+import {ResultPage} from '../features/capture/view/ResultPage';
+import {RoiPage} from '../features/capture/view/RoiPage';
+import {ConfirmPage} from '../features/capture/view/ConfirmPage';
 import {InspectionHub} from '../features/maintenance/view/InspectionHub';
 import {VisualCheckPage} from '../features/maintenance/view/VisualCheckPage';
 import {InspectionSuccess} from '../features/maintenance/view/InspectionSuccess';
@@ -12,4 +17,4 @@ import {PageHeader} from '../shared/components/layout/PageHeader';
 import {Loading,Empty} from '../shared/components/ui';
 export function RequireRole({roles}:{roles?:Role[]}){const session=useSession();if(session.status==='loading')return <Loading/>;if(!session.user)return <Navigate to="/login" replace/>;if(roles&&!roles.includes(session.user.role))return <Empty title="Akses terbatas" description="Akun Anda tidak memiliki izin untuk tindakan ini."/>;return <Outlet/>;}
 const pending=(title:string)=><><PageHeader title={title}/><Empty title="Halaman sedang diintegrasikan" description="Data akan tampil setelah integrasi halaman ini selesai."/></>;
-export const router=createBrowserRouter([{path:'/login',element:<LoginPage/>},{element:<RequireRole/>,children:[{element:<AppShell/>,children:[{index:true,element:pending('Ringkasan bulanan')},{path:'pemeriksaan',element:<InspectionHub/>},{path:'pemeriksaan/visual',element:<VisualCheckPage/>},{path:'pemeriksaan/selesai',element:<InspectionSuccess/>},{path:'pemeriksaan/foto',element:pending('Foto dan analisis')},{path:'riwayat',element:pending('Riwayat')},{path:'peralatan',element:<EquipmentPage/>},{path:'pengaturan',element:<SettingsPage/>}]}]},{path:'*',element:<Empty title="Halaman tidak ditemukan" description="Gunakan menu utama untuk kembali."/>}]);
+export const router=createBrowserRouter([{path:'/login',element:<LoginPage/>},{element:<RequireRole/>,children:[{element:<AppShell/>,children:[{index:true,element:pending('Ringkasan bulanan')},{path:'pemeriksaan',element:<InspectionHub/>},{path:'pemeriksaan/visual',element:<VisualCheckPage/>},{path:'pemeriksaan/selesai',element:<InspectionSuccess/>},{element:<RequireRole roles={['Admin','Operator']}/>,children:[{element:<CaptureLayout/>,children:[{path:'pemeriksaan/foto',element:<CapturePage/>},{path:'pemeriksaan/hasil',element:<ResultPage/>},{path:'pemeriksaan/crop',element:<RoiPage/>},{path:'pemeriksaan/konfirmasi',element:<ConfirmPage/>}]}]},{path:'riwayat',element:pending('Riwayat')},{path:'peralatan',element:<EquipmentPage/>},{path:'pengaturan',element:<SettingsPage/>}]}]},{path:'*',element:<Empty title="Halaman tidak ditemukan" description="Gunakan menu utama untuk kembali."/>}]);
