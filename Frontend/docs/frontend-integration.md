@@ -21,6 +21,16 @@ JSON berhasil: {success:true,message,data,request_id}. Gagal: {success:false,mes
 
 ROI memakai {x,y,width,height} ternormalisasi0–1 pada foto penuh yang sudah mengikuti orientasi EXIF. Koordinat bukan piksel elemen HTML atau foto yang sedang diperbesar. Crop sementara POST photos/{image_id}/crop menerima ROI langsung, bukan {roi:...}.
 
+Pemilihan nama alat pada halaman hasil tidak mengirim pekerjaan CV baru. Relasi `maintenance_check_ids` mengisi pemeriksaan bila tepat satu pilihan tersedia; pemilihan pemeriksaan juga mengisi alat bila tepat satu alat terhubung. Pilihan ambigu tetap memerlukan operator, dan alat yang belum ditautkan harus dikonfigurasi di Peralatan.
+
+Jika mengganti identitas alat dengan profil fisik yang sama, konfirmasi mengirim `equipment_reassigned:true` dan `instrument_revision` yang ditinjau. Server tetap memeriksa profil, revisi, kepemilikan analisis, identitas, relasi pemeriksaan, bukti, serta idempotensi. Kalibrasi milik alat lama tidak dapat dipindahkan; provenance identitas/profil asli tetap disimpan. Pilihan alat tidak mengubah satuan atau desimal hasil foto sebelumnya. Profil berbeda membutuhkan tombol baca ulang secara eksplisit atau jalur input manual.
+
+## Angka manual dengan bukti foto
+
+Jika CV/discovery tidak berhasil, pertahankan foto yang telah berhasil diunggah dan daftar alat. Setelah alat serta pemeriksaan dipilih, kirim `POST /analysis-jobs/manual` dengan `{image_id,instrument_id,roi,label_roi?}`. Endpoint ini tidak memanggil OCR/analisis CV dan mengembalikan AnalysisResult dengan `analysis_id`, `validated_prediction:null` dan `confidence.valid:false`.
+
+Gunakan ID tersebut pada endpoint konfirmasi bacaan yang sama. Isi `final_value`, alasan manual yang tidak kosong, verifikasi identitas dan verifikasi angka. Nilai manual tetap diperiksa terhadap rentang/desimal alat dan disimpan bersama foto/crop; angka tersebut tidak diberi confidence CV. Foto yang gagal diunggah harus diunggah kembali sebelum dapat dikonfirmasi. Bukti yang sama tetap tidak boleh dipakai ulang untuk sampel baru.
+
 ## Pemeriksaan visual
 
 Observations berupa [{sample_id,status:'OK'|'NG'}]. Lengkapi semua sampel dan konfirmasi sebelum POST maintenance/records. instrument_id opsional mengikat identitas alat visual; profil angka palsu tidak diperlukan.
@@ -95,3 +105,10 @@ Status penyimpanan maintenance yang tidak pasti disimpan bersama draft selama na
 
 Update definisi memakai `occurrence_rule:null` untuk menghapus aturan slot secara eksplisit. Field yang dihilangkan berarti tidak mengubah nilai lama.
 
+## Pemeriksaan aktif dan status jadwal
+
+`GET /maintenance/catalog` mengembalikan pemeriksaan aktif; `?include_inactive=true` juga memuat yang dinonaktifkan untuk Pengaturan dan pemilihan laporan historis. Admin membuat pemeriksaan dengan `POST /maintenance/definitions` (DefinitionCreate), memperbaruinya dengan `PUT /maintenance/definitions/:id`, dan mengubah status dengan `PUT /maintenance/definitions/:id/status` berisi `{active, review_reason}`. Penonaktifan mempertahankan riwayat. `instrument_ids` pada create/update mengganti hubungan alat dalam transaksi yang sama; tidak dikirim berarti mempertahankan hubungan lama.
+
+`GET /maintenance/due?line=17&product_type_id=...` memberikan `schedule`, `items`, `pending_count` dan `completed_count`. Type opsional. Setiap item memiliki `definition_id`, `definition_version`, `state` (`pending`, `completed`, `not_scheduled`), `completed_record_id`, `occurrence_key`, `starts_at`, `next_starts_at` dan `basis`. Daftar pengisian menggunakan state=pending. Waktu/perhitungan berasal dari server; jangan menghitung selesai dari jam HP atau foto yang belum disimpan. Invalidasi query ini setelah penyimpanan pemeriksaan atau perubahan master; ambil ulang berkala dan saat aplikasi kembali aktif.
+
+Kecocokan label terdaftar dapat memilih alat dan pemeriksaan terkait tanpa mengirim pekerjaan CV kedua. Profil auto boleh menggunakan hasil digital/analog yang terbukti jenisnya jika seluruh parameter fisik identik. Perbedaan satuan, rentang, toleransi, presisi atau kalibrasi tetap memerlukan pembacaan ulang eksplisit atau input manual berbukti foto. Identitas/nilai tetap dikonfirmasi operator.

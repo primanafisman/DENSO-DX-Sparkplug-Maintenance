@@ -1,5 +1,6 @@
 import { read, write } from '../../../shared/lib/api';
 import type {
+  MaintenanceDue,
   MaintenanceRecord,
   ServerSchedule,
   Context,
@@ -17,6 +18,8 @@ export type RecordInput = {
   instrument_id?: string;
 };
 export const inspectionApi = {
+  due: (line: string, product_type_id?: string) =>
+    read<MaintenanceDue>('/maintenance/due', { params: { line, product_type_id } }),
   schedule: () => read<ServerSchedule>('/maintenance/schedule'),
   save: (body: RecordInput) => write<MaintenanceRecord>('/maintenance/records', body),
 };

@@ -20,6 +20,10 @@ export type CaptureState = {
   proposalIndex: number;
   instrument: Instrument | null;
   profile: Profile | null;
+  analysisProfile: Profile | null;
+  analysisInstrumentId: string | null;
+  requiresReanalysis: boolean;
+  manualPreparing: boolean;
   roi: ROI;
   label_roi: ROI | null;
   result: AnalysisResult | null;
@@ -40,6 +44,10 @@ const initial = (): CaptureState => ({
   proposalIndex: 0,
   instrument: null,
   profile: null,
+  analysisProfile: null,
+  analysisInstrumentId: null,
+  requiresReanalysis: false,
+  manualPreparing: false,
   roi: { x: 0, y: 0, width: 1, height: 1 },
   label_roi: null,
   result: null,

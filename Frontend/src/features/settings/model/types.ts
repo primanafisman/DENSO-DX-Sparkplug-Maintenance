@@ -8,4 +8,4 @@ export type DefinitionUpdate = Pick<
       MaintenanceDefinition,
       'kind' | 'input_method' | 'samples' | 'shifts' | 'interval_guide' | 'occurrence_rule'
     >
-  > & { review_reason: string };
+  > & { review_reason: string; instrument_ids?: string[] };

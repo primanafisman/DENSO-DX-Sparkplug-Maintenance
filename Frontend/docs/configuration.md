@@ -6,6 +6,7 @@ Konfigurasi rilis lokal 1.1; cocokkan dengan kontrak OpenAPI Backend/contracts/o
 - Frontend/.env hanya untuk konfigurasi publik pengembangan. VITE_API_BASE_URL kosong menggunakan /api/v1 pada origin yang sama. Jangan menaruh API key, JWT secret, password atau koneksi SQL pada variabel VITE_.
 - Port awal: Node8100, CV privat8101, HTTPS lokal8443 bila diaktifkan. Frontend menggunakan Node, bukan akses langsung ke Python atau database.
 - Pengaturan memuat line, sampler, master Type produk dan revisi definisi pemeriksaan. Shift mengikuti waktu server Asia/Jakarta: 07:45,12:45 Shift1;21:15,01:15 Shift2. Tanggal produksi malam menggunakan pengaturan rollover server.
+- Instalasi baru menawarkan line1–17 dan sampler awal Ldr. Di Pengaturan → Line, sampler & Type, Admin mencentang line aktif serta menambah/menghapus sampler. Dashboard dan pemeriksaan hanya menawarkan pilihan tersimpan; daftar kosong menonaktifkan pilihan, bukan membuka input bebas. Penghapusan pilihan tidak menghapus catatan historis.
 - Peralatan: nomor/kode, nama, alias label, area, jenis, kondisi fisik, enabled dan parameter fisik. Alat visual tidak memerlukan profil angka. Kondisi Tidak berfungsi memblokir pengukuran numerik baru; menonaktifkan alat tidak menghapus sejarah.
 - Standar penerimaan, metode, sampel dan frekuensi berada pada definisi pemeriksaan yang ditautkan ke alat. Rentang fisik alat bukan batas OK/NG proses.
 - Type pada laporan adalah varian produk. Riwayat tanpa Type menampilkan Tidak tercatat. Type, standar, alat dan kalibrasi yang tidak kompatibel dipisahkan dalam laporan SPC.
@@ -14,6 +15,21 @@ Konfigurasi rilis lokal 1.1; cocokkan dengan kontrak OpenAPI Backend/contracts/o
 - Perubahan standar menghasilkan versi baru. Pemeriksaan yang sedang berjalan mengirim definition_version; jika standar berubah sebelum disimpan, server mengembalikan DEFINITION_VERSION_CONFLICT dan operator harus meninjau ulang versi baru.
 - Mengosongkan semua slot jadwal mengirim occurrence_rule=null untuk menghapus aturan sebelumnya. Field yang tidak dikirim pada pembaruan tetap mempertahankan nilainya.
 - Enam bulan adalah rentang navigasi bawaan, bukan kebijakan penghapusan. Batas satu permintaan laporan kurang dari enam bulan kalender,100000 catatan dan5000 subgroup SPC; pilih rentang lebih kecil bila ditolak.
+
+## Daftar pemeriksaan dan jadwal aktif
+
+Admin dapat menambah pemeriksaan melalui Pengaturan → Standar & metode → Tambah pemeriksaan. Isi nama, persyaratan, metode, jenis input, sampel, satuan/batas untuk angka, shift, frekuensi dan alat terhubung. Hubungan alat ini dipakai untuk menyarankan pemeriksaan setelah label foto cocok. Beberapa hubungan tetap membutuhkan pilihan operator.
+
+Hapus dari pilihan menonaktifkan pemeriksaan; riwayat, foto dan revisinya tetap ada. Aktifkan mengembalikannya ke pilihan. Perubahan menghasilkan versi baru, sehingga hasil standar lama tidak menandai standar baru sebagai selesai.
+
+Daftar Pemeriksaan menampilkan item yang belum selesai untuk line dan Type yang dipilih, memakai waktu server. OK maupun NG yang sudah tersimpan dihitung selesai; foto/angka yang belum disimpan sebagai pemeriksaan lengkap belum dihitung. Sampler/operator berbeda tidak mengulang kewajiban yang sama. Tanpa filter Type, seluruh Type pada line dihitung bersama.
+
+- Per shift: Shift 1 mulai07:45 hingga21:15; Shift 2 mulai21:15 hingga07:45 berikutnya. Slot12:45 dan01:15 tidak mengulang item per shift.
+- Harian: sekali per tanggal produksi. Mingguan: sekali per minggu produksi mulai Senin.
+- Aturan slot yang ditinjau Admin menggantikan pengelompokan bawaan. Slot harus sesuai shift aktif; mingguan memerlukan hari pilihan.
+- Untuk interval berulang `every_4_hours` tanpa aturan slot, pilot mengikuti empat sesi server07:45/12:45/21:15/01:15. Ini bukan timer empat jam bergulir. Waktu lain pada panduan kertas tetap informasi sumber, sampai jadwal operasional ditinjau dan disetel.
+
+Daftar diperbarui berkala, saat kembali ke aplikasi dan setelah simpan. Gangguan pengambilan jadwal menampilkan pesan muat ulang, bukan status selesai palsu. Riwayat NG tetap terlihat di Riwayat/Ringkasan.
 
 ## Statistik
 

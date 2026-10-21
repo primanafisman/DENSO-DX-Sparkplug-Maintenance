@@ -6,6 +6,7 @@ import { useInspectionStore } from '../model/inspectionStore';
 import type { InspectionDraft } from '../model/inspectionStore';
 import type { MaintenanceDefinition } from '../../../shared/lib/contracts';
 import { contextFormSchema } from '../model/schemas';
+import { settingsApi } from '../../settings/model/api';
 import { ApiError } from '../../../shared/lib/api';
 export function useInspection({ scheduleEnabled = true } = {}) {
   const schedule = useQuery({
@@ -25,7 +26,10 @@ export function useInspection({ scheduleEnabled = true } = {}) {
   ) => {
     try {
       const c = contextFormSchema.parse(selection),
-        fresh = await inspectionApi.schedule();
+        fresh = await inspectionApi.schedule(),
+        configured = await settingsApi.settings();
+      if (!configured.lines.includes(c.line) || !configured.allowed_samplers.includes(c.sampler))
+        throw new Error('Pilih line dan sampler yang aktif di Pengaturan.');
       store.start({
         definition,
         context: {
@@ -74,6 +78,7 @@ export function useInspection({ scheduleEnabled = true } = {}) {
       });
     },
     onSuccess: (record, d) => {
+      client.invalidateQueries({ queryKey: ['maintenance-due'] });
       client.invalidateQueries({ queryKey: ['history'] });
       client.invalidateQueries({ queryKey: ['summary'] });
       if (d?.session_id === useInspectionStore.getState().draft?.session_id) {
@@ -107,4 +112,19 @@ export function useInspection({ scheduleEnabled = true } = {}) {
       if (useInspectionStore.getState().saveState === 'uncertain') store.setSaveState('editing');
     },
   };
+}
+
+export function useMaintenanceDue(line: string, product_type_id?: string) {
+  return useQuery({
+    queryKey: ['maintenance-due', line, product_type_id ?? ''],
+    queryFn: () => inspectionApi.due(line, product_type_id),
+    enabled: !!line,
+    refetchOnWindowFocus: true,
+    refetchInterval: (q) => {
+      const s = q.state.data?.schedule;
+      return s
+        ? Math.max(1000, Math.min(60000, Date.parse(s.next_starts_at) - Date.parse(s.server_time)))
+        : 60000;
+    },
+  });
 }

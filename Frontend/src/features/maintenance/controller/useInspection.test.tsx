@@ -16,6 +16,17 @@ it('catalog exposes 44 options with requirement filters and Viewer cannot start 
     http.get('/api/v1/auth/me', () =>
       HttpResponse.json(envelope({ id: 'v', username: 'Viewer', role: 'Viewer' })),
     ),
+    http.get('/api/v1/maintenance/due', () =>
+      HttpResponse.json(
+        envelope({
+          schedule,
+          line: '17',
+          items: defs.map((d) => ({ definition_id: d.id, state: 'pending' })),
+          pending_count: 44,
+          completed_count: 0,
+        }),
+      ),
+    ),
     http.get('/api/v1/maintenance/schedule', () => HttpResponse.json(envelope(schedule))),
     http.get('/api/v1/maintenance/settings', () =>
       HttpResponse.json(
@@ -29,7 +40,7 @@ it('catalog exposes 44 options with requirement filters and Viewer cannot start 
     ),
   );
   renderApp(<InspectionHub />);
-  expect(await screen.findByText('44 pilihan pemeriksaan')).toBeVisible();
+  expect(await screen.findByText('44 belum diperiksa')).toBeVisible();
   expect(screen.getByLabelText('Persyaratan')).toBeVisible();
   expect(screen.getAllByRole('button', { name: /Mulai Check/ })[0]).toBeDisabled();
 });
@@ -84,4 +95,50 @@ it('visual samples must all be chosen and explicit save uses the frozen server c
     { sample_id: 'one', status: 'OK' },
     { sample_id: 'two', status: 'NG' },
   ]);
+});
+
+it('inspection list hides completed checks for the selected line and refreshes from server', async () => {
+  const defs = [
+    fixtureDefinition({ id: 'done', name: 'Packing Depth Tool' }),
+    fixtureDefinition({ id: 'todo', name: 'Talc Tool' }),
+  ];
+  server.use(
+    http.get('/api/v1/auth/me', () =>
+      HttpResponse.json(envelope({ id: 'u', username: 'Operator', role: 'Operator' })),
+    ),
+    http.get('/api/v1/maintenance/schedule', () => HttpResponse.json(envelope(schedule))),
+    http.get('/api/v1/maintenance/settings', () =>
+      HttpResponse.json(
+        envelope({ lines: ['1', '2'], allowed_samplers: ['Ldr'], night_rollover_hour: 12 }),
+      ),
+    ),
+    http.get('/api/v1/maintenance/catalog', () =>
+      HttpResponse.json(
+        envelope({ items: defs, count: 2, source_gaps: { missing_rows: [], clipped_row: 45 } }),
+      ),
+    ),
+    http.get('/api/v1/maintenance/due', ({ request }) => {
+      const line = new URL(request.url).searchParams.get('line');
+      return HttpResponse.json(
+        envelope({
+          schedule,
+          line,
+          items: defs.map((d) => ({
+            definition_id: d.id,
+            state: line === '1' && d.id === 'done' ? 'completed' : 'pending',
+          })),
+          pending_count: line === '1' ? 1 : 2,
+          completed_count: line === '1' ? 1 : 0,
+        }),
+      );
+    }),
+  );
+  renderApp(<InspectionHub />);
+  fireEvent.change(await screen.findByLabelText('Line'), { target: { value: '1' } });
+  expect(await screen.findByRole('button', { name: 'Mulai Talc Tool' })).toBeVisible();
+  expect(
+    screen.queryByRole('button', { name: 'Mulai Packing Depth Tool' }),
+  ).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Line'), { target: { value: '2' } });
+  expect(await screen.findByRole('button', { name: 'Mulai Packing Depth Tool' })).toBeVisible();
 });

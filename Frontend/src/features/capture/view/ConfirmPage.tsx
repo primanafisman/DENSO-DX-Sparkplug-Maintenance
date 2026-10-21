@@ -63,6 +63,11 @@ export function ConfirmPage() {
               ' ' +
               state.profile?.unit}
         </div>
+        {!state.result.confidence.valid && (
+          <p className="info-note">
+            Input manual berdasarkan foto. Isi nilai, alasan, lalu konfirmasi identitas dan hasil.
+          </p>
+        )}
         <p className="muted">
           {sample
             ? `${sample.sample_id}${sample.stage ? ' · ' + sample.stage : ''}`

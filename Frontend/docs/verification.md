@@ -51,3 +51,21 @@ Remaining acceptance:
 - Quality approval of STDEV.S paper Cp/Cpk nomenclature versus within estimates, saved baselines and source ambiguities for Talc n8, Sweeping instrument/unit and Gasket occurrence schedule. Source review notes remain visible.
 - Source images omit checklist rows17–23 and clip row45. The application retains44 configured options without inventing unseen requirements.
 - OCR artifact provenance/licensing notes remain in Backend/docs/governance/ocr-artifacts.json. No corporate UAT/Sonar certification is implied.
+
+## Update — result selection, manual entry and configured choices
+
+The annotation fix retains the current reading/crops when equipment changes; it does not submit another CV job. All numeric equipment/check choices remain accessible. A unique registered relationship fills the paired selection; ambiguous or absent links require operator/configuration input. A different physical profile never relabels the original prediction. Rereading is explicit, and manual entry is an alternative.
+
+Manual entry creates a photo-backed, unvalidated operator-review receipt without OCR. A reason, equipment/value verification, profile limits, ownership, expiry and evidence uniqueness remain required. If discovery fails after upload, equipment options and the uploaded photo are retained for this fallback.
+
+Active lines are configured from1–17; initial sampler is Ldr. Settings provide line checkboxes and sampler add/remove controls. Empty lists do not enable unrestricted free-text entry. Existing records remain intact. This installation's active lists were explicitly updated to1–17 and Ldr while retaining product Types.
+
+Update verification: **Backend137/137**, **Frontend48/48**, lint/Feature MVC/types/build passed. New regression tests cover no-reread selection, mutual links/ambiguity, original-unit display, uncertain-confirmation lock, reassignment/profile/calibration/revision guards, photo-backed manual entry, failed-discovery fallback and configured choice controls. One focused review found the failed-discovery fallback issue; its failing test was observed before the fix and the complete frontend suite was rerun. CV algorithms/models were not changed. Earlier real-HP/print/second-computer/SQL acceptance limits still apply.
+
+## Update — registered matching, custom inspections and pending schedule
+
+Command-only verification: Backend145/145 and Frontend53/53 passed, including lint, Feature MVC, types and production build. After the final slot/shift form guard, the five Settings tests, lint, types and build passed again. Backend checks cover create/archive/due endpoint authentication and response schemas, archive fallback/history preservation, transactional equipment links, custom links beyond the original44 and invalid shift/slot combinations. No browser testing was used for this extension.
+
+Added tests demonstrate registered-label selection independent of an old check filter, safe auto/digital profile normalization, shared blank-area label matching, Admin add/archive controls and pending-list filtering by line. Schedule tests cover both OK/NG completion, incomplete/future exclusion, changed standards, per-shift midday/midnight boundaries, next-shift return, daily/weekly and year rollover, and explicit reviewed slots/weekdays. Source CV models and algorithms remain unchanged. Physical-phone UAT and receiving-computer acceptance limits above remain open.
+
+Live local API verification returned a pending list and valid readings for IMG_0418 (0.410 MPa analog) and IMG_20261009_085505 (15.96 mm digital). These checks uploaded/analyzed photos without creating business maintenance records. Independent read-only review found the incompatible shift/slot guard and the old44-link equipment cap; both were corrected and verified before packaging. No release blockers remained in that review.

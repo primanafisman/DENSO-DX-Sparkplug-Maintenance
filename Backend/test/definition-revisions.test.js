@@ -33,7 +33,7 @@ test('unused definition versions and settings changes have immutable revisions w
     assert.equal(revisions.items.find(r=>r.version===1).value.limits.minimum,4.4);
     assert.equal(revisions.items.find(r=>r.version===3).effective_at,serverNow);
     const settings={lines:['17'],allowed_samplers:['Ldr'],night_rollover_hour:12,product_types:[{id:'u',code:'U',name:'U-Type',active:true}]};
-    await service.updateSettings(settings,actor);await service.updateSettings({lines:['18'],allowed_samplers:['Ldr'],night_rollover_hour:12},actor);
+    await service.updateSettings(settings,actor);await service.updateSettings({lines:['16'],allowed_samplers:['Ldr'],night_rollover_hour:12},actor);
     assert.equal((await service.getSettings()).product_types[0].name,'U-Type');
     assert.equal((await repo.revisions.list({entity_id:'maintenance-settings',limit:25})).items.length,2);
   }finally{await close();}
@@ -48,6 +48,8 @@ test('definition revision endpoints require Admin role',async()=>{
     const {password}=await import('./helpers.js');const login=await request(other).post('/api/v1/auth/token').send({username:'001',password});
     const auth='Bearer '+login.body.data.access_token;
     assert.equal((await request(other).get('/api/v1/maintenance/definitions/chart_ee_length/revisions').set('Authorization',auth)).status,403);
+    assert.equal((await request(other).post('/api/v1/maintenance/definitions').set('Authorization',auth).send({})).status,403);
+    assert.equal((await request(other).put('/api/v1/maintenance/definitions/chart_ee_length/status').set('Authorization',auth).send({active:false,review_reason:'test'})).status,403);
     assert.equal((await request(other).put('/api/v1/maintenance/definitions/chart_ee_length').set('Authorization',auth).send(update('chart_ee_length'))).status,403);
   }
   assert.ok(app&&token);

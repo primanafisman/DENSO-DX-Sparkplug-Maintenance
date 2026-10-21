@@ -5,5 +5,6 @@ export const profile=z.object({kind:z.enum(['auto','digital','analog']),unit:z.e
 export const context=z.object({line:z.string().trim().min(1).max(64),production_date:z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v=>{const date=new Date(v+'T00:00:00Z');return Number.isFinite(date.valueOf())&&date.toISOString().slice(0,10)===v;},'Invalid date.'),shift:z.enum(['day','night']),sampler:z.string().trim().min(1).max(64),product_type_id:id.optional()}).strict();
 export const photoInput=z.object({context}).strict();
 export const discoveryInput=z.object({area:z.string().max(80).default('')}).strict();
+export const manualAnalysisInput=z.object({image_id:id,instrument_id:id,roi,label_roi:roi.optional()}).strict();
 export const analysisItem=z.object({client_id:id,roi,label_roi:roi.optional(),instrument_id:id.optional(),calibration_id:id.optional(),profile}).strict();
 export const jobInput=z.object({image_id:id,items:z.array(analysisItem).min(1).max(12),area:z.string().max(80).default('')}).strict().refine(j=>new Set(j.items.map(i=>i.client_id)).size===j.items.length,'Client IDs must be unique.');

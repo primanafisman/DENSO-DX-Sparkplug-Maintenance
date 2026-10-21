@@ -1,4 +1,4 @@
-import { read, update } from '../../../shared/lib/api';
+import { read, write, update } from '../../../shared/lib/api';
 import type {
   MaintenanceSettings,
   MaintenanceCatalog,
@@ -14,7 +14,25 @@ export const settingsApi = {
     settingsSchema.parse(data);
     return data;
   },
-  catalog: () => read<MaintenanceCatalog>('/maintenance/catalog'),
+  catalog: (includeInactive = false) =>
+    read<MaintenanceCatalog>('/maintenance/catalog', {
+      params: includeInactive ? { include_inactive: 'true' } : {},
+    }),
+  createDefinition: (body: DefinitionUpdate) =>
+    write<MaintenanceDefinition>('/maintenance/definitions', body),
+  setDefinitionStatus: ({
+    id,
+    active,
+    review_reason,
+  }: {
+    id: string;
+    active: boolean;
+    review_reason: string;
+  }) =>
+    update<MaintenanceDefinition>(
+      '/maintenance/definitions/' + encodeURIComponent(id) + '/status',
+      { active, review_reason },
+    ),
   save: (body: MaintenanceSettings & { review_reason?: string }) =>
     update('/maintenance/settings', body),
   saveDefinition: ({ id, body }: { id: string; body: DefinitionUpdate }) =>

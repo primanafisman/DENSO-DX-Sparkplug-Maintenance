@@ -201,6 +201,162 @@
         }
       }
     },
+    "/api/v1/analysis-jobs/manual": {
+      "post": {
+        "summary": "Prepare photo-backed operator entry without OCR",
+        "operationId": "post__api_v1_analysis_jobs_manual",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for cookie-authenticated writes, issued by GET auth/csrf."
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/AnalysisResult"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualAnalysisInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/maintenance/due": {
+      "get": {
+        "summary": "Pending checks for a line using server-clock recurrence",
+        "operationId": "get__api_v1_maintenance_due",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "line",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "product_type_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/MaintenanceDue"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/maintenance/schedule": {
       "get": {
         "summary": "Current server-clock WIB shift and latest inspection start",
@@ -1862,9 +2018,177 @@
         }
       }
     },
+    "/api/v1/maintenance/definitions": {
+      "post": {
+        "summary": "Admin creates an inspection with equipment links",
+        "operationId": "post__api_v1_maintenance_definitions",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for cookie-authenticated writes, issued by GET auth/csrf."
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/MaintenanceDefinition"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinitionCreate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/maintenance/definitions/{id}/status": {
+      "put": {
+        "summary": "Admin archives or reactivates an inspection; history retained",
+        "operationId": "put__api_v1_maintenance_definitions__id__status",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for cookie-authenticated writes, issued by GET auth/csrf."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/MaintenanceDefinition"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DefinitionStatus"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/maintenance/catalog": {
       "get": {
-        "summary": "44 reviewed checklist/chart definitions and source gaps",
+        "summary": "Active reviewed and custom checks; include_inactive=true retains archived standards",
         "operationId": "get__api_v1_maintenance_catalog",
         "security": [
           {
@@ -1874,7 +2198,16 @@
             "bearerAuth": []
           }
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "include_inactive",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Include archived inspections for settings and historical reports."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful response",
@@ -3694,6 +4027,99 @@
         ],
         "additionalProperties": false
       },
+      "ManualAnalysisInput": {
+        "type": "object",
+        "properties": {
+          "image_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "instrument_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "roi": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number",
+                "minimum": 0,
+                "exclusiveMaximum": true,
+                "maximum": 1
+              },
+              "y": {
+                "type": "number",
+                "minimum": 0,
+                "exclusiveMaximum": true,
+                "maximum": 1
+              },
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": true,
+                "minimum": 0,
+                "maximum": 1
+              },
+              "height": {
+                "type": "number",
+                "exclusiveMinimum": true,
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ],
+            "additionalProperties": false
+          },
+          "label_roi": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number",
+                "minimum": 0,
+                "exclusiveMaximum": true,
+                "maximum": 1
+              },
+              "y": {
+                "type": "number",
+                "minimum": 0,
+                "exclusiveMaximum": true,
+                "maximum": 1
+              },
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": true,
+                "minimum": 0,
+                "maximum": 1
+              },
+              "height": {
+                "type": "number",
+                "exclusiveMinimum": true,
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "image_id",
+          "instrument_id",
+          "roi"
+        ],
+        "additionalProperties": false
+      },
       "LoginInput": {
         "type": "object",
         "properties": {
@@ -3834,7 +4260,7 @@
               "minLength": 1,
               "maxLength": 64
             },
-            "maxItems": 44,
+            "maxItems": 500,
             "default": []
           }
         },
@@ -3970,6 +4396,14 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 64
+          },
+          "instrument_revision": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0
+          },
+          "equipment_reassigned": {
+            "type": "boolean"
           },
           "final_value": {
             "anyOf": [
@@ -4232,10 +4666,27 @@
             "type": "array",
             "items": {
               "type": "string",
-              "minLength": 1,
-              "maxLength": 64
+              "enum": [
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "10",
+                "11",
+                "12",
+                "13",
+                "14",
+                "15",
+                "16",
+                "17"
+              ]
             },
-            "maxItems": 100
+            "maxItems": 17
           },
           "allowed_samplers": {
             "type": "array",
@@ -4306,6 +4757,15 @@
       "DefinitionUpdate": {
         "type": "object",
         "properties": {
+          "instrument_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 500
+          },
           "name": {
             "type": "string",
             "minLength": 1,
@@ -4628,6 +5088,362 @@
         ],
         "additionalProperties": false
       },
+      "DefinitionCreate": {
+        "type": "object",
+        "properties": {
+          "instrument_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 500
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "standard_text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "method_text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "tool": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "MPa",
+              "mm",
+              "kN",
+              "N",
+              "bar"
+            ],
+            "nullable": true
+          },
+          "limits": {
+            "type": "object",
+            "properties": {
+              "minimum": {
+                "type": "number"
+              },
+              "maximum": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "minimum",
+              "maximum"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "intervals": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "per_shift",
+                "weekly",
+                "every_4_hours",
+                "daily"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 4
+          },
+          "triggers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "routine",
+                "dandori",
+                "start_process"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 3
+          },
+          "review_reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "visual",
+              "functional",
+              "numeric",
+              "difference"
+            ]
+          },
+          "input_method": {
+            "type": "string",
+            "enum": [
+              "ok_ng",
+              "photo",
+              "photo_difference"
+            ]
+          },
+          "samples": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                }
+              },
+              "required": [
+                "id",
+                "label"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 20
+          },
+          "shifts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "day",
+                "night"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 2
+          },
+          "interval_guide": {
+            "type": "object",
+            "properties": {
+              "interval": {
+                "type": "string",
+                "enum": [
+                  "per_shift",
+                  "weekly",
+                  "every_4_hours",
+                  "daily"
+                ]
+              },
+              "description": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "day": {
+                "type": "object",
+                "properties": {
+                  "times": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "time": {
+                          "type": "string",
+                          "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                        },
+                        "day_offset": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1
+                        }
+                      },
+                      "required": [
+                        "time",
+                        "day_offset"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 24
+                  },
+                  "window": {
+                    "type": "object",
+                    "properties": {
+                      "start": {
+                        "type": "string",
+                        "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                      },
+                      "end": {
+                        "type": "string",
+                        "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                      },
+                      "end_day_offset": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1
+                      }
+                    },
+                    "required": [
+                      "start",
+                      "end",
+                      "end_day_offset"
+                    ],
+                    "additionalProperties": false,
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "times",
+                  "window"
+                ],
+                "additionalProperties": false
+              },
+              "night": {
+                "type": "object",
+                "properties": {
+                  "times": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "time": {
+                          "type": "string",
+                          "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                        },
+                        "day_offset": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1
+                        }
+                      },
+                      "required": [
+                        "time",
+                        "day_offset"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 24
+                  },
+                  "window": {
+                    "type": "object",
+                    "properties": {
+                      "start": {
+                        "type": "string",
+                        "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                      },
+                      "end": {
+                        "type": "string",
+                        "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                      },
+                      "end_day_offset": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1
+                      }
+                    },
+                    "required": [
+                      "start",
+                      "end",
+                      "end_day_offset"
+                    ],
+                    "additionalProperties": false,
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "times",
+                  "window"
+                ],
+                "additionalProperties": false
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            },
+            "required": [
+              "interval",
+              "description",
+              "day",
+              "night",
+              "note"
+            ],
+            "additionalProperties": false
+          },
+          "occurrence_rule": {
+            "type": "object",
+            "properties": {
+              "slot_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "maxItems": 4
+              },
+              "weekdays": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 7
+                },
+                "minItems": 1,
+                "maxItems": 7
+              }
+            },
+            "required": [
+              "slot_ids"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          }
+        },
+        "required": [
+          "name",
+          "standard_text",
+          "method_text",
+          "tool",
+          "unit",
+          "limits",
+          "intervals",
+          "triggers",
+          "review_reason",
+          "kind",
+          "input_method",
+          "samples",
+          "shifts"
+        ],
+        "additionalProperties": false
+      },
+      "DefinitionStatus": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "review_reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "active",
+          "review_reason"
+        ],
+        "additionalProperties": false
+      },
       "DiscoveryInput": {
         "type": "object",
         "properties": {
@@ -4831,7 +5647,7 @@
               "minLength": 1,
               "maxLength": 64
             },
-            "maxItems": 44,
+            "maxItems": 500,
             "default": []
           },
           "id": {
@@ -5422,6 +6238,13 @@
           "outcome_guide": {
             "type": "string"
           },
+          "active": {
+            "type": "boolean"
+          },
+          "archived_at": {
+            "type": "string",
+            "nullable": true
+          },
           "effective_at": {
             "type": "string"
           },
@@ -5529,10 +6352,27 @@
             "type": "array",
             "items": {
               "type": "string",
-              "minLength": 1,
-              "maxLength": 64
+              "enum": [
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "10",
+                "11",
+                "12",
+                "13",
+                "14",
+                "15",
+                "16",
+                "17"
+              ]
             },
-            "maxItems": 100
+            "maxItems": 17
           },
           "allowed_samplers": {
             "type": "array",
@@ -5877,7 +6717,7 @@
                   "minLength": 1,
                   "maxLength": 64
                 },
-                "maxItems": 44,
+                "maxItems": 500,
                 "default": []
               },
               "id": {
@@ -6346,7 +7186,7 @@
               "minLength": 1,
               "maxLength": 64
             },
-            "maxItems": 44,
+            "maxItems": 500,
             "default": []
           },
           "id": {
@@ -6679,6 +7519,13 @@
               },
               "outcome_guide": {
                 "type": "string"
+              },
+              "active": {
+                "type": "boolean"
+              },
+              "archived_at": {
+                "type": "string",
+                "nullable": true
               },
               "effective_at": {
                 "type": "string"
@@ -7963,6 +8810,83 @@
                 }
               }
             }
+          }
+        }
+      },
+      "MaintenanceDue": {
+        "type": "object",
+        "required": [
+          "schedule",
+          "line",
+          "items",
+          "pending_count",
+          "completed_count"
+        ],
+        "properties": {
+          "schedule": {
+            "$ref": "#/components/schemas/ServerSchedule"
+          },
+          "line": {
+            "type": "string"
+          },
+          "product_type_id": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "definition_id",
+                "definition_version",
+                "state",
+                "completed_record_id",
+                "occurrence_key",
+                "starts_at",
+                "next_starts_at",
+                "basis"
+              ],
+              "properties": {
+                "definition_id": {
+                  "type": "string"
+                },
+                "definition_version": {
+                  "type": "integer"
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "pending",
+                    "completed",
+                    "not_scheduled"
+                  ]
+                },
+                "completed_record_id": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "occurrence_key": {
+                  "type": "string"
+                },
+                "starts_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "next_starts_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "basis": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "pending_count": {
+            "type": "integer"
+          },
+          "completed_count": {
+            "type": "integer"
           }
         }
       },

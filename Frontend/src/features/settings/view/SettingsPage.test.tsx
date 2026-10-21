@@ -1,13 +1,16 @@
 import { it, expect, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
-import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { server } from '../../../test/server';
 import { renderApp } from '../../../test/render';
-import { envelope, fixtureDefinition } from '../../../test/fixtures';
+import { envelope, fixtureDefinition, fixtureInstrument } from '../../../test/fixtures';
 import { SettingsPage } from './SettingsPage';
 import { DefinitionEditor } from './DefinitionEditor';
 it('settings preserve structured source guidance and require a revision reason', async () => {
   server.use(
+    http.get('/api/v1/instruments', () =>
+      HttpResponse.json(envelope({ items: [], next_cursor: null })),
+    ),
     http.get('/api/v1/auth/me', () =>
       HttpResponse.json(envelope({ id: 'a', username: 'Admin', role: 'Admin' })),
     ),
@@ -36,6 +39,92 @@ it('settings preserve structured source guidance and require a revision reason',
   fireEvent.click(screen.getByRole('button', { name: 'Edit EE Cutting' }));
   expect(screen.getByLabelText('Alasan revisi')).toBeRequired();
   expect(screen.getByDisplayValue('1 kali per shift')).toBeVisible();
+});
+
+it('admin adds a linked inspection and removes it from active options while retaining its row', async () => {
+  let rows = [fixtureDefinition()],
+    created: Record<string, unknown> | null = null,
+    status: Record<string, unknown> | null = null;
+  server.use(
+    http.get('/api/v1/auth/me', () =>
+      HttpResponse.json(envelope({ id: 'a', username: 'Admin', role: 'Admin' })),
+    ),
+    http.get('/api/v1/auth/csrf', () => HttpResponse.json(envelope({ csrf_token: 'test-csrf' }))),
+    http.get('/api/v1/maintenance/settings', () =>
+      HttpResponse.json(
+        envelope({
+          lines: ['17'],
+          allowed_samplers: ['Ldr'],
+          night_rollover_hour: 12,
+          product_types: [],
+        }),
+      ),
+    ),
+    http.get('/api/v1/maintenance/catalog', () =>
+      HttpResponse.json(
+        envelope({
+          items: rows,
+          count: rows.length,
+          source_gaps: { missing_rows: [], clipped_row: 45 },
+        }),
+      ),
+    ),
+    http.get('/api/v1/instruments', () =>
+      HttpResponse.json(envelope({ items: [fixtureInstrument()], next_cursor: null })),
+    ),
+    http.post('/api/v1/maintenance/definitions', async ({ request }) => {
+      created = (await request.json()) as Record<string, unknown>;
+      const d = fixtureDefinition({
+        ...created,
+        id: 'custom-check',
+        name: 'Packing tambahan',
+        kind: 'visual',
+        input_method: 'ok_ng',
+        unit: null,
+        limits: null,
+        active: true,
+      });
+      rows = [...rows, d];
+      return HttpResponse.json(envelope(d), { status: 201 });
+    }),
+    http.put('/api/v1/maintenance/definitions/custom-check/status', async ({ request }) => {
+      status = (await request.json()) as Record<string, unknown>;
+      rows = rows.map((d) => (d.id === 'custom-check' ? { ...d, active: false } : d));
+      return HttpResponse.json(envelope(rows[1]));
+    }),
+  );
+  renderApp(<SettingsPage />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Tambah pemeriksaan' }));
+  const dialog = within(screen.getByRole('dialog'));
+  fireEvent.change(dialog.getByLabelText('Nama pemeriksaan'), {
+    target: { value: 'Packing tambahan' },
+  });
+  fireEvent.change(dialog.getByLabelText('Persyaratan / standar'), {
+    target: { value: 'Tidak rusak' },
+  });
+  fireEvent.change(dialog.getByLabelText('Metode pemeriksaan'), {
+    target: { value: 'Lihat dan raba' },
+  });
+  fireEvent.click(await dialog.findByLabelText('Kaliper'));
+  fireEvent.change(dialog.getByLabelText('Alasan revisi'), {
+    target: { value: 'Tambahan disetujui' },
+  });
+  fireEvent.click(dialog.getByRole('button', { name: 'Tambah pemeriksaan' }));
+  await waitFor(() =>
+    expect(created).toMatchObject({
+      name: 'Packing tambahan',
+      input_method: 'ok_ng',
+      instrument_ids: ['g1'],
+    }),
+  );
+  const row = (await screen.findByText('Packing tambahan')).closest('tr')!;
+  fireEvent.click(within(row).getByRole('button', { name: 'Hapus dari pilihan' }));
+  fireEvent.change(screen.getByLabelText('Alasan perubahan status'), {
+    target: { value: 'Tidak digunakan' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Simpan status' }));
+  await waitFor(() => expect(status).toEqual({ active: false, review_reason: 'Tidak digunakan' }));
+  expect(await screen.findByText('Nonaktif')).toBeVisible();
 });
 it('weekly edit sends explicit weekdays and retains original paper time guidance', async () => {
   const d = fixtureDefinition({ intervals: ['weekly'] });
@@ -80,4 +169,48 @@ it('clearing all occurrence slots explicitly resets the saved rule', async () =>
   fireEvent.click(screen.getByRole('button', { name: 'Simpan revisi' }));
   await waitFor(() => expect(save).toHaveBeenCalled());
   expect(save.mock.calls[0][0].occurrence_rule).toBeNull();
+});
+
+it('settings add or remove active lines1 to17 and sampler options through controls', async () => {
+  let saved: { lines: string[]; allowed_samplers: string[] } | undefined;
+  server.use(
+    http.get('/api/v1/auth/csrf', () => HttpResponse.json(envelope({ csrf_token: 'test-csrf' }))),
+    http.get('/api/v1/auth/me', () =>
+      HttpResponse.json(envelope({ id: 'a', username: 'Admin', role: 'Admin' })),
+    ),
+    http.get('/api/v1/maintenance/settings', () =>
+      HttpResponse.json(
+        envelope({
+          lines: ['17'],
+          allowed_samplers: ['Ldr'],
+          night_rollover_hour: 12,
+          product_types: [],
+        }),
+      ),
+    ),
+    http.get('/api/v1/maintenance/catalog', () =>
+      HttpResponse.json(
+        envelope({ items: [], count: 0, source_gaps: { missing_rows: [], clipped_row: null } }),
+      ),
+    ),
+    http.put('/api/v1/maintenance/settings', async ({ request }) => {
+      saved = (await request.json()) as typeof saved;
+      return HttpResponse.json(envelope({ value: saved, version: 2 }));
+    }),
+  );
+  renderApp(<SettingsPage />);
+  fireEvent.click(await screen.findByRole('tab', { name: 'Line, sampler & Type' }));
+  const first = await screen.findByLabelText('Line 1');
+  expect(screen.queryByLabelText('Line 18')).not.toBeInTheDocument();
+  fireEvent.click(first);
+  fireEvent.click(screen.getByLabelText('Line 17'));
+  fireEvent.change(screen.getByLabelText('Tambah sampler'), { target: { value: 'Leader 2' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Tambah sampler' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Hapus sampler Ldr' }));
+  fireEvent.change(screen.getByLabelText('Alasan perubahan pengaturan'), {
+    target: { value: 'Aktifkan line dan sampler.' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: /Simpan pengaturan/ }));
+  await waitFor(() => expect(saved?.lines).toEqual(['1']));
+  expect(saved?.allowed_samplers).toEqual(['Leader 2']);
 });

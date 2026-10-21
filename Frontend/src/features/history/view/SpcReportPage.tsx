@@ -28,7 +28,7 @@ export function SpcReportPage() {
     f = useReportFilters(),
     navigate = useNavigate(),
     [params, setParams] = useSearchParams(),
-    catalog = useCatalog(),
+    catalog = useCatalog(true),
     session = useSession(),
     baselines = useBaselines(),
     [chosen, setChosen] = useState(''),

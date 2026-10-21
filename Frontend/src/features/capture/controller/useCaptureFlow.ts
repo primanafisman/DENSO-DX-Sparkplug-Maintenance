@@ -1,4 +1,5 @@
 import { snapshotPhoto } from '../model/photoFile';
+import { sameProfile } from '../model/profileCompatibility';
 import { useEffect, useRef } from 'react';
 import { useStore } from 'zustand';
 import { useNavigate } from 'react-router-dom';
@@ -78,6 +79,7 @@ export function createCaptureFlow({
       stage: 'idle',
       error: null,
       generation,
+      manualPreparing: false,
     });
     return generation;
   }
@@ -134,11 +136,37 @@ export function createCaptureFlow({
         label = blobs[1].status === 'fulfilled' ? blobs[1].value : null;
       store.setState({
         result: job.results[0],
+        analysisProfile: profile,
+        analysisInstrumentId: item.instrument_id ?? null,
+        requiresReanalysis: false,
         stage: 'ready',
         error: null,
         gaugeUrl: gauge ? URL.createObjectURL(gauge) : '',
         labelUrl: label ? URL.createObjectURL(label) : '',
       });
+      const match = job.results[0].label;
+      if (
+        !state.instrument &&
+        match?.level === 'high' &&
+        !match.conflict &&
+        match.requires_operator_selection === false &&
+        typeof match.suggested_id === 'string'
+      ) {
+        const asset = state.instruments.find(
+          (a) =>
+            a.id === match.suggested_id &&
+            a.active &&
+            a.measurement_mode !== 'visual' &&
+            a.condition !== 'not_working' &&
+            a.profile,
+        );
+        if (asset)
+          store.setState({
+            instrument: asset,
+            profile: asset.profile,
+            requiresReanalysis: !sameProfile(profile, asset.profile, job.results[0].candidate.kind),
+          });
+      }
       onResult();
       return job.results[0];
     } catch (error) {
@@ -156,7 +184,15 @@ export function createCaptureFlow({
       labelUrl: '',
       photo: null,
       discovery: null,
+      instruments: [],
       instrument: null,
+      profile: null,
+      analysisProfile: null,
+      analysisInstrumentId: null,
+      requiresReanalysis: false,
+      proposalIndex: 0,
+      roi: { x: 0, y: 0, width: 1, height: 1 },
+      label_roi: null,
       stage: 'uploading',
     });
     try {
@@ -166,21 +202,31 @@ export function createCaptureFlow({
       const photo = await api.upload(ownedFile, input.context, controller.signal);
       if (!current(id)) return null;
       store.setState({ photo, stage: 'locating' });
-      const [discovery, instruments] = await Promise.all([
+      const [discoveryResponse, instrumentResponse] = await Promise.allSettled([
         api.discover(photo.image_id, input.context.line, controller.signal),
         api.instruments(),
       ]);
       if (!current(id)) return null;
+      if (instrumentResponse.status === 'fulfilled')
+        store.setState({ instruments: instrumentResponse.value });
+      if (discoveryResponse.status === 'rejected') throw discoveryResponse.reason;
+      if (instrumentResponse.status === 'rejected') throw instrumentResponse.reason;
+      const discovery = discoveryResponse.value,
+        instruments = instrumentResponse.value;
       const proposed =
         discovery.instruments.find(
           (p) => p.instrument?.id && p.profile_source === 'registered-equipment',
         ) ?? discovery.instruments[0];
-      const linked = instruments.filter(
-        (a) => !input.definition || a.maintenance_check_ids.includes(input.definition.id),
-      );
       const instrument =
         (proposed?.profile_source === 'registered-equipment'
-          ? linked.find((a) => a.id === proposed.instrument?.id)
+          ? instruments.find(
+              (a) =>
+                a.id === proposed.instrument?.id &&
+                a.active &&
+                a.measurement_mode !== 'visual' &&
+                a.condition !== 'not_working' &&
+                a.profile,
+            )
           : null) ?? null;
       store.setState({
         discovery,
@@ -197,14 +243,63 @@ export function createCaptureFlow({
     }
   }
   async function selectInstrument(asset: Instrument | null) {
-    const id = invalidate();
-    store.setState({ instrument: asset, profile: asset?.profile ?? null });
-    return analyze(id);
+    const state = store.getState();
+    if (state.pending || state.reading)
+      throw new Error('Periksa konfirmasi dan riwayat sebelum mengganti alat.');
+    controller.abort();
+    controller = new AbortController();
+    generation++;
+    const sourceProfile = state.analysisProfile ?? state.profile;
+    store.setState({
+      instrument: asset,
+      profile: asset?.profile ?? state.profile,
+      analysisProfile: sourceProfile,
+      generation,
+      error: null,
+      stage: state.result ? 'ready' : 'idle',
+      requiresReanalysis:
+        !!asset &&
+        !!state.result &&
+        !sameProfile(sourceProfile, asset.profile, state.result.candidate.kind),
+    });
+    return state.result;
   }
   async function regions(roi: ROI, label_roi: ROI | null) {
     const id = invalidate();
     store.setState({ roi, label_roi });
     return analyze(id);
+  }
+  async function manual() {
+    const state = store.getState();
+    if (state.pending || state.reading)
+      throw new Error('Periksa konfirmasi sebelumnya di riwayat.');
+    if (!state.photo || !state.instrument?.profile)
+      throw new Error('Unggah foto dan pilih alat terlebih dahulu.');
+    const id = invalidate();
+    store.setState({ manualPreparing: true });
+    try {
+      const result = await api.manual(
+        state.photo.image_id,
+        state.instrument.id,
+        state.roi,
+        state.label_roi,
+        controller.signal,
+      );
+      if (!current(id)) return null;
+      store.setState({
+        result,
+        stage: 'ready',
+        profile: state.instrument.profile,
+        analysisProfile: state.instrument.profile,
+        analysisInstrumentId: state.instrument.id,
+        requiresReanalysis: false,
+        manualPreparing: false,
+      });
+      return result;
+    } catch (error) {
+      if (current(id)) store.setState({ manualPreparing: false });
+      return failed(error, id);
+    }
   }
   async function proposal(index: number) {
     const p = store.getState().discovery?.instruments[index];
@@ -232,6 +327,8 @@ export function createCaptureFlow({
     if (!parsed.success) throw new Error('Periksa angka dan konfirmasi.');
     if (!state.result || !state.instrument || !input.definition)
       throw new Error('Pilih alat dan pemeriksaan, lalu analisis foto.');
+    if (state.requiresReanalysis)
+      throw new Error('Profil alat berbeda. Baca ulang dengan profil alat sebelum konfirmasi.');
     if (
       (!state.result.confidence.valid ||
         state.result.validated_prediction === null ||
@@ -242,6 +339,11 @@ export function createCaptureFlow({
     const data: Confirmation = {
       analysis_id: state.result.analysis_id,
       instrument_id: state.instrument.id,
+      instrument_revision: state.instrument.revision,
+      ...(state.analysisInstrumentId !== state.instrument.id ||
+      state.analysisProfile?.kind !== state.instrument.profile?.kind
+        ? { equipment_reassigned: true }
+        : {}),
       final_value: parsed.data.final_value,
       identity_verified: true,
       verified: true,
@@ -273,6 +375,7 @@ export function createCaptureFlow({
     clearError: () => store.setState({ error: null }),
     invalidate,
     selectInstrument,
+    manual,
     regions,
     proposal,
     confirm,

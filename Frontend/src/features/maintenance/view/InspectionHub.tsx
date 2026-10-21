@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Camera, Upload, ArrowRight, ClipboardCheck } from 'lucide-react';
 import { useSession } from '../../auth/controller/useSession';
 import { useSettings } from '../../settings/controller/useSettings';
-import { useInspection } from '../controller/useInspection';
+import { useInspection, useMaintenanceDue } from '../controller/useInspection';
 import { InspectionContextForm } from './InspectionContextForm';
 import type { ContextSelection } from './InspectionContextForm';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
@@ -19,15 +19,39 @@ export function InspectionHub() {
   const state = useInspection(),
     { user } = useSession(),
     settings = useSettings(),
-    [selection, setSelection] = useState<ContextSelection>({ line: '', sampler: 'Ldr' }),
+    [selection, setSelection] = useState<ContextSelection>({ line: '', sampler: '' }),
     [q, setQ] = useState(''),
     [kind, setKind] = useState(''),
     [requirement, setRequirement] = useState(''),
     [group, setGroup] = useState('');
+  const due = useMaintenanceDue(selection.line, selection.product_type_id);
   const defs = settings.catalog.data?.items ?? [],
-    canWrite = user?.role === 'Admin' || user?.role === 'Operator';
+    canWrite =
+      (user?.role === 'Admin' || user?.role === 'Operator') &&
+      !!settings.settings.data?.lines.includes(selection.line) &&
+      !!settings.settings.data?.allowed_samplers.includes(selection.sampler);
+  useEffect(() => {
+    const configured = settings.settings.data;
+    if (!configured) return;
+    setSelection((old) => ({
+      ...old,
+      line: configured.lines.includes(old.line)
+        ? old.line
+        : configured.lines.length === 1
+          ? configured.lines[0]
+          : '',
+      sampler: configured.allowed_samplers.includes(old.sampler)
+        ? old.sampler
+        : configured.allowed_samplers.length === 1
+          ? configured.allowed_samplers[0]
+          : '',
+    }));
+  }, [settings.settings.data]);
   const filtered = defs.filter(
     (d) =>
+      !!selection.line &&
+      due.data?.items.some((i) => i.definition_id === d.id && i.state === 'pending') === true &&
+      !due.isError &&
       (!q || d.name.toLowerCase().includes(q.toLowerCase())) &&
       (!kind || d.input_method === kind) &&
       (!requirement || d.requirement_tags.includes(requirement)) &&
@@ -78,7 +102,7 @@ export function InspectionHub() {
       <Card>
         <div className="row between section-title">
           <h2>Daftar pemeriksaan</h2>
-          <Badge>{settings.catalog.data?.count ?? 0} pilihan pemeriksaan</Badge>
+          <Badge>{due.data?.pending_count ?? 0} belum diperiksa</Badge>
         </div>
         {!canWrite && (
           <p className="info-note">
@@ -124,7 +148,27 @@ export function InspectionHub() {
             </select>
           </Field>
         </div>
-        {settings.catalog.isPending ? (
+        {!selection.line && (
+          <p className="info-note">Pilih line untuk melihat pemeriksaan yang belum selesai.</p>
+        )}
+        {selection.line && due.data && (
+          <p className="muted">
+            {due.data.completed_count} pemeriksaan sudah selesai pada jadwal ini. Item muncul
+            kembali saat jadwal berikutnya; hasil OK / NG tetap ada di Riwayat.
+          </p>
+        )}
+        <ErrorMessage error={due.error} />
+        {due.isError && (
+          <Button variant="secondary" onClick={() => due.refetch()}>
+            Muat ulang jadwal
+          </Button>
+        )}
+        {selection.line && due.data?.pending_count === 0 && !due.isError && (
+          <p className="info-note">
+            Semua pemeriksaan pada jadwal ini sudah selesai atau belum waktunya.
+          </p>
+        )}
+        {settings.catalog.isPending || (!!selection.line && due.isPending) ? (
           <Loading />
         ) : (
           <div className="inspection-list">

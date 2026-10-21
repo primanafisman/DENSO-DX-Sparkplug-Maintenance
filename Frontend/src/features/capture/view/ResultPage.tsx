@@ -1,42 +1,25 @@
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useCapture } from '../controller/captureContext';
 import { useInspectionStore } from '../../maintenance/model/inspectionStore';
-import { useCatalog } from '../../settings/controller/useSettings';
+import { useResultSelection } from '../controller/useResultSelection';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { Card, Field, Badge, Loading, ErrorMessage, Button } from '../../../shared/components/ui';
 import { number } from '../../../shared/lib/format';
-import { useEffect } from 'react';
 export function ResultPage() {
   const { state, engine } = useCapture(),
     store = useInspectionStore(),
-    catalog = useCatalog(),
+    selection = useResultSelection(),
     navigate = useNavigate();
-  useEffect(() => {
-    if (!store.draft?.definition && state.instrument) {
-      const options =
-        catalog.data?.items.filter(
-          (d) =>
-            d.input_method !== 'ok_ng' && state.instrument!.maintenance_check_ids.includes(d.id),
-        ) ?? [];
-      if (options.length === 1) store.setDefinition(options[0]);
-    }
-  }, [state.instrument, catalog.data, store]);
   if (!state.file) return <Navigate to="/pemeriksaan/foto" replace />;
-  const busy = ['queued', 'reading', 'locating', 'uploading'].includes(state.stage),
+  const busy =
+      state.manualPreparing || ['queued', 'reading', 'locating', 'uploading'].includes(state.stage),
     result = state.result,
     valid =
       result?.confidence.valid &&
       result.validated_prediction !== null &&
       result.validated_prediction !== undefined;
-  const candidates = state.instruments.filter(
-    (a) => !store.draft?.definition || a.maintenance_check_ids.includes(store.draft.definition.id),
-  );
-  const checks =
-    catalog.data?.items.filter(
-      (d) =>
-        d.input_method !== 'ok_ng' &&
-        (!state.instrument || state.instrument.maintenance_check_ids.includes(d.id)),
-    ) ?? [];
+  const { candidates, checks } = selection;
+  const resultProfile = state.analysisProfile ?? state.profile;
   const label = result?.label ?? state.discovery?.instruments[state.proposalIndex]?.label;
   const raw =
     label && typeof label.raw_text === 'string'
@@ -44,27 +27,25 @@ export function ResultPage() {
       : label && typeof label.text === 'string'
         ? label.text
         : '';
-  const select = (id: string) => {
-    const asset = state.instruments.find((a) => a.id === id) ?? null;
-    if (!store.draft?.definition && asset?.maintenance_check_ids.length === 1) {
-      const check = catalog.data?.items.find((d) => d.id === asset.maintenance_check_ids[0]);
-      if (check) store.setDefinition(check);
-    }
-    void engine.selectInstrument(asset);
-  };
   return (
     <>
       <PageHeader title="Hasil pembacaan" description="Periksa angka, crop dan identitas alat." />
       <Card>
         {busy ? (
-          <Loading label="Menganalisis ulang crop / profil…" />
+          <Loading
+            label={
+              state.manualPreparing
+                ? 'Menyiapkan input manual…'
+                : 'Menganalisis ulang crop / profil…'
+            }
+          />
         ) : (
           <>
             <div className={'reading-value ' + (!valid ? 'unread' : '')}>
               {valid
-                ? number(result!.validated_prediction, state.profile?.decimals ?? 3) +
+                ? number(result!.validated_prediction, resultProfile?.decimals ?? 3) +
                   ' ' +
-                  (state.profile?.unit ?? '')
+                  (resultProfile?.unit ?? '')
                 : 'Belum terbaca'}
             </div>
             <div className="row wrap">
@@ -130,7 +111,11 @@ export function ResultPage() {
                 label="Nama alat"
                 hint="Label adalah saran; identitas tetap dikonfirmasi operator."
               >
-                <select value={state.instrument?.id ?? ''} onChange={(e) => select(e.target.value)}>
+                <select
+                  disabled={selection.locked}
+                  value={state.instrument?.id ?? ''}
+                  onChange={(e) => void selection.selectInstrument(e.target.value)}
+                >
                   <option value="">Pilih nama alat</option>
                   {candidates.map((a) => (
                     <option key={a.id} value={a.id}>
@@ -142,18 +127,9 @@ export function ResultPage() {
               </Field>
               <Field label="Pemeriksaan">
                 <select
+                  disabled={selection.locked}
                   value={store.draft?.definition?.id ?? ''}
-                  onChange={(e) => {
-                    const d = catalog.data?.items.find((d) => d.id === e.target.value);
-                    if (d) {
-                      store.setDefinition(d);
-                      if (
-                        state.instrument &&
-                        !state.instrument.maintenance_check_ids.includes(d.id)
-                      )
-                        void engine.selectInstrument(null);
-                    }
-                  }}
+                  onChange={(e) => void selection.selectCheck(e.target.value)}
                 >
                   <option value="">Pilih pemeriksaan</option>
                   {checks.map((d) => (
@@ -164,6 +140,22 @@ export function ResultPage() {
                 </select>
               </Field>
             </div>
+            {state.requiresReanalysis && (
+              <p className="info-note">
+                Profil alat berbeda dari pembacaan foto ini. Hasil di atas tetap memakai satuan
+                asli. Pilih baca ulang, atau isi angka manual berdasarkan foto.
+              </p>
+            )}
+            {state.instrument && (state.requiresReanalysis || !result) && (
+              <Button variant="secondary" onClick={() => void engine.reanalyse()}>
+                Baca ulang dengan profil alat
+              </Button>
+            )}
+            {state.instrument && !state.instrument.maintenance_check_ids.length && (
+              <p className="info-note">
+                Alat ini belum ditautkan ke pemeriksaan. Atur hubungan alat di Peralatan.
+              </p>
+            )}
             {state.instrument?.condition === 'unknown' && (
               <p className="info-note">
                 Kondisi alat belum tercatat. Periksa kelayakan alat sebelum konfirmasi.
@@ -184,7 +176,24 @@ export function ResultPage() {
                 Foto ulang
               </Link>
               <Button
-                disabled={!result || !state.instrument || !store.draft?.definition}
+                variant="secondary"
+                disabled={
+                  !state.photo || !state.instrument || !store.draft?.definition || selection.locked
+                }
+                onClick={async () => {
+                  const result = await engine.manual();
+                  if (result) navigate('/pemeriksaan/konfirmasi');
+                }}
+              >
+                Isi angka manual
+              </Button>
+              <Button
+                disabled={
+                  !result ||
+                  !state.instrument ||
+                  !store.draft?.definition ||
+                  state.requiresReanalysis
+                }
                 onClick={() => navigate('/pemeriksaan/konfirmasi')}
               >
                 Lanjut · konfirmasi

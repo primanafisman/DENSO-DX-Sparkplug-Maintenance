@@ -1144,3 +1144,20 @@
     flex-shrink: 0;
   }
 }
+
+.active-line-options {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 0;
+}
+.line-option-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 6px;
+}
+.sampler-options {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}

@@ -16,41 +16,28 @@ export function InspectionContextForm({
     <>
       <div className="context-grid">
         <Field label="Line">
-          {settings.lines.length ? (
-            <select
-              value={value.line}
-              onChange={(e) => onChange({ ...value, line: e.target.value })}
-            >
-              <option value="">Pilih line</option>
-              {settings.lines.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
-          ) : (
-            <input
-              value={value.line}
-              onChange={(e) => onChange({ ...value, line: e.target.value })}
-              placeholder="Masukkan line"
-            />
-          )}
+          <select
+            disabled={!settings.lines.length}
+            value={value.line}
+            onChange={(e) => onChange({ ...value, line: e.target.value })}
+          >
+            <option value="">Pilih line</option>
+            {settings.lines.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
         </Field>
         <Field label="Sampler">
-          {settings.allowed_samplers.length ? (
-            <select
-              value={value.sampler}
-              onChange={(e) => onChange({ ...value, sampler: e.target.value })}
-            >
-              <option value="">Pilih sampler</option>
-              {settings.allowed_samplers.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
-          ) : (
-            <input
-              value={value.sampler}
-              onChange={(e) => onChange({ ...value, sampler: e.target.value })}
-            />
-          )}
+          <select
+            disabled={!settings.allowed_samplers.length}
+            value={value.sampler}
+            onChange={(e) => onChange({ ...value, sampler: e.target.value })}
+          >
+            <option value="">Pilih sampler</option>
+            {settings.allowed_samplers.map((s) => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
         </Field>
         <Field label="Type produk">
           <select

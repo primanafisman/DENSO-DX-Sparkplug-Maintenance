@@ -65,6 +65,22 @@
       }
     },
     {
+      "name": "Prepare photo-backed operator entry without OCR",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/v1/analysis-jobs/manual",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Pending checks for a line using server-clock recurrence",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/maintenance/due",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
       "name": "Current server-clock WIB shift and latest inspection start",
       "request": {
         "method": "GET",
@@ -246,7 +262,23 @@
       }
     },
     {
-      "name": "44 reviewed checklist/chart definitions and source gaps",
+      "name": "Admin creates an inspection with equipment links",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/v1/maintenance/definitions",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Admin archives or reactivates an inspection; history retained",
+      "request": {
+        "method": "PUT",
+        "url": "{{base_url}}/api/v1/maintenance/definitions/{id}/status",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Active reviewed and custom checks; include_inactive=true retains archived standards",
       "request": {
         "method": "GET",
         "url": "{{base_url}}/api/v1/maintenance/catalog",

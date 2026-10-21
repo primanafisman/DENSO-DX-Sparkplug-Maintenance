@@ -6,6 +6,7 @@ import type {
   Instrument,
   Page,
   AnalysisItem,
+  AnalysisResult,
   Job,
   ROI,
   Confirmation,
@@ -48,4 +49,16 @@ export const captureApi = {
   crop: (id: string, roi: ROI, signal?: AbortSignal) =>
     cropBinary('/photos/' + encodeURIComponent(id) + '/crop', roi, signal),
   confirm: (body: Confirmation) => write<ConfirmedReading>('/readings/confirm', body),
+  manual: (
+    image_id: string,
+    instrument_id: string,
+    roi: ROI,
+    label_roi: ROI | null,
+    signal?: AbortSignal,
+  ) =>
+    write<AnalysisResult>(
+      '/analysis-jobs/manual',
+      { image_id, instrument_id, roi, ...(label_roi ? { label_roi } : {}) },
+      { signal },
+    ),
 };

@@ -73,7 +73,7 @@ function setup() {
       confidence_calibrated: false as const,
     })),
     instruments: vi.fn(async () => [instrument]),
-    submit: vi.fn(async () => job),
+    submit: vi.fn<typeof captureApi.submit>(async () => job),
     job: vi.fn(async () => job),
     crop: vi.fn(async () => new Blob(['x'], { type: 'image/jpeg' })),
     confirm: vi.fn(
@@ -185,4 +185,193 @@ it('unresolved label never silently selects the sole linked instrument', async (
   expect(state.getState().instrument).toBeNull();
   expect(state.getState().result?.validated_prediction).toBe(0);
   engine.dispose();
+});
+
+it('choosing another registered instrument preserves the result and crop without running CV again', async () => {
+  const { engine, api, state } = setup();
+  await engine.upload(new File(['x'], 'x.jpg', { type: 'image/jpeg' }));
+  const result = state.getState().result,
+    crop = state.getState().gaugeUrl;
+  const other = fixtureInstrument({
+    id: 'g2',
+    name: 'Pressure B',
+    profile,
+    maintenance_check_ids: ['check'],
+    revision: 7,
+  });
+  await engine.selectInstrument(other);
+  expect(api.submit).toHaveBeenCalledTimes(1);
+  expect(state.getState().result).toBe(result);
+  expect(state.getState().gaugeUrl).toBe(crop);
+  await engine.confirm({
+    final_value: '0.000',
+    identity_verified: true,
+    verified: true,
+    reason: '',
+  });
+  expect(api.confirm.mock.calls[0][0]).toMatchObject({
+    instrument_id: 'g2',
+    instrument_revision: 7,
+    equipment_reassigned: true,
+  });
+});
+it('changing to an incompatible equipment profile retains the source result until an explicit reread', async () => {
+  const { engine, api, state } = setup();
+  await engine.upload(new File(['x'], 'x.jpg', { type: 'image/jpeg' }));
+  const result = state.getState().result;
+  await engine.selectInstrument(fixtureInstrument({ profile: { ...profile, unit: 'mm' } }));
+  expect(api.submit).toHaveBeenCalledTimes(1);
+  expect(state.getState().result).toBe(result);
+  await expect(
+    engine.confirm({ final_value: '0.000', identity_verified: true, verified: true, reason: '' }),
+  ).rejects.toThrow(/profil/i);
+  expect(api.confirm).not.toHaveBeenCalled();
+  await engine.reanalyse();
+  expect(api.submit).toHaveBeenCalledTimes(2);
+  expect(api.submit.mock.calls[1][1][0].profile.unit).toBe('mm');
+});
+it('an uncertain reading confirmation cannot be reassigned to another instrument', async () => {
+  const { engine, api, state } = setup();
+  await engine.upload(new File(['x'], 'x.jpg', { type: 'image/jpeg' }));
+  api.confirm.mockRejectedValueOnce(new ApiError('lost', 0));
+  await expect(
+    engine.confirm({ final_value: '0.000', identity_verified: true, verified: true, reason: '' }),
+  ).rejects.toThrow('lost');
+  await expect(engine.selectInstrument(fixtureInstrument({ id: 'g2', profile }))).rejects.toThrow(
+    /konfirmasi|riwayat/i,
+  );
+  expect(state.getState().instrument?.id).toBe(instrument.id);
+  expect(state.getState().pending).not.toBeNull();
+});
+
+it('manual input from an uploaded photo creates unvalidated evidence without another CV job', async () => {
+  const { engine, api, state } = setup();
+  await engine.upload(new File(['x'], 'x.jpg', { type: 'image/jpeg' }));
+  api.manual = vi.fn<typeof captureApi.manual>(async () => ({
+    ...job.results[0],
+    analysis_id: 'manual',
+    candidate: { readable: false, value: null, unit: 'MPa', kind: 'unknown' },
+    validated_prediction: null,
+    confidence: { valid: false, level: 'low' },
+  }));
+  await engine.manual();
+  expect(api.submit).toHaveBeenCalledTimes(1);
+  expect(state.getState().result?.analysis_id).toBe('manual');
+  expect(state.getState().result?.confidence.valid).toBe(false);
+  await expect(
+    engine.confirm({ final_value: '0.427', verified: true, identity_verified: true, reason: '' }),
+  ).rejects.toThrow(/alasan/i);
+  await engine.confirm({
+    final_value: '0.427',
+    verified: true,
+    identity_verified: true,
+    reason: 'Baca angka langsung dari foto.',
+  });
+  expect(api.confirm.mock.calls[0][0].final_value).toBe('0.427');
+});
+
+it('failed gauge discovery retains registered choices and allows photo-backed manual entry without CV', async () => {
+  const { engine, api, state } = setup();
+  api.discover.mockRejectedValueOnce(new Error('Gauge tidak ditemukan.'));
+  api.manual = vi.fn<typeof captureApi.manual>(async () => ({
+    ...job.results[0],
+    analysis_id: 'manual-fallback',
+    candidate: { readable: false, value: null, unit: 'MPa', kind: 'unknown' },
+    validated_prediction: null,
+    confidence: { valid: false, level: 'low' },
+  }));
+  await engine.upload(new File(['x'], 'unclear.jpg', { type: 'image/jpeg' }));
+  expect(state.getState().photo?.image_id).toBe('p');
+  expect(state.getState().instruments.map((a) => a.id)).toEqual([instrument.id]);
+  await engine.selectInstrument(instrument);
+  await engine.manual();
+  expect(state.getState().result?.analysis_id).toBe('manual-fallback');
+  expect(api.submit).not.toHaveBeenCalled();
+});
+
+it('a registered label match can replace equipment linked to an earlier different inspection', async () => {
+  const { engine, api, state } = setup();
+  const recognized = fixtureInstrument({
+    id: 'registered',
+    profile,
+    maintenance_check_ids: ['another-check'],
+  });
+  api.instruments.mockResolvedValueOnce([instrument, recognized]);
+  api.discover.mockResolvedValueOnce({
+    instruments: [
+      {
+        client_id: 'indicator',
+        roi: { x: 0, y: 0, width: 1, height: 1 },
+        label_roi: null,
+        instrument: recognized,
+        suggested_profile: profile,
+        profile_source: 'registered-equipment',
+        requires_confirmation: true,
+        requires_profile_confirmation: true,
+        kind_hint: 'digital',
+      },
+    ],
+    warnings: [],
+    confidence_calibrated: false,
+  });
+  await engine.upload(new File(['x'], 'registered.jpg', { type: 'image/jpeg' }));
+  expect(state.getState().instrument?.id).toBe('registered');
+  expect(api.submit).toHaveBeenCalledTimes(1);
+});
+it('a high unambiguous name found during reading fills equipment without another CV job', async () => {
+  const { engine, api, state } = setup();
+  api.discover.mockResolvedValueOnce({
+    instruments: [
+      {
+        client_id: 'indicator',
+        roi: { x: 0, y: 0, width: 1, height: 1 },
+        label_roi: null,
+        instrument: null,
+        suggested_profile: profile,
+        profile_source: 'display-default',
+        requires_confirmation: true,
+        requires_profile_confirmation: true,
+        kind_hint: 'digital',
+      },
+    ],
+    warnings: [],
+    confidence_calibrated: false,
+  });
+  api.submit.mockResolvedValueOnce({
+    ...job,
+    results: [
+      {
+        ...job.results[0],
+        label: {
+          suggested_id: instrument.id,
+          level: 'high',
+          conflict: false,
+          requires_operator_selection: false,
+        },
+      },
+    ],
+  });
+  await engine.upload(new File(['x'], 'label.jpg', { type: 'image/jpeg' }));
+  expect(state.getState().instrument?.id).toBe(instrument.id);
+  expect(state.getState().result?.validated_prediction).toBe(0);
+  expect(api.submit).toHaveBeenCalledTimes(1);
+});
+it('auto and digital profile kinds reuse a known digital result when all physical parameters match', async () => {
+  const { engine, api, state } = setup();
+  await engine.upload(new File(['x'], 'gauge.jpg', { type: 'image/jpeg' }));
+  await engine.selectInstrument(
+    fixtureInstrument({
+      id: 'g2',
+      profile: { ...profile, kind: 'digital' },
+      maintenance_check_ids: ['check'],
+    }),
+  );
+  expect(state.getState().requiresReanalysis).toBe(false);
+  await engine.confirm({
+    final_value: '0.000',
+    verified: true,
+    identity_verified: true,
+    reason: '',
+  });
+  expect(api.submit).toHaveBeenCalledTimes(1);
 });

@@ -31,7 +31,7 @@ export const useInspectionStore = create<{
   saveState: 'editing' | 'saving' | 'uncertain';
   setSaveState: (state: 'editing' | 'saving' | 'uncertain') => void;
   start: (input: StartInput) => void;
-  setDefinition: (definition: MaintenanceDefinition) => void;
+  setDefinition: (definition: MaintenanceDefinition | null) => void;
   setStatus: (id: string, status: 'OK' | 'NG') => void;
   addReading: (
     sample: string,
@@ -58,9 +58,9 @@ export const useInspectionStore = create<{
         draft: {
           ...d,
           definition,
-          interval: definition.intervals[0],
-          trigger: definition.triggers[0],
-          observations: d.definition?.id === definition.id ? d.observations : [],
+          interval: definition?.intervals[0] ?? d.interval,
+          trigger: definition?.triggers[0] ?? d.trigger,
+          observations: d.definition?.id === definition?.id ? d.observations : [],
         },
       });
   },

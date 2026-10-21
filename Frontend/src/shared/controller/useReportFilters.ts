@@ -10,7 +10,8 @@ export function useReportFilters() {
   const serverMonth = schedule.data?.production_date.slice(0, 7),
     raw = params.get('month'),
     month = raw && /^\d{4}-(0[1-9]|1[0-2])$/.test(raw) ? raw : (serverMonth ?? '');
-  const line = params.get('line') ?? '',
+  const requestedLine = params.get('line') ?? '',
+    line = settings.data?.lines.includes(requestedLine) ? requestedLine : '',
     shift: 'day' | 'night' | undefined =
       params.get('shift') === 'day' ? 'day' : params.get('shift') === 'night' ? 'night' : undefined;
   const change = (key: string, value: string) => {

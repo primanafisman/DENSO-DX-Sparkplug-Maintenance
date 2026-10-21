@@ -14,14 +14,16 @@ For updates, stop the server before running setup. Existing SQLite is backed up 
 ## Pages
 
 - **Ringkasan:** monthly totals, OK/NG ratio, daily counts and check summaries.
-- **Pemeriksaan:** server-time context, 44 source options, visual OK/NG or automatic photo/CV → crop/result → explicit confirmation. Each numeric sample/stage requires a new photo.
+- **Pemeriksaan:** server-time context, 44 source options, visual OK/NG or automatic photo/CV → crop/result → explicit confirmation. Equipment selection preserves the reading; registered links fill equipment/check choices when unique. Unread photos support manual numeric entry with a reason and explicit review. Each numeric sample/stage requires a new photo.
 - **Riwayat:** month table only; individual checks open date-scoped X-bar/R, raw measurements/Type, statistics, full CSV and A4 landscape printing.
 - **Peralatan:** codes, names/aliases, condition, availability, physical profile and linked checks.
-- **Pengaturan:** lines, samplers, product Type and versioned methods/standards/sampling/cadence. Mutations require Admin.
+- **Pengaturan:** active lines1–17, add/remove samplers (initial Ldr), product Type and versioned methods/standards/sampling/cadence. Only configured choices appear in the application. Mutations require Admin.
 
 The structure follows the supplied Feature MVC guidance. This is a local implementation, not a claim of corporate certification. SQLite is verified locally; company SQL deployment and quality-statistics conventions require receiving-team review.
 
 ## Handover
+
+Pada Pemeriksaan, pilih line untuk melihat item yang belum selesai pada jadwal server. Item OK maupun NG yang tersimpan lengkap tersembunyi hingga jadwal berikutnya, dan tetap tersedia di Riwayat. Admin dapat menambah pemeriksaan, menghubungkannya ke alat, serta menonaktifkan/mengaktifkannya kembali melalui Pengaturan tanpa menghapus riwayat. Rincian frekuensi dan aturan slot dijelaskan pada panduan konfigurasi.
 
 - [Installation](Frontend/docs/installation.md)
 - [Configuration and statistics](Frontend/docs/configuration.md)

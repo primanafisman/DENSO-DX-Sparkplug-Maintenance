@@ -5,7 +5,7 @@ import type { MaintenanceDefinition, Profile } from '../../../shared/lib/contrac
 import type { DefinitionUpdate } from '../model/types';
 import { definitionFormSchema } from '../model/schemas';
 import type { DefinitionForm } from '../model/schemas';
-import { useDefinitionRevisions } from '../controller/useSettings';
+import { useDefinitionRevisions, useDefinitionEquipment } from '../controller/useSettings';
 import { Button, Field, ErrorMessage, Badge } from '../../../shared/components/ui';
 const slots = [
   ['day-0745', 'Shift 1 · 07:45'],
@@ -20,12 +20,16 @@ export function DefinitionEditor({
   onSave,
   saving,
   error,
+  creating = false,
+  manageEquipment = false,
 }: {
   definition: MaintenanceDefinition;
   onClose: () => void;
   onSave: (body: DefinitionUpdate) => void;
   saving: boolean;
   error: unknown;
+  creating?: boolean;
+  manageEquipment?: boolean;
 }) {
   const form = useForm<DefinitionForm>({
     resolver: zodResolver(definitionFormSchema),
@@ -51,10 +55,18 @@ export function DefinitionEditor({
     [weekdays, setDays] = useState(d.occurrence_rule?.weekdays ?? []),
     [shifts, setShifts] = useState(d.shifts),
     [showRevisions, setShowRevisions] = useState(false);
+  const equipment = useDefinitionEquipment(manageEquipment);
+  const [equipmentIds, setEquipmentIds] = useState<string[] | null>(creating ? [] : null);
   const revisions = useDefinitionRevisions(d.id, showRevisions);
   const submit = (v: DefinitionForm) => {
     if (!shifts.length) {
       form.setError('review_reason', { message: 'Pilih minimal satu shift.' });
+      return;
+    }
+    if (slotIds.some((id) => !shifts.includes(id.startsWith('day-') ? 'day' : 'night'))) {
+      form.setError('review_reason', {
+        message: 'Slot waktu harus sesuai dengan shift yang dipilih.',
+      });
       return;
     }
     if (v.interval === 'weekly' && slotIds.length && !weekdays.length) {
@@ -62,6 +74,7 @@ export function DefinitionEditor({
       return;
     }
     onSave({
+      ...(equipmentIds !== null ? { instrument_ids: equipmentIds } : {}),
       name: v.name,
       standard_text: v.standard_text,
       method_text: v.method_text,
@@ -93,7 +106,7 @@ export function DefinitionEditor({
         aria-labelledby="definition-title"
       >
         <div className="row between">
-          <h2 id="definition-title">Standar · {d.name}</h2>
+          <h2 id="definition-title">{creating ? 'Tambah pemeriksaan' : 'Standar · ' + d.name}</h2>
           <Button variant="ghost" onClick={onClose}>
             Tutup
           </Button>
@@ -238,6 +251,49 @@ export function DefinitionEditor({
               {note}
             </p>
           ))}
+          {manageEquipment && (
+            <fieldset>
+              <legend>Alat terhubung</legend>
+              <p className="muted">Label alat ini dapat memilih pemeriksaan secara otomatis.</p>
+              <ErrorMessage error={equipment.error} />
+              {equipment.isPending && <p>Memuat daftar alat…</p>}
+              {equipment.data
+                ?.filter(
+                  (a) =>
+                    a.active &&
+                    (!numeric ||
+                      (a.measurement_mode !== 'visual' && a.profile?.unit === form.watch('unit'))),
+                )
+                .map((a) => (
+                  <label className="check-label" key={a.id}>
+                    <input
+                      type="checkbox"
+                      checked={(
+                        equipmentIds ??
+                        equipment.data
+                          ?.filter((x) => x.maintenance_check_ids.includes(d.id))
+                          .map((x) => x.id) ??
+                        []
+                      ).includes(a.id)}
+                      onChange={(e) => {
+                        const current =
+                          equipmentIds ??
+                          equipment.data
+                            ?.filter((x) => x.maintenance_check_ids.includes(d.id))
+                            .map((x) => x.id) ??
+                          [];
+                        setEquipmentIds(
+                          e.target.checked
+                            ? [...current, a.id]
+                            : current.filter((id) => id !== a.id),
+                        );
+                      }}
+                    />
+                    {a.name}
+                  </label>
+                ))}
+            </fieldset>
+          )}
           <Field label="Alasan revisi">
             <textarea {...form.register('review_reason')} required />
           </Field>
@@ -251,6 +307,7 @@ export function DefinitionEditor({
             <Button
               variant="secondary"
               type="button"
+              disabled={creating}
               onClick={() => setShowRevisions(!showRevisions)}
             >
               Riwayat revisi
@@ -259,7 +316,7 @@ export function DefinitionEditor({
               Batal
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? 'Menyimpan…' : 'Simpan revisi'}
+              {saving ? 'Menyimpan…' : creating ? 'Tambah pemeriksaan' : 'Simpan revisi'}
             </Button>
           </div>
         </form>
