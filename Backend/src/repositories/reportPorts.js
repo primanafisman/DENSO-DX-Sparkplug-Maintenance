@@ -1,6 +1,7 @@
 import {Op} from 'sequelize';
 import {createHash,randomUUID} from 'node:crypto';
 import {AppError} from '../errors/AppError.js';
+import {revisionPrefix} from '../utils/revision.js';
 const dto=row=>row?JSON.parse(row.payload):null;
 const hash=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const invalid=(message,code='INVALID_CURSOR')=>new AppError(422,code,message);
@@ -28,7 +29,7 @@ export function reportPorts(models,transaction,settings){
     for(let i=0;i<unique.length;i+=500)result.push(...(await models.readings.findAll({where:{id:{[Op.in]:unique.slice(i,i+500)}},transaction})).map(dto));
     return result;
   }
-  const prefix=entity=>'rev:'+hash(entity).slice(0,16)+':';
+  const prefix=revisionPrefix;
   const revisions={
     async create(value){if(typeof value.entity_id!=='string')throw invalid('Revision entity required.','INVALID_FILTER');return settings.create({...value,id:value.id??prefix(value.entity_id)+randomUUID()});},
     async get(id){const value=await settings.get(id);return value?.entity_id?value:null;},
