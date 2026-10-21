@@ -1,0 +1,4 @@
+import type {useReportFilters} from '../../controller/useReportFilters';
+import {Field} from '../ui';
+export function ReportFilters({filters:f}:{filters:ReturnType<typeof useReportFilters>}){return <div className="filter-bar"><Field label="Bulan"><input type="month" list="recent-months" value={f.month} onChange={e=>f.change('month',e.target.value)}/></Field><datalist id="recent-months">{f.months.map(m=><option value={m.value} key={m.value}>{m.label}</option>)}</datalist><Field label="Line"><select value={f.line} onChange={e=>f.change('line',e.target.value)}><option value="">Semua line</option>{f.lines.map(l=><option key={l}>{l}</option>)}</select></Field><Field label="Shift"><select value={f.shift??''} onChange={e=>f.change('shift',e.target.value)}><option value="">Semua shift</option><option value="day">Shift 1</option><option value="night">Shift 2</option></select></Field></div>;}
+
