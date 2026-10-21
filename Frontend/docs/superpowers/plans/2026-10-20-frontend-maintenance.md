@@ -10,7 +10,9 @@
 
 **Spec:** [frontend outline](../../design/2026-10-20-frontend-outline.md), [page refinement v2](../../design/2026-10-20-pages-reporting-v2.md), [history/SPC v3](../../design/2026-10-20-history-spc-v3.md). V3 supersedes V2 history; V2 supersedes the original dashboard. Selected visual references are listed in [previews/README.md](../../design/previews/README.md).
 
-**Execution:** Native implementation in this chat, incrementally, with one independent whole-change review at the end, as already selected by the user. Approved by the user on 21 October 2026; implementation in progress. Detailed evidence is recorded in the execution ledger.
+**Execution:** Native implementation in this chat, incrementally, with one independent whole-change review at the end, as already selected by the user. Approved by the user on 21 October 2026. Tasks1–13 are implemented; Task14 code, local setup, review corrections and handover documentation are implemented. Backend133/133 and Frontend37/37 tests passed. See [verification](../../verification.md) for actual evidence and uncompleted manual acceptance; the step checklists below remain the original approved test intent.
+
+**Acceptance boundary:** The three unchanged CV integrations and live Node photo→confirmation→evidence flow passed. Desktop browser history/SPC/visual-save checks passed with isolated fixtures. Internal-browser file reads crashed its renderer, so real Chrome/HP upload/camera/ROI end-to-end acceptance, physical A4 printing, a second-computer install and company SQL verification remain open. They are not represented as passing automated checks.
 
 ## Global Constraints
 

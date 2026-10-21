@@ -1,6 +1,6 @@
 # Konfigurasi operasional dan batas data
 
-Draft implementasi; cocokkan dengan kontrak OpenAPI Backend/contracts/openapi.yaml pada versi distribusi.
+Konfigurasi rilis lokal 1.1; cocokkan dengan kontrak OpenAPI Backend/contracts/openapi.yaml pada versi distribusi.
 
 - Backend/.env menyimpan rahasia server, adapter database, port dan pengaturan HTTPS. File ini tidak dikirim ke browser atau GitHub.
 - Frontend/.env hanya untuk konfigurasi publik pengembangan. VITE_API_BASE_URL kosong menggunakan /api/v1 pada origin yang sama. Jangan menaruh API key, JWT secret, password atau koneksi SQL pada variabel VITE_.
@@ -10,6 +10,9 @@ Draft implementasi; cocokkan dengan kontrak OpenAPI Backend/contracts/openapi.ya
 - Standar penerimaan, metode, sampel dan frekuensi berada pada definisi pemeriksaan yang ditautkan ke alat. Rentang fisik alat bukan batas OK/NG proses.
 - Type pada laporan adalah varian produk. Riwayat tanpa Type menampilkan Tidak tercatat. Type, standar, alat dan kalibrasi yang tidak kompatibel dipisahkan dalam laporan SPC.
 - Nama label yang cocok adalah saran dari master; identitas dan angka tetap dikonfirmasi operator. Label parsial/ambigu tidak boleh memilih alat secara diam-diam.
+- Profil digital harus sesuai satuan dan jumlah digit desimal yang benar-benar terlihat pada display. Contoh layar 15.96 mm memakai decimals=2; jangan memilih decimals=3 hanya untuk memformat laporan. Profil terdaftar bersifat otoritatif; mode auto tidak mengubahnya secara diam-diam. Profil yang salah dapat membuat digit yang terlihat jelas ditolak. Untuk analog 0–1 MPa, decimals=3 adalah format interpolasi, bukan bukti ketelitian fisik 0.001 MPa.
+- Perubahan standar menghasilkan versi baru. Pemeriksaan yang sedang berjalan mengirim definition_version; jika standar berubah sebelum disimpan, server mengembalikan DEFINITION_VERSION_CONFLICT dan operator harus meninjau ulang versi baru.
+- Mengosongkan semua slot jadwal mengirim occurrence_rule=null untuk menghapus aturan sebelumnya. Field yang tidak dikirim pada pembaruan tetap mempertahankan nilainya.
 - Enam bulan adalah rentang navigasi bawaan, bukan kebijakan penghapusan. Batas satu permintaan laporan kurang dari enam bulan kalender,100000 catatan dan5000 subgroup SPC; pilih rentang lebih kecil bila ditolak.
 
 ## Statistik

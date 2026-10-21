@@ -1,4 +1,32 @@
-import {z} from 'zod';
-export const settingsSchema=z.object({lines:z.array(z.string()),allowed_samplers:z.array(z.string()),night_rollover_hour:z.number().int(),product_types:z.array(z.object({id:z.string(),code:z.string(),name:z.string(),active:z.boolean(),version:z.number()})).optional()});
-export const definitionFormSchema=z.object({name:z.string().trim().min(1),standard_text:z.string().trim().min(1),method_text:z.string().trim().min(1),tool:z.string().trim().min(1),kind:z.enum(['visual','functional','numeric','difference']),unit:z.enum(['MPa','mm','kN','N','bar']),minimum:z.number(),maximum:z.number(),sample_count:z.number().int().min(1).max(20),interval:z.enum(['per_shift','weekly','every_4_hours','daily']),description:z.string().min(1),review_reason:z.string().trim().min(1)});
-export type DefinitionForm=z.infer<typeof definitionFormSchema>;
+import { z } from 'zod';
+export const settingsSchema = z.object({
+  lines: z.array(z.string()),
+  allowed_samplers: z.array(z.string()),
+  night_rollover_hour: z.number().int(),
+  product_types: z
+    .array(
+      z.object({
+        id: z.string(),
+        code: z.string(),
+        name: z.string(),
+        active: z.boolean(),
+        version: z.number(),
+      }),
+    )
+    .optional(),
+});
+export const definitionFormSchema = z.object({
+  name: z.string().trim().min(1),
+  standard_text: z.string().trim().min(1),
+  method_text: z.string().trim().min(1),
+  tool: z.string().trim().min(1),
+  kind: z.enum(['visual', 'functional', 'numeric', 'difference']),
+  unit: z.enum(['MPa', 'mm', 'kN', 'N', 'bar']),
+  minimum: z.number(),
+  maximum: z.number(),
+  sample_count: z.number().int().min(1).max(20),
+  interval: z.enum(['per_shift', 'weekly', 'every_4_hours', 'daily']),
+  description: z.string().min(1),
+  review_reason: z.string().trim().min(1),
+});
+export type DefinitionForm = z.infer<typeof definitionFormSchema>;

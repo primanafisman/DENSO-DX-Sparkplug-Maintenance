@@ -17,7 +17,7 @@ JSON berhasil: {success:true,message,data,request_id}. Gagal: {success:false,mes
 5. Hasil utama: validated_prediction (angka atau null), candidate, confidence.valid/level/reasons, ROI dan label. Confidence bukan probabilitas akurasi yang telah dikalibrasi. candidate yang ditolak tidak boleh ditampilkan sebagai prediksi valid.
 6. POST readings/confirm dengan {analysis_id,instrument_id,final_value,verified:true,identity_verified:true,context,check_id,sample_key,reason,confirmation_id}. final_value memakai titik desimal; reason wajib untuk nilai manual/koreksi/tidak tervalidasi. Retry memakai confirmation_id dan body yang sama.
 7. Kumpulkan reading_id untuk tiap sampel. Sample_key biasa n1; difference memakai n1:before dan n1:after. Setiap sampel/tahap membutuhkan foto baru.
-8. POST maintenance/records dengan {definition_id,context,interval,trigger,checked_at,observations:[{sample_id,reading_id}]}. Difference mengganti reading_id dengan before_reading_id/after_reading_id. Backend menghitung OK/NG terhadap snapshot standar.
+8. POST maintenance/records dengan {definition_id,definition_version,context,interval,trigger,checked_at,observations:[{sample_id,reading_id}]}. Difference mengganti reading_id dengan before_reading_id/after_reading_id. Backend menghitung OK/NG terhadap snapshot standar.
 
 ROI memakai {x,y,width,height} ternormalisasi0–1 pada foto penuh yang sudah mengikuti orientasi EXIF. Koordinat bukan piksel elemen HTML atau foto yang sedang diperbesar. Crop sementara POST photos/{image_id}/crop menerima ROI langsung, bukan {roi:...}.
 
@@ -41,3 +41,57 @@ Observations berupa [{sample_id,status:'OK'|'NG'}]. Lengkapi semua sampel dan ko
 401: login ulang;403: hak akses/CSRF;409: konflik profil/evidence, analisis ulang sesuai alasan;410: foto/job kedaluwarsa, unggah ulang;413: ukuran foto;422: periksa field/lingkup;429: kapasitas reader, tunggu lalu coba. Tampilkan pesan operator, request_id pada detail, dan jangan menghapus input manual tanpa alasan.
 
 Batalkan polling saat keluar atau mengganti foto/ROI/alat/profil. Gunakan generation token agar hasil lama tidak mengisi foto baru. Hentikan camera tracks dan revoke object URLs. Gambar dan draft tetap di memori, bukan query cache jangka panjang/localStorage. Jangan retry POST penyimpanan maintenance otomatis ketika status respons tidak pasti; cek riwayat lebih dahulu.
+
+## Field utama integrasi
+
+| Field | Bentuk | Sumber / arti |
+|---|---|---|
+| context.line | string | Line yang dipilih dari settings |
+| context.production_date | YYYY-MM-DD | Tanggal produksi dari server, bukan jam HP |
+| context.shift | day / night | Shift1 / Shift2 dari server |
+| context.sampler | string | Pelaksana dari settings |
+| context.product_type_id | string, opsional | ID Type produk, bukan jenis gauge |
+| checked_at | ISO8601 | Waktu server saat pemeriksaan dimulai |
+| definition_version | integer | Versi standar yang ditinjau; konflik409 mewajibkan mulai ulang dengan versi baru |
+| definition_id / check_id | string | ID definisi pemeriksaan, bukan nomor urut tampilan |
+| instrument_id | string | ID master alat yang dikonfirmasi |
+| roi / label_roi | x,y,width,height | Pecahan 0–1 pada foto penuh yang sudah berorientasi |
+| validated_prediction | number / null | Angka tervalidasi; **0 tetap valid** |
+| confidence.valid | boolean | Apakah reader memvalidasi angka kandidat |
+| confidence.level | low / medium / high | Heuristik, bukan persentase akurasi |
+| final_value | string atau number | Angka operator, titik desimal saat dikirim |
+| sample_key | n1 atau n1:before / n1:after | Mengikat bacaan ke sampel/tahap |
+| confirmation_id | UUID | ID tetap untuk retry permintaan yang sama |
+| observations | array | Status visual atau ID bacaan terkonfirmasi tiap sampel |
+| meta.as_of | ISO8601 | Snapshot laporan untuk paging/cetak/CSV yang konsisten |
+| cohort_id | string | Kelompok data kompatibel pada respons SPC |
+
+Contoh penyimpanan numeric setelah empat bacaan dikonfirmasi:
+
+```json
+{
+  "definition_id": "chart_ee_length",
+  "definition_version": 1,
+  "context": {"line":"17","production_date":"2026-10-21","shift":"day","sampler":"Ldr"},
+  "checked_at":"2026-10-21T01:00:00Z",
+  "interval":"per_shift",
+  "trigger":"routine",
+  "observations":[
+    {"sample_id":"n1","reading_id":"reading-id-1"},
+    {"sample_id":"n2","reading_id":"reading-id-2"},
+    {"sample_id":"n3","reading_id":"reading-id-3"},
+    {"sample_id":"n4","reading_id":"reading-id-4"}
+  ]
+}
+```
+
+Ini contoh kontrak, bukan ID siap kirim. Ambil ID/opsi yang berlaku dari katalog dan respons API. `overall_status`, `outcomes` dan snapshot historis dihasilkan backend; jangan kirim status OK hasil hitungan frontend untuk numeric. Profil, standar atau identitas yang berubah membatalkan hasil lama dan perlu analisis/konfirmasi baru.
+
+## Versi standar dan rekonsiliasi simpan
+
+Frontend ini selalu mengirim `definition_version` dari standar yang ditinjau saat mulai pemeriksaan. Server memeriksanya di dalam transaksi penyimpanan. Respons409 `DEFINITION_VERSION_CONFLICT` berarti operator perlu memulai ulang dengan standar terbaru. Untuk kompatibilitas, API masih menerima klien lama tanpa field ini dan menggunakan standar terbaru; integrasi baru wajib mengirimkannya agar standar yang ditinjau terlindungi.
+
+Status penyimpanan maintenance yang tidak pasti disimpan bersama draft selama navigasi. Setelah gangguan jaringan/server, periksa riwayat sebelum membuka kembali kunci percobaan. Jangan melakukan retry otomatis; endpoint maintenance belum menyediakan idempotensi lintas permintaan. `confirmation_id` hanya melindungi endpoint konfirmasi bacaan, bukan keseluruhan catatan maintenance.
+
+Update definisi memakai `occurrence_rule:null` untuk menghapus aturan slot secara eksplisit. Field yang dihilangkan berarti tidak mengubah nilai lama.
+

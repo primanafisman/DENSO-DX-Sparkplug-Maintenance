@@ -1,3 +1,75 @@
-import type {SpcCohort} from '../../../shared/lib/contracts';
-import {number} from '../../../shared/lib/format';
-export function CalculationPanel({cohort:c}:{cohort:SpcCohort}){const s=c.statistics,l=c.control_limits,cap=c.capability,metrics:[string,number|null][]=[['Subgroup lengkap (k)',s.k],['Ukuran sampel (n)',s.n],['Total sampel (N)',s.N],['ΣX',s.sum_raw],['ΣX̄',s.sum_xbar],['ΣR',s.sum_r],['X̿',s.grand_mean],['R̄',s.rbar],['s · STDEV.S',s.s_overall],['σwithin',s.sigma_within],['σ metode terpilih',cap.sigma],['3σ',s.three_sigma],['6σ',s.six_sigma],[cap.method==='paper_stdev_s'?'Cp (lembar)':'Cp (within)',cap.cp],[cap.method==='paper_stdev_s'?'Cpk (lembar)':'Cpk (within)',cap.cpk],['UCLx',l.ucl_x],['LCLx',l.lcl_x],['UCLr',l.ucl_r],['LCLr',l.lcl_r],['R max',s.r_max]];return <section className="calculation-panel"><h2>Kalkulasi</h2><p>Metode: <strong>{cap.method==='paper_stdev_s'?'STDEV.S':'R̄ / d₂'}</strong>{cap.provisional?' · estimasi periode':''}</p><dl className="metric-grid">{metrics.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{number(value,Number.isInteger(value)&&['Subgroup lengkap (k)','Ukuran sampel (n)','Total sampel (N)'].includes(label)?0:6)}</dd></div>)}</dl><p>Subgroup belum lengkap: {c.counts.incomplete} · tidak disertakan: {c.counts.excluded}</p>{cap.reason&&<p className="info-note">{cap.reason}</p>}<details className="info-note no-print"><summary>Penjelasan metode dan batas</summary><p>STDEV.S memakai sebaran seluruh sampel (metode lembar). σwithin = R̄ / d₂ ditampilkan terpisah. Penamaan Cp/Cpk metode lembar perlu peninjauan tim kualitas. Batas kontrol adalah batas statistik, berbeda dari batas spesifikasi LSL/USL.</p><p>Standar: {c.definition_snapshot.standard_text}. Nilai kosong berarti data belum cukup / metode tidak sesuai.</p></details>{[...new Set([...s.reasons,...c.warnings])].map(reason=><p className="source-note" key={reason}>{reason}</p>)}</section>;}
+import type { SpcCohort } from '../../../shared/lib/contracts';
+import { number } from '../../../shared/lib/format';
+export function CalculationPanel({ cohort: c }: { cohort: SpcCohort }) {
+  const s = c.statistics,
+    l = c.control_limits,
+    cap = c.capability,
+    metrics: [string, number | null][] = [
+      ['Subgroup lengkap (k)', s.k],
+      ['Ukuran sampel (n)', s.n],
+      ['Total sampel (N)', s.N],
+      ['ΣX', s.sum_raw],
+      ['ΣX̄', s.sum_xbar],
+      ['ΣR', s.sum_r],
+      ['X̿', s.grand_mean],
+      ['R̄', s.rbar],
+      ['s · STDEV.S', s.s_overall],
+      ['σwithin', s.sigma_within],
+      ['σ metode terpilih', cap.sigma],
+      ['3σ', s.three_sigma],
+      ['6σ', s.six_sigma],
+      [cap.method === 'paper_stdev_s' ? 'Cp (lembar)' : 'Cp (within)', cap.cp],
+      [cap.method === 'paper_stdev_s' ? 'Cpk (lembar)' : 'Cpk (within)', cap.cpk],
+      ['UCLx', l.ucl_x],
+      ['LCLx', l.lcl_x],
+      ['UCLr', l.ucl_r],
+      ['LCLr', l.lcl_r],
+      ['R max', s.r_max],
+    ];
+  return (
+    <section className="calculation-panel">
+      <h2>Kalkulasi</h2>
+      <p>
+        Metode: <strong>{cap.method === 'paper_stdev_s' ? 'STDEV.S' : 'R̄ / d₂'}</strong>
+        {cap.provisional ? ' · estimasi periode' : ''}
+      </p>
+      <dl className="metric-grid">
+        {metrics.map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>
+              {number(
+                value,
+                Number.isInteger(value) &&
+                  ['Subgroup lengkap (k)', 'Ukuran sampel (n)', 'Total sampel (N)'].includes(label)
+                  ? 0
+                  : 6,
+              )}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <p>
+        Subgroup belum lengkap: {c.counts.incomplete} · tidak disertakan: {c.counts.excluded}
+      </p>
+      {cap.reason && <p className="info-note">{cap.reason}</p>}
+      <details className="info-note no-print">
+        <summary>Penjelasan metode dan batas</summary>
+        <p>
+          STDEV.S memakai sebaran seluruh sampel (metode lembar). σwithin = R̄ / d₂ ditampilkan
+          terpisah. Penamaan Cp/Cpk metode lembar perlu peninjauan tim kualitas. Batas kontrol
+          adalah batas statistik, berbeda dari batas spesifikasi LSL/USL.
+        </p>
+        <p>
+          Standar: {c.definition_snapshot.standard_text}. Nilai kosong berarti data belum cukup /
+          metode tidak sesuai.
+        </p>
+      </details>
+      {[...new Set([...s.reasons, ...c.warnings])].map((reason) => (
+        <p className="source-note" key={reason}>
+          {reason}
+        </p>
+      ))}
+    </section>
+  );
+}

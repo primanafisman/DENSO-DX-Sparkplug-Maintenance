@@ -1,4 +1,77 @@
-import type {MaintenanceSettings,ServerSchedule} from '../../../shared/lib/contracts';
-import {Field,Badge} from '../../../shared/components/ui';
-export type ContextSelection={line:string;sampler:string;product_type_id?:string};
-export function InspectionContextForm({settings,schedule,value,onChange}:{settings:MaintenanceSettings;schedule?:ServerSchedule;value:ContextSelection;onChange:(v:ContextSelection)=>void}){return <><div className="context-grid"><Field label="Line">{settings.lines.length?<select value={value.line} onChange={e=>onChange({...value,line:e.target.value})}><option value="">Pilih line</option>{settings.lines.map(s=><option key={s}>{s}</option>)}</select>:<input value={value.line} onChange={e=>onChange({...value,line:e.target.value})} placeholder="Masukkan line"/>}</Field><Field label="Sampler">{settings.allowed_samplers.length?<select value={value.sampler} onChange={e=>onChange({...value,sampler:e.target.value})}><option value="">Pilih sampler</option>{settings.allowed_samplers.map(s=><option key={s}>{s}</option>)}</select>:<input value={value.sampler} onChange={e=>onChange({...value,sampler:e.target.value})}/>}</Field><Field label="Type produk"><select value={value.product_type_id??''} onChange={e=>onChange({...value,product_type_id:e.target.value})}><option value="">Tidak tercatat / belum dipilih</option>{settings.product_types?.filter(p=>p.active).map(p=><option key={p.id} value={p.id}>{p.code} · {p.name}</option>)}</select></Field></div><div className="row wrap"><Badge>{schedule?.slot_label??'Memeriksa waktu server…'}</Badge><small className="muted">Tanggal produksi {schedule?.production_date??'—'} · WIB</small></div></>;}
+import type { MaintenanceSettings, ServerSchedule } from '../../../shared/lib/contracts';
+import { Field, Badge } from '../../../shared/components/ui';
+export type ContextSelection = { line: string; sampler: string; product_type_id?: string };
+export function InspectionContextForm({
+  settings,
+  schedule,
+  value,
+  onChange,
+}: {
+  settings: MaintenanceSettings;
+  schedule?: ServerSchedule;
+  value: ContextSelection;
+  onChange: (v: ContextSelection) => void;
+}) {
+  return (
+    <>
+      <div className="context-grid">
+        <Field label="Line">
+          {settings.lines.length ? (
+            <select
+              value={value.line}
+              onChange={(e) => onChange({ ...value, line: e.target.value })}
+            >
+              <option value="">Pilih line</option>
+              {settings.lines.map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              value={value.line}
+              onChange={(e) => onChange({ ...value, line: e.target.value })}
+              placeholder="Masukkan line"
+            />
+          )}
+        </Field>
+        <Field label="Sampler">
+          {settings.allowed_samplers.length ? (
+            <select
+              value={value.sampler}
+              onChange={(e) => onChange({ ...value, sampler: e.target.value })}
+            >
+              <option value="">Pilih sampler</option>
+              {settings.allowed_samplers.map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              value={value.sampler}
+              onChange={(e) => onChange({ ...value, sampler: e.target.value })}
+            />
+          )}
+        </Field>
+        <Field label="Type produk">
+          <select
+            value={value.product_type_id ?? ''}
+            onChange={(e) => onChange({ ...value, product_type_id: e.target.value })}
+          >
+            <option value="">Tidak tercatat / belum dipilih</option>
+            {settings.product_types
+              ?.filter((p) => p.active)
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.code} · {p.name}
+                </option>
+              ))}
+          </select>
+        </Field>
+      </div>
+      <div className="row wrap">
+        <Badge>{schedule?.slot_label ?? 'Memeriksa waktu server…'}</Badge>
+        <small className="muted">Tanggal produksi {schedule?.production_date ?? '—'} · WIB</small>
+      </div>
+    </>
+  );
+}

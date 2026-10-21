@@ -1,2 +1,147 @@
-.print-only{display:none}.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.metric-grid>div{padding:12px;background:#f5f6f8;border-radius:8px}.metric-grid dt{color:#64748b;font-size:14px}.metric-grid dd{margin:6px 0 0;font-variant-numeric:tabular-nums;font-weight:700;font-size:19px}.measurement-matrix td,.measurement-matrix th{min-width:125px}.measurement-matrix small{display:block;color:#64748b}.spc-charts section{break-inside:avoid;margin-bottom:24px}.report-header h1{font-size:24px}@media(max-width:760px){.metric-grid{grid-template-columns:repeat(2,1fr)}}
-@media print{@page{size:A4 landscape;margin:10mm}body{background:#fff;color:#111;font-size:10pt}.sidebar,.mobile-nav,.topbar,.no-print,.modal-backdrop{display:none!important}.app-main,main{margin:0!important;padding:0!important;width:100%!important}.card{box-shadow:none!important;border:0!important;padding:4mm!important;margin:0!important}.report-header{break-after:avoid}.report-header h1{font-size:18pt}.metric-grid{grid-template-columns:repeat(5,1fr);gap:2mm}.metric-grid>div{padding:1mm}.metric-grid dd{font-size:11pt}.spc-charts{display:grid;grid-template-columns:1fr 1fr;gap:5mm}.spc-charts section{margin:0}.spc-charts .recharts-responsive-container{height:55mm!important}.print-only{display:block}.print-sheet{break-before:page}.table-scroll{overflow:visible}.measurement-matrix table{table-layout:fixed;width:100%;font-size:8pt}.measurement-matrix th,.measurement-matrix td{min-width:0!important;white-space:normal;overflow-wrap:anywhere;padding:2mm}.cell-button{min-height:0;min-width:0;text-align:left;color:#111}.badge{border:1px solid #999;background:transparent}.calculation-panel details{display:none}.page-heading{display:none}a{text-decoration:none;color:inherit}thead{display:table-header-group}tr{break-inside:avoid}}
+.print-only {
+  display: none;
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.metric-grid > div {
+  padding: 12px;
+  background: #f5f6f8;
+  border-radius: 8px;
+}
+.metric-grid dt {
+  color: #64748b;
+  font-size: 14px;
+}
+.metric-grid dd {
+  margin: 6px 0 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 19px;
+}
+.measurement-matrix td,
+.measurement-matrix th {
+  min-width: 125px;
+}
+.measurement-matrix small {
+  display: block;
+  color: #64748b;
+}
+.spc-charts section {
+  break-inside: avoid;
+  margin-bottom: 24px;
+}
+.report-header h1 {
+  font-size: 24px;
+}
+@media (max-width: 760px) {
+  .metric-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+  body {
+    background: #fff;
+    color: #111;
+    font-size: 10pt;
+  }
+  .sidebar,
+  .mobile-nav,
+  .topbar,
+  .no-print,
+  .modal-backdrop {
+    display: none !important;
+  }
+  .app-main,
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+  .card {
+    box-shadow: none !important;
+    border: 0 !important;
+    padding: 4mm !important;
+    margin: 0 !important;
+  }
+  .report-header {
+    break-after: avoid;
+  }
+  .report-header h1 {
+    font-size: 18pt;
+  }
+  .metric-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2mm;
+  }
+  .metric-grid > div {
+    padding: 1mm;
+  }
+  .metric-grid dd {
+    font-size: 11pt;
+  }
+  .spc-charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5mm;
+  }
+  .spc-charts section {
+    margin: 0;
+  }
+  .spc-charts .recharts-responsive-container {
+    height: 55mm !important;
+  }
+  .print-only {
+    display: block;
+  }
+  .print-sheet {
+    break-before: page;
+  }
+  .table-scroll {
+    overflow: visible;
+  }
+  .measurement-matrix table {
+    table-layout: fixed;
+    width: 100%;
+    font-size: 8pt;
+  }
+  .measurement-matrix th,
+  .measurement-matrix td {
+    min-width: 0 !important;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    padding: 2mm;
+  }
+  .cell-button {
+    min-height: 0;
+    min-width: 0;
+    text-align: left;
+    color: #111;
+  }
+  .badge {
+    border: 1px solid #999;
+    background: transparent;
+  }
+  .calculation-panel details {
+    display: none;
+  }
+  .page-heading {
+    display: none;
+  }
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+  thead {
+    display: table-header-group;
+  }
+  tr {
+    break-inside: avoid;
+  }
+}

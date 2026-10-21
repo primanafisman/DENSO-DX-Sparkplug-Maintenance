@@ -1,4 +1,78 @@
-import type {SpcCohort,Subgroup,Occurrence} from '../../../shared/lib/contracts';
-import {dateTime,number} from '../../../shared/lib/format';
-import {Status} from '../../../shared/components/ui';
-export function MeasurementMatrix({cohort:c,groups,onSelect}:{cohort:SpcCohort;groups:Subgroup[];onSelect:(o:Occurrence)=>void}){return <div className="table-scroll measurement-matrix"><table><caption>Nilai pengukuran · {c.unit}</caption><thead><tr><th>Sampel / hasil</th>{groups.map((g,i)=><th key={g.occurrence.id}><button className="cell-button" onClick={()=>onSelect(g.occurrence)}>{i+1} · {dateTime(g.occurrence.checked_at)}</button><small>Line {g.occurrence.context.line} · {g.occurrence.slot_id??(g.occurrence.context.shift==='day'?'Shift 1':'Shift 2')}</small></th>)}</tr></thead><tbody>{Array.from({length:c.n},(_,i)=><tr key={i}><th>X{i+1}</th>{groups.map(g=><td key={g.occurrence.id}>{number(g.values[i],c.definition_snapshot.resolution===.01?2:3)}</td>)}</tr>)}<tr><th>X̄</th>{groups.map(g=><td key={g.occurrence.id}>{number(g.xbar)}</td>)}</tr><tr><th>R</th>{groups.map(g=><td key={g.occurrence.id}>{number(g.r)}</td>)}</tr><tr><th>Type</th>{groups.map(g=><td key={g.occurrence.id}>{g.occurrence.product_snapshot?.code??'Tidak tercatat'}</td>)}</tr><tr><th>Hasil</th>{groups.map(g=><td key={g.occurrence.id}><Status value={g.occurrence.overall_status}/>{g.reasons?.length?<small>{g.reasons.join(', ')}</small>:null}</td>)}</tr></tbody></table></div>;}
+import type { SpcCohort, Subgroup, Occurrence } from '../../../shared/lib/contracts';
+import { dateTime, number } from '../../../shared/lib/format';
+import { Status } from '../../../shared/components/ui';
+export function MeasurementMatrix({
+  cohort: c,
+  groups,
+  onSelect,
+}: {
+  cohort: SpcCohort;
+  groups: Subgroup[];
+  onSelect: (o: Occurrence) => void;
+}) {
+  return (
+    <div className="table-scroll measurement-matrix">
+      <table>
+        <caption>Nilai pengukuran · {c.unit}</caption>
+        <thead>
+          <tr>
+            <th>Sampel / hasil</th>
+            {groups.map((g, i) => (
+              <th key={g.occurrence.id}>
+                <button className="cell-button" onClick={() => onSelect(g.occurrence)}>
+                  {i + 1} · {dateTime(g.occurrence.checked_at)}
+                </button>
+                <small>
+                  Line {g.occurrence.context.line} ·{' '}
+                  {g.occurrence.slot_id ??
+                    (g.occurrence.context.shift === 'day' ? 'Shift 1' : 'Shift 2')}
+                </small>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: c.n }, (_, i) => (
+            <tr key={i}>
+              <th>X{i + 1}</th>
+              {groups.map((g) => (
+                <td key={g.occurrence.id}>
+                  {number(g.values[i], c.definition_snapshot.resolution === 0.01 ? 2 : 3)}
+                </td>
+              ))}
+            </tr>
+          ))}
+          <tr>
+            <th>X̄</th>
+            {groups.map((g) => (
+              <td key={g.occurrence.id}>{number(g.xbar)}</td>
+            ))}
+          </tr>
+          <tr>
+            <th>R</th>
+            {groups.map((g) => (
+              <td key={g.occurrence.id}>{number(g.r)}</td>
+            ))}
+          </tr>
+          <tr>
+            <th>Type</th>
+            {groups.map((g) => (
+              <td key={g.occurrence.id}>
+                {g.occurrence.product_snapshot?.code ?? 'Tidak tercatat'}
+              </td>
+            ))}
+          </tr>
+          <tr>
+            <th>Hasil</th>
+            {groups.map((g) => (
+              <td key={g.occurrence.id}>
+                <Status value={g.occurrence.overall_status} />
+                {g.reasons?.length ? <small>{g.reasons.join(', ')}</small> : null}
+              </td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}

@@ -1,9 +1,125 @@
-import {Link} from 'react-router-dom';
-import {BarChart,Bar,XAxis,YAxis,Tooltip,ResponsiveContainer,CartesianGrid} from 'recharts';
-import {useMonthlySummary} from '../controller/useMonthlySummary';
-import {useReportFilters} from '../../../shared/controller/useReportFilters';
-import {ReportFilters} from '../../../shared/components/layout/ReportFilters';
-import {PageHeader} from '../../../shared/components/layout/PageHeader';
-import {Card,Loading,ErrorMessage,Empty} from '../../../shared/components/ui';
-import {dateTime,number,monthLabel} from '../../../shared/lib/format';
-export function SummaryPage(){const filters=useReportFilters(),query=useMonthlySummary(filters),d=query.data;return <><PageHeader title="Ringkasan bulanan" description={filters.month?monthLabel(filters.month)+' · hasil pemeriksaan tersimpan':'Memuat bulan produksi…'} actions={<Link className="button button-primary" to="/pemeriksaan">Mulai pemeriksaan</Link>}/><ReportFilters filters={filters}/><ErrorMessage error={filters.error??query.error}/>{query.isLoading&&<Loading/>}{d&&<><div className="kpi-grid"><Card><p>Total catatan</p><strong>{d.total}</strong><small>Seluruh hasil pada periode terpilih</small></Card><Card><p>Catatan OK</p><strong className="text-ok">{d.ok}</strong></Card><Card><p>Catatan NG</p><strong className="text-ng">{d.ng}</strong></Card><Card><p>Rasio catatan OK</p><strong>{d.ok_ratio===null?'—':number(d.ok_ratio*100,1)+'%'}</strong><small>OK ÷ total catatan tersimpan</small></Card></div><Card><h2>Hasil per hari</h2>{d.total?<div className="chart-box" role="img" aria-label="Grafik jumlah catatan OK dan NG per hari"><ResponsiveContainer width="100%" height={280}><BarChart data={d.daily}><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="date" tickFormatter={s=>String(s).slice(8)}/><YAxis allowDecimals={false}/><Tooltip/><Bar name="OK" dataKey="ok" fill="#15803D" stackId="status"/><Bar name="NG" dataKey="ng" fill="#E60012" stackId="status"/></BarChart></ResponsiveContainer></div>:<Empty title="Belum ada catatan bulan ini"/>}</Card><Card><h2>Ringkasan pemeriksaan</h2><div className="table-scroll"><table><thead><tr><th>Pemeriksaan</th><th>Total</th><th>OK</th><th>NG</th><th/></tr></thead><tbody>{d.groups.map(g=><tr key={g.definition_id}><th>{g.name}</th><td>{g.total}</td><td>{g.ok}</td><td>{g.ng}</td><td><Link to={'/riwayat/'+encodeURIComponent(g.definition_id)+'?'+new URLSearchParams({month:filters.month,...(filters.line?{line:filters.line}:{})})}>Lihat laporan</Link></td></tr>)}</tbody></table></div></Card><p className="muted">Snapshot {dateTime(d.meta.as_of)} · satu catatan dapat memuat beberapa sampel. {d.meta.warnings.join(' ')}</p></>}</>;}
+import { Link } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { useMonthlySummary } from '../controller/useMonthlySummary';
+import { useReportFilters } from '../../../shared/controller/useReportFilters';
+import { ReportFilters } from '../../../shared/components/layout/ReportFilters';
+import { PageHeader } from '../../../shared/components/layout/PageHeader';
+import { Card, Loading, ErrorMessage, Empty } from '../../../shared/components/ui';
+import { dateTime, number, monthLabel } from '../../../shared/lib/format';
+export function SummaryPage() {
+  const filters = useReportFilters(),
+    query = useMonthlySummary(filters),
+    d = query.data;
+  return (
+    <>
+      <PageHeader
+        title="Ringkasan bulanan"
+        description={
+          filters.month
+            ? monthLabel(filters.month) + ' · hasil pemeriksaan tersimpan'
+            : 'Memuat bulan produksi…'
+        }
+        actions={
+          <Link className="button button-primary" to="/pemeriksaan">
+            Mulai pemeriksaan
+          </Link>
+        }
+      />
+      <ReportFilters filters={filters} />
+      <ErrorMessage error={filters.error ?? query.error} />
+      {query.isLoading && <Loading />}
+      {d && (
+        <>
+          <div className="kpi-grid">
+            <Card>
+              <p>Total catatan</p>
+              <strong>{d.total}</strong>
+              <small>Seluruh hasil pada periode terpilih</small>
+            </Card>
+            <Card>
+              <p>Catatan OK</p>
+              <strong className="text-ok">{d.ok}</strong>
+            </Card>
+            <Card>
+              <p>Catatan NG</p>
+              <strong className="text-ng">{d.ng}</strong>
+            </Card>
+            <Card>
+              <p>Rasio catatan OK</p>
+              <strong>{d.ok_ratio === null ? '—' : number(d.ok_ratio * 100, 1) + '%'}</strong>
+              <small>OK ÷ total catatan tersimpan</small>
+            </Card>
+          </div>
+          <Card>
+            <h2>Hasil per hari</h2>
+            {d.total ? (
+              <div
+                className="chart-box"
+                role="img"
+                aria-label="Grafik jumlah catatan OK dan NG per hari"
+              >
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart data={d.daily}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="date" tickFormatter={(s) => String(s).slice(8)} />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Bar name="OK" dataKey="ok" fill="#15803D" stackId="status" />
+                    <Bar name="NG" dataKey="ng" fill="#E60012" stackId="status" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <Empty title="Belum ada catatan bulan ini" />
+            )}
+          </Card>
+          <Card>
+            <h2>Ringkasan pemeriksaan</h2>
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Pemeriksaan</th>
+                    <th>Total</th>
+                    <th>OK</th>
+                    <th>NG</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {d.groups.map((g) => (
+                    <tr key={g.definition_id}>
+                      <th>{g.name}</th>
+                      <td>{g.total}</td>
+                      <td>{g.ok}</td>
+                      <td>{g.ng}</td>
+                      <td>
+                        <Link
+                          to={
+                            '/riwayat/' +
+                            encodeURIComponent(g.definition_id) +
+                            '?' +
+                            new URLSearchParams({
+                              month: filters.month,
+                              ...(filters.line ? { line: filters.line } : {}),
+                            })
+                          }
+                        >
+                          Lihat laporan
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+          <p className="muted">
+            Snapshot {dateTime(d.meta.as_of)} · satu catatan dapat memuat beberapa sampel.{' '}
+            {d.meta.warnings.join(' ')}
+          </p>
+        </>
+      )}
+    </>
+  );
+}

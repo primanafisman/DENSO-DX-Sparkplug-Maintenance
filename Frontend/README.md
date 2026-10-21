@@ -1,16 +1,22 @@
-# Sparkplug Maintenance Frontend
+# Sparkplug Maintenance Frontend 1.1
 
-Status: **design captured; implementation plan ready for review**. No application scaffolding, dependencies or product code have been created.
+React19 + TypeScript + Vite8, following the supplied Denso Feature MVC structure. This folder stays beside `Backend/`; all HTTP runs through `src/shared/lib/api.ts` to the same-origin Node API. Views render, controllers manage workflows, models hold DTOs/schemas/API/state. SQL and Python remain private backend concerns.
 
-This folder sits beside `Backend/`. The proposed implementation follows the supplied DNIA DX Front-End Template Guide: React, TypeScript and Feature MVC. Corporate starter-kit source/documents are not copied here.
+## Local use
 
-- [Frontend outline](docs/design/2026-10-20-frontend-outline.md)
-- [Latest page and reporting design v2](docs/design/2026-10-20-pages-reporting-v2.md)
-- [Latest history and paper-style SPC design v3](docs/design/2026-10-20-history-spc-v3.md)
-- [Mockup prompts](docs/design/mockup-prompts.md)
-- [Page mockup prompts v2](docs/design/mockup-prompts-v2.md)
-- [History mockup prompts and exact report rendering v3](docs/design/mockup-prompts-v3.md)
-- [Visual previews](docs/design/previews/)
-- [Implementation plan: backend reporting, five frontend pages and local handover](docs/superpowers/plans/2026-10-20-frontend-maintenance.md)
+Use root `setup.cmd`, `start.cmd`, `stop.cmd` for the integrated application. Frontend-only `setup.cmd` installs dependencies, runs checks and builds; `check.cmd` runs lint, types, tests and build. Development uses `npm run dev` after Backend starts. When developing through Vite, add its explicit origin (normally http://127.0.0.1:5173) to Backend CORS_ORIGINS and restart; integrated production-build serving needs no extra development origin.
 
-Mockups use fictional demonstration data. They are visual references, not running software, verified measurements or a corporate acceptance certificate. Implementation follows the reviewed plan, using native execution in this chat and an independent final review.
+## Navigation
+
+Five menus: Ringkasan, Pemeriksaan, Riwayat, Peralatan, Pengaturan. Charts are lazy-loaded. Riwayat month view contains the overall table; `/riwayat/:definitionId` holds compatible-cohort SPC and paper-style printing. Photo steps are separate routes, with transient in-memory state and explicit confirmation. Reloading discards the unsaved draft.
+
+## Developer handover
+
+- [Installation](docs/installation.md)
+- [Configuration](docs/configuration.md)
+- [Input/output and variables](docs/frontend-integration.md)
+- [Verification](docs/verification.md)
+- [Approved design](docs/design/2026-10-20-history-spc-v3.md)
+- [Implementation plan](docs/superpowers/plans/2026-10-20-frontend-maintenance.md)
+
+Run `npm run format` for consistent source formatting. Corporate starter-kit/private guide documents were not copied into this folder. Visual mockups use fictional data; actual records come from the authenticated server API.

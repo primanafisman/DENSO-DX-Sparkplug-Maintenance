@@ -1,5 +1,50 @@
-import {useState} from 'react';
-import type {SpcCohort,ReportInput} from '../../../shared/lib/contracts';
-import {useSaveBaseline} from '../controller/useSaveBaseline';
-import {Field,Button,ErrorMessage} from '../../../shared/components/ui';
-export function BaselineDialog({scope,cohort,onClose}:{scope:ReportInput;cohort:SpcCohort;onClose:()=>void}){const save=useSaveBaseline(),[reason,setReason]=useState('');return <div className="modal-backdrop"><section className="modal" role="dialog" aria-modal="true" aria-label="Simpan baseline"><h2>Simpan batas kontrol</h2><p>Server menghitung dan menyimpan batas dari snapshot periode ini. Ini catatan baseline aplikasi; persetujuan kualitas mengikuti proses perusahaan.</p><Field label="Alasan peninjauan"><textarea value={reason} onChange={e=>setReason(e.target.value)} maxLength={500}/></Field><ErrorMessage error={save.error}/>{save.isSuccess?<p role="status">Baseline tersimpan.</p>:null}<div className="actions"><Button variant="secondary" onClick={onClose}>Tutup baseline</Button><Button disabled={!reason.trim()||save.isPending||save.isSuccess} onClick={()=>save.mutate({scope,cohort_id:cohort.cohort_id,method:cohort.capability.method,review_reason:reason.trim()})}>{save.isPending?'Menyimpan…':'Simpan baseline'}</Button></div></section></div>;}
+import { useState } from 'react';
+import type { SpcCohort, ReportInput } from '../../../shared/lib/contracts';
+import { useSaveBaseline } from '../controller/useSaveBaseline';
+import { Field, Button, ErrorMessage } from '../../../shared/components/ui';
+export function BaselineDialog({
+  scope,
+  cohort,
+  onClose,
+}: {
+  scope: ReportInput;
+  cohort: SpcCohort;
+  onClose: () => void;
+}) {
+  const save = useSaveBaseline(),
+    [reason, setReason] = useState('');
+  return (
+    <div className="modal-backdrop">
+      <section className="modal" role="dialog" aria-modal="true" aria-label="Simpan baseline">
+        <h2>Simpan batas kontrol</h2>
+        <p>
+          Server menghitung dan menyimpan batas dari snapshot periode ini. Ini catatan baseline
+          aplikasi; persetujuan kualitas mengikuti proses perusahaan.
+        </p>
+        <Field label="Alasan peninjauan">
+          <textarea value={reason} onChange={(e) => setReason(e.target.value)} maxLength={500} />
+        </Field>
+        <ErrorMessage error={save.error} />
+        {save.isSuccess ? <p role="status">Baseline tersimpan.</p> : null}
+        <div className="actions">
+          <Button variant="secondary" onClick={onClose}>
+            Tutup baseline
+          </Button>
+          <Button
+            disabled={!reason.trim() || save.isPending || save.isSuccess}
+            onClick={() =>
+              save.mutate({
+                scope,
+                cohort_id: cohort.cohort_id,
+                method: cohort.capability.method,
+                review_reason: reason.trim(),
+              })
+            }
+          >
+            {save.isPending ? 'Menyimpan…' : 'Simpan baseline'}
+          </Button>
+        </div>
+      </section>
+    </div>
+  );
+}

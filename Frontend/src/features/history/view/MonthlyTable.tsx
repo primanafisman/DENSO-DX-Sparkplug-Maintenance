@@ -1,7 +1,95 @@
-import {useState} from 'react';
-import {Link} from 'react-router-dom';
-import type {ChecksheetRow,Occurrence,ReportScope} from '../../../shared/lib/contracts';
-import {Status} from '../../../shared/components/ui';
-import {number} from '../../../shared/lib/format';
-import {OccurrenceDrawer} from './OccurrenceDrawer';
-export function MonthlyTable({rows,scope,mode}:{rows:ChecksheetRow[];scope:ReportScope;mode:'status'|'value'}){const [selected,setSelected]=useState<Occurrence[]|null>(null),dates:string[]=[];for(let day=scope.production_date_from;day<=scope.production_date_to;day=new Date(new Date(day+'T12:00:00Z').valueOf()+86400000).toISOString().slice(0,10))dates.push(day);return <><div className="table-scroll monthly-scroll"><table className="monthly-table"><caption className="sr-only">Catatan pemeriksaan bulanan</caption><thead><tr><th className="frozen-col">Pemeriksaan / alat</th><th>Shift</th>{dates.map(d=><th key={d}>{d.slice(8)}</th>)}</tr></thead><tbody>{rows.map(row=><tr key={row.row_id}><th className="frozen-col"><Link to={'/riwayat/'+encodeURIComponent(row.definition_id)+'?'+new URLSearchParams({month:scope.production_date_from.slice(0,7),...(scope.line?{line:scope.line}:{})})}>{row.name}</Link><small>{row.equipment_name??'Alat tidak tercatat'} · v{row.definition_version}<br/>{row.standard.text}</small></th><td>{row.shift==='day'?'1':'2'}</td>{dates.map(d=>{const cell=row.cells.find(c=>c.date===d);return <td key={d} data-testid={'day-'+d}>{cell?.count?<button className="cell-button" aria-label={cell.count+' pemeriksaan'} onClick={()=>setSelected(cell.occurrences)}>{cell.count>1?<span>{cell.count} catatan</span>:mode==='value'&&row.input_method!=='ok_ng'?<span>{number(cell.occurrences[0].numeric_summary?.xbar)}<small>{row.unit}</small></span>:<Status value={cell.occurrences[0].overall_status}/>}</button>:null}</td>;})}</tr>)}</tbody></table></div>{selected&&<OccurrenceDrawer items={selected} onClose={()=>setSelected(null)}/>}</>;}
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import type { ChecksheetRow, Occurrence, ReportScope } from '../../../shared/lib/contracts';
+import { Status } from '../../../shared/components/ui';
+import { number } from '../../../shared/lib/format';
+import { OccurrenceDrawer } from './OccurrenceDrawer';
+export function MonthlyTable({
+  rows,
+  scope,
+  mode,
+}: {
+  rows: ChecksheetRow[];
+  scope: ReportScope;
+  mode: 'status' | 'value';
+}) {
+  const [selected, setSelected] = useState<Occurrence[] | null>(null),
+    dates: string[] = [];
+  for (
+    let day = scope.production_date_from;
+    day <= scope.production_date_to;
+    day = new Date(new Date(day + 'T12:00:00Z').valueOf() + 86400000).toISOString().slice(0, 10)
+  )
+    dates.push(day);
+  return (
+    <>
+      <div className="table-scroll monthly-scroll">
+        <table className="monthly-table">
+          <caption className="sr-only">Catatan pemeriksaan bulanan</caption>
+          <thead>
+            <tr>
+              <th className="frozen-col">Pemeriksaan / alat</th>
+              <th>Shift</th>
+              {dates.map((d) => (
+                <th key={d}>{d.slice(8)}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.row_id}>
+                <th className="frozen-col">
+                  <Link
+                    to={
+                      '/riwayat/' +
+                      encodeURIComponent(row.definition_id) +
+                      '?' +
+                      new URLSearchParams({
+                        month: scope.production_date_from.slice(0, 7),
+                        ...(scope.line ? { line: scope.line } : {}),
+                      })
+                    }
+                  >
+                    {row.name}
+                  </Link>
+                  <small>
+                    {row.equipment_name ?? 'Alat tidak tercatat'} · v{row.definition_version}
+                    <br />
+                    {row.standard.text}
+                  </small>
+                </th>
+                <td>{row.shift === 'day' ? '1' : '2'}</td>
+                {dates.map((d) => {
+                  const cell = row.cells.find((c) => c.date === d);
+                  return (
+                    <td key={d} data-testid={'day-' + d}>
+                      {cell?.count ? (
+                        <button
+                          className="cell-button"
+                          aria-label={cell.count + ' pemeriksaan'}
+                          onClick={() => setSelected(cell.occurrences)}
+                        >
+                          {cell.count > 1 ? (
+                            <span>{cell.count} catatan</span>
+                          ) : mode === 'value' && row.input_method !== 'ok_ng' ? (
+                            <span>
+                              {number(cell.occurrences[0].numeric_summary?.xbar)}
+                              <small>{row.unit}</small>
+                            </span>
+                          ) : (
+                            <Status value={cell.occurrences[0].overall_status} />
+                          )}
+                        </button>
+                      ) : null}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {selected && <OccurrenceDrawer items={selected} onClose={() => setSelected(null)} />}
+    </>
+  );
+}

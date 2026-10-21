@@ -73,3 +73,14 @@ function Add-SpmWorkerBasePath($ownership,$root) {
     }
     return $ownership
 }
+function Get-SpmApplicationHash($backendRoot) {
+    $parts=New-Object System.Collections.Generic.List[string]
+    foreach($directory in @('src','cv_engine\src')) {
+        $source=Join-Path $backendRoot $directory
+        if(Test-Path -LiteralPath $source){foreach($file in @(Get-ChildItem -LiteralPath $source -File -Recurse | Where-Object {$_.Extension -in @('.js','.py')} | Sort-Object FullName)){$parts.Add($file.FullName.Substring($backendRoot.Length)+':'+(Get-SpmConfigHash $file.FullName))}}
+    }
+    foreach($relative in @('package-lock.json','docs\governance\ocr-artifacts.json','..\Frontend\dist\index.html')){$file=Join-Path $backendRoot $relative;if(Test-Path -LiteralPath $file){$parts.Add($relative+':'+(Get-SpmConfigHash $file))}}
+    $algorithm=[Security.Cryptography.SHA256]::Create()
+    try{return [BitConverter]::ToString($algorithm.ComputeHash([Text.Encoding]::UTF8.GetBytes(($parts -join "`n")))).Replace('-','')}
+    finally{$algorithm.Dispose()}
+}

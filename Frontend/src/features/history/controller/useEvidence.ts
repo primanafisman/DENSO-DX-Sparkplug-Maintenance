@@ -1,4 +1,44 @@
-import {useEffect,useState} from 'react';
-import {historyApi} from '../model/api';
-export function useEvidence(id:string,variant:'original'|'crop'){const [url,setUrl]=useState(''),[error,setError]=useState<unknown>(null);useEffect(()=>{const abort=new AbortController();let objectUrl='';setUrl('');setError(null);historyApi.evidence(id,variant,abort.signal).then(blob=>{if(!abort.signal.aborted){objectUrl=URL.createObjectURL(blob);setUrl(objectUrl);}},e=>{if(!abort.signal.aborted)setError(e);});return()=>{abort.abort();if(objectUrl)URL.revokeObjectURL(objectUrl);};},[id,variant]);return {url,error};}
-export async function downloadReport(scope:Parameters<typeof historyApi.export>[0],kind:'checksheet'|'spc',baseline?:string){const blob=await historyApi.export(scope,kind,baseline),url=URL.createObjectURL(blob);try{const a=document.createElement('a');a.href=url;a.download='maintenance-'+kind+'.csv';a.click();}finally{setTimeout(()=>URL.revokeObjectURL(url),1000);}}
+import { useEffect, useState } from 'react';
+import { historyApi } from '../model/api';
+export function useEvidence(id: string, variant: 'original' | 'crop') {
+  const [url, setUrl] = useState(''),
+    [error, setError] = useState<unknown>(null);
+  useEffect(() => {
+    const abort = new AbortController();
+    let objectUrl = '';
+    setUrl('');
+    setError(null);
+    historyApi.evidence(id, variant, abort.signal).then(
+      (blob) => {
+        if (!abort.signal.aborted) {
+          objectUrl = URL.createObjectURL(blob);
+          setUrl(objectUrl);
+        }
+      },
+      (e) => {
+        if (!abort.signal.aborted) setError(e);
+      },
+    );
+    return () => {
+      abort.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [id, variant]);
+  return { url, error };
+}
+export async function downloadReport(
+  scope: Parameters<typeof historyApi.export>[0],
+  kind: 'checksheet' | 'spc',
+  baseline?: string,
+) {
+  const blob = await historyApi.export(scope, kind, baseline),
+    url = URL.createObjectURL(blob);
+  try {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'maintenance-' + kind + '.csv';
+    a.click();
+  } finally {
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+}

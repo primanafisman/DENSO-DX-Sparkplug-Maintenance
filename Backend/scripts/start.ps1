@@ -25,7 +25,7 @@ if($env:SPM_HTTPS_ENABLED -eq '1'){
 }
 $apiUrl='http://127.0.0.1:'+$apiPort
 $ownershipFile=Join-Path $SpmRuntime 'processes.json'
-$configHash=(Get-SpmConfigHash (Join-Path $SpmRoot '.env'))+':'+$env:HOST+':'+$env:CORS_ORIGINS
+$configHash=(Get-SpmConfigHash (Join-Path $SpmRoot '.env'))+':'+$env:HOST+':'+$env:CORS_ORIGINS+':'+(Get-SpmApplicationHash $SpmRoot)
 if($env:SPM_HTTPS_ENABLED -eq '1'){
     $certificatePath=$env:SPM_TLS_CERT
     if(-not [System.IO.Path]::IsPathRooted($certificatePath)){$certificatePath=Join-Path $SpmRoot $certificatePath}
@@ -101,3 +101,4 @@ try {
     if($ownership){& (Join-Path $PSScriptRoot 'stop.ps1') -LaunchId $launchId}
     Pop-Location
 }
+

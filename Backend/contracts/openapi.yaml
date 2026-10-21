@@ -4068,6 +4068,11 @@
             "minLength": 1,
             "maxLength": 64
           },
+          "definition_version": {
+            "type": "integer",
+            "exclusiveMinimum": true,
+            "minimum": 0
+          },
           "context": {
             "type": "object",
             "properties": {
@@ -4606,7 +4611,8 @@
             "required": [
               "slot_ids"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "nullable": true
           }
         },
         "required": [
@@ -5444,7 +5450,8 @@
             "required": [
               "slot_ids"
             ],
-            "additionalProperties": false
+            "additionalProperties": false,
+            "nullable": true
           }
         },
         "required": [
@@ -6701,7 +6708,8 @@
                 "required": [
                   "slot_ids"
                 ],
-                "additionalProperties": false
+                "additionalProperties": false,
+                "nullable": true
               }
             },
             "required": [

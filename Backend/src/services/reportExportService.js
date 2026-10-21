@@ -17,7 +17,7 @@ export function createReportExportService(reports,baselines){return {
       chunks.push(row(['cohort','record_id','checked_at','Type','sample','value','xbar','R','unit','status','as_of']));
       for(const cohort of report.cohorts){
         let cursor;do{const groups=await reports.subgroups({...input,as_of:report.meta.as_of},{cohort_id:cohort.cohort_id,limit:100,cursor,method:baseline?.method});
-          for(const group of groups.items)for(const [i,sample] of group.occurrence.outcomes.entries())chunks.push(row([cohort.cohort_id,group.occurrence.id,group.occurrence.checked_at,group.occurrence.product_snapshot?.name??'Tidak tercatat',sample.sample_id,group.values[i]??sample.value,group.xbar,group.r,cohort.unit,sample.status,report.meta.as_of],[5,6,7]));
+          for(const group of groups.items)for(const sample of group.occurrence.outcomes)chunks.push(row([cohort.cohort_id,group.occurrence.id,group.occurrence.checked_at,group.occurrence.product_snapshot?.name??'Tidak tercatat',sample.sample_id,group.values.length===cohort.definition_snapshot.samples.length?group.values[cohort.definition_snapshot.samples.findIndex(s=>s.id===sample.sample_id)]:sample.value,group.xbar,group.r,cohort.unit,sample.status,report.meta.as_of],[5,6,7]));
           cursor=groups.next_cursor;
         }while(cursor);
         for(const [key,value] of Object.entries({...cohort.statistics,...cohort.control_limits,cp:cohort.capability.cp,cpk:cohort.capability.cpk,method:cohort.capability.method,baseline_id:cohort.baseline.id}).filter(([,v])=>v===null||typeof v!=='object'))chunks.push(row(['STAT',cohort.cohort_id,key,value],typeof value==='number'?[3]:[]));
@@ -26,3 +26,4 @@ export function createReportExportService(reports,baselines){return {
     return chunks.join('');
   },
 };}
+

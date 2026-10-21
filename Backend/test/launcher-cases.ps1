@@ -37,3 +37,17 @@ try {
     Assert-Spm ((Get-SpmConfigHash $hashFixture) -eq 'BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD') 'Configuration hashing must work without optional PowerShell hash modules.'
 } finally {[System.IO.File]::Delete($hashFixture)}
 Write-Output 'Launcher readiness and ownership cases passed.'
+$sourceFixture=Join-Path ([System.IO.Path]::GetTempPath()) ('spm-source-hash-'+[guid]::NewGuid())
+try {
+    $fixtureSource=Join-Path $sourceFixture 'Backend\src'
+    New-Item -ItemType Directory -Path $fixtureSource -Force | Out-Null
+    $fixtureBackend=Split-Path -Parent $fixtureSource
+    $fixtureFile=Join-Path $fixtureSource 'app.js'
+    [IO.File]::WriteAllText($fixtureFile,'old source')
+    $first=Get-SpmApplicationHash $fixtureBackend
+    [IO.File]::WriteAllText($fixtureFile,'new source')
+    Assert-Spm ((Get-SpmApplicationHash $fixtureBackend) -ne $first) 'Source changes must invalidate startup reuse.'
+} finally {
+    $resolved=[IO.Path]::GetFullPath($sourceFixture)
+    if($resolved.StartsWith([IO.Path]::GetTempPath(),[StringComparison]::OrdinalIgnoreCase)){Remove-Item -LiteralPath $resolved -Recurse -Force}
+}
