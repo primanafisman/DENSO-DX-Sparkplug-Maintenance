@@ -1,5 +1,5 @@
 import {read,update} from '../../../shared/lib/api';
 import type {MaintenanceSettings,MaintenanceCatalog,MaintenanceDefinition,DefinitionRevision,Page} from '../../../shared/lib/contracts';
 import {settingsSchema} from './schemas';
-export type DefinitionUpdate=Pick<MaintenanceDefinition,'name'|'standard_text'|'method_text'|'tool'|'unit'|'limits'|'intervals'|'triggers'>&Partial<Pick<MaintenanceDefinition,'kind'|'input_method'|'samples'|'shifts'|'interval_guide'|'occurrence_rule'>>&{review_reason:string};
+import type {DefinitionUpdate} from './types';
 export const settingsApi={settings:async()=>{const data=await read<MaintenanceSettings>('/maintenance/settings');settingsSchema.parse(data);return data;},catalog:()=>read<MaintenanceCatalog>('/maintenance/catalog'),save:(body:MaintenanceSettings&{review_reason?:string})=>update('/maintenance/settings',body),saveDefinition:({id,body}:{id:string;body:DefinitionUpdate})=>update<MaintenanceDefinition>('/maintenance/definitions/'+encodeURIComponent(id),body),revisions:(id:string)=>read<Page<DefinitionRevision>>('/maintenance/definitions/'+encodeURIComponent(id)+'/revisions')};

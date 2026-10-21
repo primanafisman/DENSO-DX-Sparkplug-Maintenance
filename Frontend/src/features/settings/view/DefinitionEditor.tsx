@@ -2,7 +2,7 @@ import {useState} from 'react';
 import {useForm} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import type {MaintenanceDefinition,Profile} from '../../../shared/lib/contracts';
-import type {DefinitionUpdate} from '../model/api';
+import type {DefinitionUpdate} from '../model/types';
 import {definitionFormSchema} from '../model/schemas';
 import type {DefinitionForm} from '../model/schemas';
 import {useDefinitionRevisions} from '../controller/useSettings';
