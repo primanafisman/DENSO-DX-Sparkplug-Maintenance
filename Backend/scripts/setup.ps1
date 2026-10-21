@@ -26,6 +26,9 @@ try {
         if(-not $databaseFile){$databaseFile=Join-Path $env:RUNTIME_DIR 'development.sqlite'}
         if(-not [System.IO.Path]::IsPathRooted($databaseFile)){$databaseFile=Join-Path $SpmRoot $databaseFile}
         if(-not (Test-Path -LiteralPath $databaseFile)){& $nodePath 'scripts\initialize-database.js';if($LASTEXITCODE -ne 0){throw 'Inisialisasi database gagal.'}}
+        & (Join-Path $PSScriptRoot 'stop.ps1')
+        & $nodePath 'scripts\migrate-database.js'
+        if($LASTEXITCODE -ne 0){throw 'Migrasi database gagal; backup dan data lama dipertahankan.'}
         if($env:NODE_ENV -eq 'development'){& $nodePath 'scripts\seed-demo.js';if($LASTEXITCODE -ne 0){throw 'Akun dummy belum siap.'}}
     }
     if($env:SPM_HTTPS_ENABLED -eq '1'){

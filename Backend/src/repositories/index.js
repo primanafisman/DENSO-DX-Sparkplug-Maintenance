@@ -3,10 +3,12 @@ import {randomUUID} from 'node:crypto';
 import {connectDatabase} from '../config/db.js';
 import {defineModels,definitions} from '../models/index.js';
 import {AppError} from '../errors/AppError.js';
+import {SCHEMA_VERSION} from '../constants/schemaVersion.js';
+import {reportPorts} from './reportPorts.js';
 const dto=row=>row?JSON.parse(row.payload):null;
 export async function createRepositories(config){
   const db=connectDatabase(config),models=defineModels(db);let closing;
-  try{await db.authenticate();const version=await models.schema.findByPk('schema-version',{attributes:['payload']});if(dto(version)?.version!==1)throw new Error('version');}catch{await db.close();throw new AppError(503,'SCHEMA_REQUIRED','Database schema missing or incompatible; initialize the reviewed schema.');}
+  try{await db.authenticate();const version=await models.schema.findByPk('schema-version',{attributes:['payload']});if(dto(version)?.version!==SCHEMA_VERSION)throw new Error('version');}catch{await db.close();throw new AppError(503,'SCHEMA_REQUIRED','Database schema missing or incompatible; run setup to verify/migrate the reviewed schema.');}
   function ports(transaction){
     function store(name){const model=models[name],selected=Object.keys(model.getAttributes());
       async function get(id){return dto(await model.findByPk(id,{attributes:selected,transaction}));}
@@ -32,8 +34,9 @@ export async function createRepositories(config){
     const defs=store('maintenanceDefinitions'),records=store('maintenanceRecords');
     const maintenance={getDefinition:defs.get,listDefinitions:defs.list,createDefinition:defs.create,updateDefinition:defs.update,createRecord:records.create,getRecord:records.get,listRecords:records.list};
     const settings=store('settings');const originalUpdate=settings.update;settings.update=async(id,input)=>await settings.get(id)?originalUpdate(id,input):settings.create({id,...input});
+    const reporting=reportPorts(models,transaction,settings);maintenance.listRecordsRange=reporting.listRecordsRange;readings.getMany=reporting.getMany;
     const auditStore=store('audit');const audit={append:auditStore.create};
-    return {users,instruments,calibrations,readings,maintenance,settings,audit,transaction:callback=>db.transaction(tx=>callback(ports(tx))),close:()=>closing??=db.close()};
+    return {users,instruments,calibrations,readings,maintenance,settings,audit,revisions:reporting.revisions,transaction:callback=>db.transaction(tx=>callback(ports(tx))),close:()=>closing??=db.close()};
   }
   return ports();
 }
