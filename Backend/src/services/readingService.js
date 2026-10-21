@@ -5,6 +5,7 @@ import path from 'node:path';
 import {AppError} from '../errors/AppError.js';
 import {confirmInput} from '../validations/readingValidation.js';
 import {publicReading} from '../sanitizers/readingSanitizer.js';
+import {assertNumericEquipment} from './equipmentPolicy.js';
 export function createReadingService({config,repositories,clock},analyses,photos){
   const evidenceRoot=path.join(config.runtimeDir,'evidence');
   return {
@@ -17,6 +18,7 @@ export function createReadingService({config,repositories,clock},analyses,photos
       if(bound){if(bound.analysis_binding_fingerprint!==bindingFingerprint)throw new AppError(409,'ANALYSIS_ALREADY_CONFIRMED','Analysis already bound to another value, context or check/sample.');return publicReading(bound);}
       const snapshot=analyses.getResult(input.analysis_id,actor),asset=await repositories.instruments.get(input.instrument_id);
       if(!asset?.active)throw new AppError(422,'INSTRUMENT_UNAVAILABLE','Select active registered equipment.');
+      assertNumericEquipment(asset);
       if(snapshot.submitted.instrument_id&&snapshot.submitted.instrument_id!==input.instrument_id)throw new AppError(422,'IDENTITY_CONFLICT','Selected equipment differs from the analysis identity.');
       if(!isDeepStrictEqual(asset.profile,snapshot.submitted.profile)||snapshot.instrument_snapshot&&snapshot.instrument_snapshot.revision!==asset.revision)throw new AppError(409,'PROFILE_CHANGED','Equipment changed after analysis. Analyze again.');
       if(!isDeepStrictEqual(input.context,snapshot.context))throw new AppError(422,'CONTEXT_CONFLICT','Production context differs from the photo context.');

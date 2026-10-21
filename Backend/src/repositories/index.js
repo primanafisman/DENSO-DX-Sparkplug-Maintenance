@@ -5,6 +5,7 @@ import {defineModels,definitions} from '../models/index.js';
 import {AppError} from '../errors/AppError.js';
 import {SCHEMA_VERSION} from '../constants/schemaVersion.js';
 import {reportPorts} from './reportPorts.js';
+import {instrumentSearch} from './instrumentSearch.js';
 const dto=row=>row?JSON.parse(row.payload):null;
 export async function createRepositories(config){
   const db=connectDatabase(config),models=defineModels(db);let closing;
@@ -27,6 +28,7 @@ export async function createRepositories(config){
     }
     const users=store('users');users.findByUsername=async username=>dto(await models.users.findOne({attributes:Object.keys(models.users.getAttributes()),where:{username},transaction}));users.getById=users.get;
     const instruments=store('instruments'),calibrations=store('calibrations');delete calibrations.update;
+    instruments.search=instrumentSearch(models.instruments,transaction);
     const readings=store('readings');readings.createConfirmed=readings.create;delete readings.create;delete readings.update;
     readings.getByConfirmation=async confirmation_id=>dto(await models.readings.findOne({attributes:Object.keys(models.readings.getAttributes()),where:{confirmation_id},transaction}));
     readings.getByAnalysis=async analysis_id=>dto(await models.readings.findOne({attributes:Object.keys(models.readings.getAttributes()),where:{analysis_id},transaction}));

@@ -1,5 +1,5 @@
 export function suggestDiscoveryProfile(proposal,instruments){
-  const asset=instruments.find(item=>item.id===proposal.instrument?.id&&item.active!==false);
+  const asset=instruments.find(item=>item.id===proposal.instrument?.id&&item.active!==false&&item.measurement_mode!=='visual'&&item.condition!=='not_working'&&item.profile);
   if(asset)return {...proposal,instrument:structuredClone(asset),suggested_profile:structuredClone(asset.profile),profile_source:'registered-equipment',requires_profile_confirmation:true};
   const analog=proposal.kind_hint==='analog';
   if(!analog&&!(proposal.kind_hint==='digital'&&['lcd','green-led'].includes(proposal.display_type)))return {...proposal,suggested_profile:null,profile_source:'manual-required',requires_profile_confirmation:true};
