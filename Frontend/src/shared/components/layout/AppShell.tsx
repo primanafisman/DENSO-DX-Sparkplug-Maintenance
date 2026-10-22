@@ -3,7 +3,6 @@ import {
   House,
   ClipboardCheck,
   History,
-  Wrench,
   Settings,
   LogOut,
   Menu,
@@ -16,7 +15,6 @@ const links = [
   { to: '/', label: 'Ringkasan', icon: House },
   { to: '/pemeriksaan', label: 'Pemeriksaan', icon: ClipboardCheck },
   { to: '/riwayat', label: 'Riwayat', icon: History },
-  { to: '/peralatan', label: 'Peralatan', icon: Wrench },
   { to: '/pengaturan', label: 'Pengaturan', icon: Settings },
 ];
 export function AppShell() {

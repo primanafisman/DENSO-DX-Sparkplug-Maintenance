@@ -7,6 +7,7 @@ import { definitionFormSchema } from '../model/schemas';
 import type { DefinitionForm } from '../model/schemas';
 import { useDefinitionRevisions, useDefinitionEquipment } from '../controller/useSettings';
 import { Button, Field, ErrorMessage, Badge } from '../../../shared/components/ui';
+import { AvailabilityAction } from '../../../shared/components/ui/AvailabilityAction';
 const slots = [
   ['day-0745', 'Shift 1 · 07:45'],
   ['day-1245', 'Shift 1 · 12:45'],
@@ -22,6 +23,9 @@ export function DefinitionEditor({
   error,
   creating = false,
   manageEquipment = false,
+  onSetActive,
+  statusPending = false,
+  statusError,
 }: {
   definition: MaintenanceDefinition;
   onClose: () => void;
@@ -30,6 +34,9 @@ export function DefinitionEditor({
   error: unknown;
   creating?: boolean;
   manageEquipment?: boolean;
+  onSetActive?: (active: boolean) => void;
+  statusPending?: boolean;
+  statusError?: unknown;
 }) {
   const form = useForm<DefinitionForm>({
     resolver: zodResolver(definitionFormSchema),
@@ -53,11 +60,13 @@ export function DefinitionEditor({
   const [slotIds, setSlots] = useState(d.occurrence_rule?.slot_ids ?? []),
     [weekdays, setDays] = useState(d.occurrence_rule?.weekdays ?? []),
     [shifts, setShifts] = useState(d.shifts),
-    [showRevisions, setShowRevisions] = useState(false);
+    [showRevisions, setShowRevisions] = useState(false),
+    [statusPrompt, setStatusPrompt] = useState(false);
   const equipment = useDefinitionEquipment(manageEquipment);
   const [equipmentIds, setEquipmentIds] = useState<string[] | null>(creating ? [] : null);
   const revisions = useDefinitionRevisions(d.id, showRevisions);
   const submit = (v: DefinitionForm) => {
+    if (statusPrompt || statusPending) return;
     if (!shifts.length) {
       form.setError('root', { message: 'Pilih minimal satu shift.' });
       return;
@@ -108,7 +117,7 @@ export function DefinitionEditor({
       >
         <div className="row between">
           <h2 id="definition-title">{creating ? 'Tambah pemeriksaan' : 'Standar · ' + d.name}</h2>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onClick={onClose} disabled={statusPending}>
             Tutup
           </Button>
         </div>
@@ -117,207 +126,221 @@ export function DefinitionEditor({
           lama tetap memakai snapshot terdahulu.
         </p>
         <form onSubmit={form.handleSubmit(submit)}>
-          <div className="field-row">
-            <Field label="Nama pemeriksaan">
-              <input {...form.register('name')} required />
-            </Field>
-            <Field label="Jenis pemeriksaan">
-              <select {...form.register('kind')}>
-                <option value="visual">Visual OK / NG</option>
-                <option value="functional">Fungsi OK / NG</option>
-                <option value="numeric">Angka dari foto</option>
-                <option value="difference">Selisih before / after</option>
-              </select>
-            </Field>
-          </div>
-          <Field label="Persyaratan / standar">
-            <textarea {...form.register('standard_text')} required />
-          </Field>
-          <Field label="Metode pemeriksaan">
-            <textarea {...form.register('method_text')} required />
-          </Field>
-          <Field label="Alat yang digunakan">
-            <input {...form.register('tool')} required />
-          </Field>
-          {numeric && (
+          <fieldset className="editor-fields" disabled={statusPrompt || statusPending}>
             <div className="field-row">
-              <Field label="Batas minimum proses">
-                <input
-                  type="number"
-                  step="any"
-                  {...form.register('minimum', { valueAsNumber: true })}
-                />
+              <Field label="Nama pemeriksaan">
+                <input {...form.register('name')} required />
               </Field>
-              <Field label="Batas maksimum proses">
-                <input
-                  type="number"
-                  step="any"
-                  {...form.register('maximum', { valueAsNumber: true })}
-                />
-              </Field>
-              <Field label="Satuan hasil">
-                <select {...form.register('unit')}>
-                  {['MPa', 'mm', 'kN', 'N', 'bar'].map((u) => (
-                    <option key={u}>{u}</option>
-                  ))}
+              <Field label="Jenis pemeriksaan">
+                <select {...form.register('kind')}>
+                  <option value="visual">Visual OK / NG</option>
+                  <option value="functional">Fungsi OK / NG</option>
+                  <option value="numeric">Angka dari foto</option>
+                  <option value="difference">Selisih before / after</option>
                 </select>
               </Field>
             </div>
-          )}
-          <div className="field-row">
-            <Field label="Jumlah sampel">
-              <input
-                type="number"
-                min="1"
-                max="20"
-                {...form.register('sample_count', { valueAsNumber: true })}
-              />
+            <Field label="Persyaratan / standar">
+              <textarea {...form.register('standard_text')} required />
             </Field>
-            <Field label="Frekuensi">
-              <select {...form.register('interval')}>
-                <option value="per_shift">Per shift</option>
-                <option value="every_4_hours">Setiap 4 jam</option>
-                <option value="daily">Harian</option>
-                <option value="weekly">Mingguan</option>
-              </select>
+            <Field label="Metode pemeriksaan">
+              <textarea {...form.register('method_text')} required />
             </Field>
-          </div>
-          <Field label="Panduan interval">
-            <input {...form.register('description')} required />
-          </Field>
-          <div className="row wrap">
-            {(['day', 'night'] as const).map((s) => (
-              <label key={s} className="check-label">
+            <Field label="Alat yang digunakan">
+              <input {...form.register('tool')} required />
+            </Field>
+            {numeric && (
+              <div className="field-row">
+                <Field label="Batas minimum proses">
+                  <input
+                    type="number"
+                    step="any"
+                    {...form.register('minimum', { valueAsNumber: true })}
+                  />
+                </Field>
+                <Field label="Batas maksimum proses">
+                  <input
+                    type="number"
+                    step="any"
+                    {...form.register('maximum', { valueAsNumber: true })}
+                  />
+                </Field>
+                <Field label="Satuan hasil">
+                  <select {...form.register('unit')}>
+                    {['MPa', 'mm', 'kN', 'N', 'bar'].map((u) => (
+                      <option key={u}>{u}</option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+            )}
+            <div className="field-row">
+              <Field label="Jumlah sampel">
                 <input
-                  type="checkbox"
-                  checked={shifts.includes(s)}
-                  onChange={(e) =>
-                    setShifts(e.target.checked ? [...shifts, s] : shifts.filter((x) => x !== s))
-                  }
+                  type="number"
+                  min="1"
+                  max="20"
+                  {...form.register('sample_count', { valueAsNumber: true })}
                 />
-                {s === 'day' ? 'Shift 1' : 'Shift 2'}
-              </label>
-            ))}
-          </div>
-          <details className="info-note">
-            <summary>Waktu pemeriksaan dan sumber</summary>
-            <p>
-              Waktu pada lembar dipertahankan:{' '}
-              {d.interval_guide.day.times.map((t) => t.time).join(', ') || 'belum ditetapkan'}{' '}
-              (siang);{' '}
-              {d.interval_guide.night.times.map((t) => t.time).join(', ') || 'belum ditetapkan'}{' '}
-              (malam).
-            </p>
-            <p>Pilih slot hanya setelah aturan pemeriksaan ditinjau.</p>
+              </Field>
+              <Field label="Frekuensi">
+                <select {...form.register('interval')}>
+                  <option value="per_shift">Per shift</option>
+                  <option value="every_4_hours">Setiap 4 jam</option>
+                  <option value="daily">Harian</option>
+                  <option value="weekly">Mingguan</option>
+                </select>
+              </Field>
+            </div>
+            <Field label="Panduan interval">
+              <input {...form.register('description')} required />
+            </Field>
             <div className="row wrap">
-              {slots.map(([id, label]) => (
-                <label className="check-label" key={id}>
+              {(['day', 'night'] as const).map((s) => (
+                <label key={s} className="check-label">
                   <input
                     type="checkbox"
-                    checked={slotIds.includes(id)}
+                    checked={shifts.includes(s)}
                     onChange={(e) =>
-                      setSlots(
-                        e.target.checked ? [...slotIds, id] : slotIds.filter((x) => x !== id),
-                      )
+                      setShifts(e.target.checked ? [...shifts, s] : shifts.filter((x) => x !== s))
                     }
                   />
-                  {label}
+                  {s === 'day' ? 'Shift 1' : 'Shift 2'}
                 </label>
               ))}
             </div>
-            {interval === 'weekly' && (
+            <details className="info-note">
+              <summary>Waktu pemeriksaan dan sumber</summary>
+              <p>
+                Waktu pada lembar dipertahankan:{' '}
+                {d.interval_guide.day.times.map((t) => t.time).join(', ') || 'belum ditetapkan'}{' '}
+                (siang);{' '}
+                {d.interval_guide.night.times.map((t) => t.time).join(', ') || 'belum ditetapkan'}{' '}
+                (malam).
+              </p>
+              <p>Pilih slot hanya setelah aturan pemeriksaan ditinjau.</p>
               <div className="row wrap">
-                {days.map((name, i) => (
-                  <label className="check-label" key={name}>
+                {slots.map(([id, label]) => (
+                  <label className="check-label" key={id}>
                     <input
                       type="checkbox"
-                      checked={weekdays.includes(i + 1)}
+                      checked={slotIds.includes(id)}
                       onChange={(e) =>
-                        setDays(
-                          e.target.checked
-                            ? [...weekdays, i + 1]
-                            : weekdays.filter((x) => x !== i + 1),
+                        setSlots(
+                          e.target.checked ? [...slotIds, id] : slotIds.filter((x) => x !== id),
                         )
                       }
                     />
-                    {name}
+                    {label}
                   </label>
                 ))}
               </div>
-            )}
-            <p>{d.interval_guide.note}</p>
-          </details>
-          {d.review_notes.map((note) => (
-            <p className="source-note" key={note}>
-              {note}
-            </p>
-          ))}
-          {manageEquipment && (
-            <fieldset>
-              <legend>Alat terhubung</legend>
-              <p className="muted">Label alat ini dapat memilih pemeriksaan secara otomatis.</p>
-              <ErrorMessage error={equipment.error} />
-              {equipment.isPending && <p>Memuat daftar alat…</p>}
-              {equipment.data
-                ?.filter(
-                  (a) =>
-                    a.active &&
-                    (!numeric ||
-                      (a.measurement_mode !== 'visual' && a.profile?.unit === form.watch('unit'))),
-                )
-                .map((a) => (
-                  <label className="check-label" key={a.id}>
-                    <input
-                      type="checkbox"
-                      checked={(
-                        equipmentIds ??
-                        equipment.data
-                          ?.filter((x) => x.maintenance_check_ids.includes(d.id))
-                          .map((x) => x.id) ??
-                        []
-                      ).includes(a.id)}
-                      onChange={(e) => {
-                        const current =
+              {interval === 'weekly' && (
+                <div className="row wrap">
+                  {days.map((name, i) => (
+                    <label className="check-label" key={name}>
+                      <input
+                        type="checkbox"
+                        checked={weekdays.includes(i + 1)}
+                        onChange={(e) =>
+                          setDays(
+                            e.target.checked
+                              ? [...weekdays, i + 1]
+                              : weekdays.filter((x) => x !== i + 1),
+                          )
+                        }
+                      />
+                      {name}
+                    </label>
+                  ))}
+                </div>
+              )}
+              <p>{d.interval_guide.note}</p>
+            </details>
+            {d.review_notes.map((note) => (
+              <p className="source-note" key={note}>
+                {note}
+              </p>
+            ))}
+            {manageEquipment && (
+              <fieldset>
+                <legend>Alat terhubung</legend>
+                <p className="muted">Label alat ini dapat memilih pemeriksaan secara otomatis.</p>
+                <ErrorMessage error={equipment.error} />
+                {equipment.isPending && <p>Memuat daftar alat…</p>}
+                {equipment.data
+                  ?.filter(
+                    (a) =>
+                      a.active &&
+                      (!numeric ||
+                        (a.measurement_mode !== 'visual' &&
+                          a.profile?.unit === form.watch('unit'))),
+                  )
+                  .map((a) => (
+                    <label className="check-label" key={a.id}>
+                      <input
+                        type="checkbox"
+                        checked={(
                           equipmentIds ??
                           equipment.data
                             ?.filter((x) => x.maintenance_check_ids.includes(d.id))
                             .map((x) => x.id) ??
-                          [];
-                        setEquipmentIds(
-                          e.target.checked
-                            ? [...current, a.id]
-                            : current.filter((id) => id !== a.id),
-                        );
-                      }}
-                    />
-                    {a.name}
-                  </label>
-                ))}
-            </fieldset>
-          )}
-          {Object.values(form.formState.errors).map((e, i) => (
-            <p className="source-note" key={i}>
-              {e.message}
-            </p>
-          ))}
-          <ErrorMessage error={error} />
+                          []
+                        ).includes(a.id)}
+                        onChange={(e) => {
+                          const current =
+                            equipmentIds ??
+                            equipment.data
+                              ?.filter((x) => x.maintenance_check_ids.includes(d.id))
+                              .map((x) => x.id) ??
+                            [];
+                          setEquipmentIds(
+                            e.target.checked
+                              ? [...current, a.id]
+                              : current.filter((id) => id !== a.id),
+                          );
+                        }}
+                      />
+                      {a.name}
+                    </label>
+                  ))}
+              </fieldset>
+            )}
+            {Object.values(form.formState.errors).map((e, i) => (
+              <p className="source-note" key={i}>
+                {e.message}
+              </p>
+            ))}
+            <ErrorMessage error={error} />
+          </fieldset>
           <div className="actions">
             <Button
               variant="secondary"
               type="button"
-              disabled={creating}
+              disabled={creating || statusPrompt || statusPending}
               onClick={() => setShowRevisions(!showRevisions)}
             >
               Riwayat revisi
             </Button>
-            <Button variant="secondary" type="button" onClick={onClose}>
+            <Button variant="secondary" type="button" onClick={onClose} disabled={statusPending}>
               Batal
             </Button>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving || statusPrompt || statusPending}>
               {saving ? 'Menyimpan…' : creating ? 'Tambah pemeriksaan' : 'Simpan revisi'}
             </Button>
           </div>
         </form>
+        {!creating && onSetActive && (
+          <AvailabilityAction
+            name={d.name}
+            active={d.active !== false}
+            confirming={statusPrompt}
+            onPrompt={setStatusPrompt}
+            onConfirm={onSetActive}
+            pending={statusPending || saving}
+            error={statusError}
+          />
+        )}
         {showRevisions && (
           <div className="revision-list">
             <ErrorMessage error={revisions.error} />

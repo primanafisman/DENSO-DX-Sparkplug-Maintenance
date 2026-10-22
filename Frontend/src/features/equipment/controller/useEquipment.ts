@@ -36,6 +36,15 @@ export function useEquipment(
       toast.success('Peralatan disimpan');
     },
   });
+  const setStatus = useMutation({
+    mutationFn: equipmentApi.setStatus,
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: ['equipment'] });
+      client.invalidateQueries({ queryKey: ['definition-equipment'] });
+      client.invalidateQueries({ queryKey: ['maintenance-due'] });
+      toast.success('Status pilihan peralatan disimpan');
+    },
+  });
   const items = useMemo(
     () => sortEquipment(query.data ?? [], sort, definitions),
     [query.data, sort, definitions],
@@ -45,7 +54,7 @@ export function useEquipment(
       key,
       direction: old.key === key && old.direction === 'asc' ? 'desc' : 'asc',
     }));
-  return { ...query, items, save, sort, sortBy };
+  return { ...query, items, save, setStatus, sort, sortBy };
 }
 export function useCalibrationHistory(id?: string) {
   return useQuery({

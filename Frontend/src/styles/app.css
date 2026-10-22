@@ -445,6 +445,53 @@
   border-color: var(--primary);
   font-weight: 650;
 }
+.settings-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.settings-tabs button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -3px;
+}
+.page-subheading {
+  margin: 8px 0 18px;
+}
+.page-subheading h2 {
+  font-size: 1.25rem;
+}
+.page-subheading p {
+  font-size: 0.84rem;
+}
+.editor-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.editor-fields:disabled {
+  opacity: 0.6;
+}
+.availability-action {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.availability-confirm {
+  border: 1px solid #fecdd3;
+  background: #fff7f8;
+  border-radius: 8px;
+  padding: 16px;
+}
+.availability-confirm h3 {
+  color: #9f1239;
+  margin-bottom: 8px;
+  font-size: 1rem;
+}
+.availability-confirm p {
+  color: #64748b;
+  font-size: 0.85rem;
+}
 .divider {
   border: 0;
   border-top: 1px solid var(--border);

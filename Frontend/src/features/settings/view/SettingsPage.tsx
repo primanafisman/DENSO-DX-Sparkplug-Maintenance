@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Save, Plus, Pencil, Clock3 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Save, Plus, Pencil, Clock3, ClipboardList, Wrench, Factory } from 'lucide-react';
 import type {
   MaintenanceDefinition,
   MaintenanceSettings,
@@ -8,6 +9,7 @@ import type {
 import { useSession } from '../../auth/controller/useSession';
 import { useSettings } from '../controller/useSettings';
 import { DefinitionEditor } from './DefinitionEditor';
+import { EquipmentPage } from '../../equipment/view/EquipmentPage';
 import { newDefinition } from '../model/newDefinition';
 import { newId } from '../../../shared/lib/id';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
@@ -228,134 +230,168 @@ function GeneralSettings({
 export function SettingsPage() {
   const state = useSettings(true),
     { user } = useSession(),
-    [tab, setTab] = useState('standards'),
-    [selected, setSelected] = useState<MaintenanceDefinition | null>(null),
-    [statusTarget, setStatusTarget] = useState<MaintenanceDefinition | null>(null);
+    [params, setParams] = useSearchParams(),
+    [selected, setSelected] = useState<MaintenanceDefinition | null>(null);
   const admin = user?.role === 'Admin';
+  const requested = params.get('tab'),
+    tab = ['standards', 'equipment', 'general'].includes(requested ?? '') ? requested : 'standards';
+  const tabs = [
+    { id: 'standards', label: 'Daftar Pemeriksaan', icon: ClipboardList },
+    { id: 'equipment', label: 'Peralatan', icon: Wrench },
+    { id: 'general', label: 'Line Produksi', icon: Factory },
+  ];
+  const setTab = (value: string) => {
+    const next = new URLSearchParams(params);
+    next.set('tab', value);
+    setParams(next);
+  };
   return (
     <>
       <PageHeader
         title="Pengaturan"
         description="Standar, metode, jadwal dan master operasional yang terkontrol."
       />
-      <div className="tabs" role="tablist">
-        <button role="tab" aria-selected={tab === 'standards'} onClick={() => setTab('standards')}>
-          Standar & metode
-        </button>
-        <button role="tab" aria-selected={tab === 'general'} onClick={() => setTab('general')}>
-          Line, sampler & Type
-        </button>
+      <div className="tabs settings-tabs" role="tablist" aria-label="Pengaturan operasional">
+        {tabs.map((item, index) => (
+          <button
+            key={item.id}
+            role="tab"
+            id={'settings-tab-' + item.id}
+            aria-controls="settings-panel"
+            aria-selected={tab === item.id}
+            tabIndex={tab === item.id ? 0 : -1}
+            onClick={() => setTab(item.id)}
+            onKeyDown={(e) => {
+              const offset = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+              const target =
+                e.key === 'Home'
+                  ? 0
+                  : e.key === 'End'
+                    ? tabs.length - 1
+                    : offset
+                      ? (index + offset + tabs.length) % tabs.length
+                      : null;
+              if (target !== null) {
+                e.preventDefault();
+                setTab(tabs[target].id);
+                const buttons =
+                  e.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
+                    '[role="tab"]',
+                  );
+                buttons?.item(target)?.focus();
+              }
+            }}
+          >
+            <item.icon size={18} aria-hidden="true" />
+            {item.label}
+          </button>
+        ))}
       </div>
       {!admin && (
         <p className="info-note">Tampilan baca saja. Perubahan konfigurasi memerlukan Admin.</p>
       )}
       <ErrorMessage error={state.settings.error ?? state.catalog.error} />
-      {state.settings.isPending || state.catalog.isPending ? (
-        <Loading />
-      ) : tab === 'general' && state.settings.data ? (
-        <GeneralSettings
-          initial={state.settings.data}
-          admin={admin}
-          onSave={(body) => state.save.mutate(body)}
-          pending={state.save.isPending}
-        />
-      ) : (
-        <Card>
-          <div className="row between section-title">
-            <h2>Daftar pemeriksaan</h2>
-            <Badge>{state.catalog.data?.count ?? 0} pilihan</Badge>
-          </div>
-          <p className="info-note">
-            Setiap perubahan membentuk versi baru. Persyaratan dan metode terdahulu tetap tersimpan
-            pada riwayat.
-          </p>
-          {admin && (
-            <Button
-              variant="secondary"
-              onClick={() => {
-                state.createDefinition.reset();
-                setSelected(newDefinition());
-              }}
-            >
-              <Plus size={17} />
-              Tambah pemeriksaan
-            </Button>
-          )}
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>PEMERIKSAAN</th>
-                  <th>STANDAR</th>
-                  <th>METODE / SAMPEL</th>
-                  <th>INTERVAL</th>
-                  <th>VERSI</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {state.catalog.data?.items.map((d) => (
-                  <tr key={d.id}>
-                    <td>
-                      <strong>{d.name}</strong>
-                      {d.active === false && <Badge>Nonaktif</Badge>}
-                      {d.review_notes.map((note) => (
-                        <p className="source-note" key={note}>
-                          {note}
-                        </p>
-                      ))}
-                    </td>
-                    <td>{d.standard_text}</td>
-                    <td>
-                      <Badge>
-                        {d.input_method === 'ok_ng'
-                          ? 'OK / NG'
-                          : d.input_method === 'photo_difference'
-                            ? 'Before / after'
-                            : 'Angka foto'}
-                      </Badge>
-                      <small className="block muted">
-                        n{d.sample_count} · {d.tool}
-                      </small>
-                    </td>
-                    <td>{d.interval_guide.description}</td>
-                    <td>v{d.definition_version}</td>
-                    <td>
-                      {admin && (
-                        <Button
-                          variant="secondary"
-                          onClick={() => {
-                            state.setDefinitionStatus.reset();
-                            setStatusTarget(d);
-                          }}
-                        >
-                          {d.active === false ? 'Aktifkan' : 'Hapus dari pilihan'}
-                        </Button>
-                      )}
-                      {admin && (
-                        <button
-                          className="icon-button"
-                          aria-label={'Edit ' + d.name}
-                          onClick={() => {
-                            state.saveDefinition.reset();
-                            setSelected(d);
-                          }}
-                        >
-                          <Pencil size={16} />
-                        </button>
-                      )}
-                    </td>
+      <div role="tabpanel" id="settings-panel" aria-labelledby={'settings-tab-' + tab}>
+        {state.settings.isPending || state.catalog.isPending ? (
+          <Loading />
+        ) : tab === 'equipment' ? (
+          <EquipmentPage embedded />
+        ) : tab === 'general' && state.settings.data ? (
+          <GeneralSettings
+            initial={state.settings.data}
+            admin={admin}
+            onSave={(body) => state.save.mutate(body)}
+            pending={state.save.isPending}
+          />
+        ) : (
+          <Card>
+            <div className="row between section-title">
+              <h2>Daftar pemeriksaan</h2>
+              <Badge>{state.catalog.data?.count ?? 0} pilihan</Badge>
+            </div>
+            <p className="info-note">
+              Setiap perubahan membentuk versi baru. Persyaratan dan metode terdahulu tetap
+              tersimpan pada riwayat.
+            </p>
+            {admin && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  state.createDefinition.reset();
+                  state.setDefinitionStatus.reset();
+                  setSelected(newDefinition());
+                }}
+              >
+                <Plus size={17} />
+                Tambah pemeriksaan
+              </Button>
+            )}
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>PEMERIKSAAN</th>
+                    <th>STANDAR</th>
+                    <th>METODE / SAMPEL</th>
+                    <th>INTERVAL</th>
+                    <th>VERSI</th>
+                    <th />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <small className="muted">
-            Sumber: baris17–23 belum tersedia; baris45 terpotong. Parameter ber-catatan perlu
-            ditinjau.
-          </small>
-        </Card>
-      )}
+                </thead>
+                <tbody>
+                  {state.catalog.data?.items.map((d) => (
+                    <tr key={d.id}>
+                      <td>
+                        <strong>{d.name}</strong>
+                        {d.active === false && <Badge>Nonaktif</Badge>}
+                        {d.review_notes.map((note) => (
+                          <p className="source-note" key={note}>
+                            {note}
+                          </p>
+                        ))}
+                      </td>
+                      <td>{d.standard_text}</td>
+                      <td>
+                        <Badge>
+                          {d.input_method === 'ok_ng'
+                            ? 'OK / NG'
+                            : d.input_method === 'photo_difference'
+                              ? 'Before / after'
+                              : 'Angka foto'}
+                        </Badge>
+                        <small className="block muted">
+                          n{d.sample_count} · {d.tool}
+                        </small>
+                      </td>
+                      <td>{d.interval_guide.description}</td>
+                      <td>v{d.definition_version}</td>
+                      <td>
+                        {admin && (
+                          <button
+                            className="icon-button"
+                            aria-label={'Edit ' + d.name}
+                            onClick={() => {
+                              state.saveDefinition.reset();
+                              state.setDefinitionStatus.reset();
+                              setSelected(d);
+                            }}
+                          >
+                            <Pencil size={16} />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <small className="muted">
+              Sumber: baris17–23 belum tersedia; baris45 terpotong. Parameter ber-catatan perlu
+              ditinjau.
+            </small>
+          </Card>
+        )}
+      </div>
       {selected && (
         <DefinitionEditor
           key={selected.id}
@@ -373,49 +409,24 @@ export function SettingsPage() {
           }
           saving={state.saveDefinition.isPending || state.createDefinition.isPending}
           error={state.saveDefinition.error ?? state.createDefinition.error}
-        />
-      )}
-      {statusTarget && (
-        <div className="modal-backdrop">
-          <section
-            className="modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Status pemeriksaan"
-          >
-            <h2>
-              {statusTarget.active === false ? 'Aktifkan' : 'Hapus dari pilihan'} ·{' '}
-              {statusTarget.name}
-            </h2>
-            <p>Riwayat pemeriksaan tetap tersimpan.</p>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                state.setDefinitionStatus.mutate(
-                  {
-                    id: statusTarget.id,
-                    active: statusTarget.active === false,
-                    review_reason:
-                      statusTarget.active === false
+          statusPending={state.setDefinitionStatus.isPending}
+          statusError={state.setDefinitionStatus.error}
+          onSetActive={
+            admin && selected.id !== 'new'
+              ? (active) =>
+                  state.setDefinitionStatus.mutate(
+                    {
+                      id: selected.id,
+                      active,
+                      review_reason: active
                         ? 'Pemeriksaan diaktifkan melalui Pengaturan.'
                         : 'Pemeriksaan dinonaktifkan melalui Pengaturan.',
-                  },
-                  { onSuccess: () => setStatusTarget(null) },
-                );
-              }}
-            >
-              <ErrorMessage error={state.setDefinitionStatus.error} />
-              <div className="actions">
-                <Button type="button" variant="secondary" onClick={() => setStatusTarget(null)}>
-                  Batal
-                </Button>
-                <Button type="submit" disabled={state.setDefinitionStatus.isPending}>
-                  Simpan status
-                </Button>
-              </div>
-            </form>
-          </section>
-        </div>
+                    },
+                    { onSuccess: () => setSelected(null) },
+                  )
+              : undefined
+          }
+        />
       )}
       <ErrorDialog error={state.save.error} onClose={() => state.save.reset()} />
     </>

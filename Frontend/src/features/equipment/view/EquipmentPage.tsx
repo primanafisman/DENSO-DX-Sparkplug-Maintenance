@@ -17,17 +17,18 @@ import {
   Loading,
   ErrorMessage,
 } from '../../../shared/components/ui';
-export function EquipmentPage() {
+export function EquipmentPage({ embedded = false }: { embedded?: boolean }) {
   const [q, setQ] = useState(''),
     [condition, setCondition] = useState(''),
     [selected, setSelected] = useState<Instrument | null | undefined>(undefined);
   const { user } = useSession(),
-    catalog = useCatalog(),
+    catalog = useCatalog(true),
     definitions = catalog.data?.items ?? [],
     equipment = useEquipment({ q, ...(condition ? { condition } : {}) }, definitions);
   return (
     <>
       <PageHeader
+        level={embedded ? 2 : 1}
         title="Peralatan"
         description="Identitas, kondisi dan parameter alat ukur."
         actions={
@@ -35,6 +36,7 @@ export function EquipmentPage() {
             <Button
               onClick={() => {
                 equipment.save.reset();
+                equipment.setStatus.reset();
                 setSelected(null);
               }}
             >
@@ -167,6 +169,7 @@ export function EquipmentPage() {
                           aria-label={'Edit ' + a.name}
                           onClick={() => {
                             equipment.save.reset();
+                            equipment.setStatus.reset();
                             setSelected(a);
                           }}
                         >
@@ -188,6 +191,17 @@ export function EquipmentPage() {
           definitions={definitions}
           saving={equipment.save.isPending}
           error={equipment.save.error}
+          statusPending={equipment.setStatus.isPending}
+          statusError={equipment.setStatus.error}
+          onSetActive={
+            selected && user?.role === 'Admin'
+              ? (active) =>
+                  equipment.setStatus.mutate(
+                    { id: selected.id, active },
+                    { onSuccess: () => setSelected(undefined) },
+                  )
+              : undefined
+          }
           onClose={() => setSelected(undefined)}
           onSave={(values) =>
             equipment.save.mutate(

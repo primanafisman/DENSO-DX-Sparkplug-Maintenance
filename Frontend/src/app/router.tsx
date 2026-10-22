@@ -15,7 +15,6 @@ import { ConfirmPage } from '../features/capture/view/ConfirmPage';
 import { InspectionHub } from '../features/maintenance/view/InspectionHub';
 import { VisualCheckPage } from '../features/maintenance/view/VisualCheckPage';
 import { InspectionSuccess } from '../features/maintenance/view/InspectionSuccess';
-import { EquipmentPage } from '../features/equipment/view/EquipmentPage';
 import { SettingsPage } from '../features/settings/view/SettingsPage';
 import type { Role } from '../shared/lib/contracts';
 import { useSession } from '../features/auth/controller/useSession';
@@ -64,7 +63,7 @@ export const router = createBrowserRouter([
           },
           { path: 'riwayat', element: <HistoryPage /> },
           { path: 'riwayat/:definitionId', element: <SpcReportPage /> },
-          { path: 'peralatan', element: <EquipmentPage /> },
+          { path: 'peralatan', element: <Navigate to="/pengaturan?tab=equipment" replace /> },
           { path: 'pengaturan', element: <SettingsPage /> },
         ],
       },

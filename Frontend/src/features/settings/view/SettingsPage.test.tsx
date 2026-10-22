@@ -35,7 +35,13 @@ it('settings preserve source guidance without requesting a revision reason', asy
     ),
   );
   renderApp(<SettingsPage />);
+  expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual([
+    'Daftar Pemeriksaan',
+    'Peralatan',
+    'Line Produksi',
+  ]);
   expect(await screen.findByText('Periksa jadwal dari sumber')).toBeVisible();
+  expect(screen.queryByRole('button', { name: 'Hapus dari pilihan' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Edit EE Cutting' }));
   expect(screen.queryByLabelText('Alasan revisi')).not.toBeInTheDocument();
   expect(screen.getByDisplayValue('1 kali per shift')).toBeVisible();
@@ -115,8 +121,18 @@ it('admin adds a linked inspection and removes it from active options while reta
     }),
   );
   const row = (await screen.findByText('Packing tambahan')).closest('tr')!;
-  fireEvent.click(within(row).getByRole('button', { name: 'Hapus dari pilihan' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Simpan status' }));
+  expect(within(row).queryByRole('button', { name: 'Hapus dari pilihan' })).not.toBeInTheDocument();
+  fireEvent.click(within(row).getByRole('button', { name: 'Edit Packing tambahan' }));
+  const editor = within(screen.getByRole('dialog'));
+  fireEvent.change(editor.getByLabelText('Nama pemeriksaan'), {
+    target: { value: 'Unsaved definition' },
+  });
+  fireEvent.click(editor.getByRole('button', { name: 'Hapus dari pilihan' }));
+  expect(status).toBeNull();
+  fireEvent.click(editor.getByRole('button', { name: 'Batal hapus' }));
+  expect(editor.getByLabelText('Nama pemeriksaan')).toHaveValue('Unsaved definition');
+  fireEvent.click(editor.getByRole('button', { name: 'Hapus dari pilihan' }));
+  fireEvent.click(editor.getByRole('button', { name: 'Ya, hapus dari pilihan' }));
   await waitFor(() => expect(status).toEqual({ active: false, review_reason: expect.any(String) }));
   expect(await screen.findByText('Nonaktif')).toBeVisible();
 });
@@ -189,7 +205,7 @@ it('settings add or remove active lines1 to17 and sampler options through contro
     }),
   );
   renderApp(<SettingsPage />);
-  fireEvent.click(await screen.findByRole('tab', { name: 'Line, sampler & Type' }));
+  fireEvent.click(await screen.findByRole('tab', { name: 'Line Produksi' }));
   const first = await screen.findByLabelText('Line 1');
   expect(screen.queryByLabelText('Line 18')).not.toBeInTheDocument();
   fireEvent.click(first);

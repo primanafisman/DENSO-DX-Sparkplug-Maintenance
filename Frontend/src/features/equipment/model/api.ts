@@ -40,6 +40,8 @@ export function equipmentBody(v: EquipmentForm) {
   };
 }
 export const equipmentApi = {
+  setStatus: ({ id, active }: { id: string; active: boolean }) =>
+    update<Instrument>('/instruments/' + encodeURIComponent(id) + '/status', { active }),
   async list(filters: EquipmentFilters, cursor?: string, signal?: AbortSignal) {
     const data = await read<Page<Instrument>>('/instruments', {
       params: { ...filters, limit: 100, cursor },

@@ -25,7 +25,8 @@ it('icon navigation retains accessible names, tooltips and active page status', 
   expect(history).toHaveAttribute('title', 'Riwayat');
   expect(history).toHaveAttribute('aria-current', 'page');
   expect(within(history).getByText('Riwayat')).toHaveClass('sr-only');
-  expect(within(nav).getAllByRole('link')).toHaveLength(5);
+  expect(within(nav).getAllByRole('link')).toHaveLength(4);
+  expect(within(nav).queryByRole('link', { name: 'Peralatan' })).not.toBeInTheDocument();
   expect(await screen.findByText('Ldr')).toBeVisible();
   expect(screen.getByRole('status', { name: 'Mode pembacaan' })).toHaveTextContent('CV lokal');
 });

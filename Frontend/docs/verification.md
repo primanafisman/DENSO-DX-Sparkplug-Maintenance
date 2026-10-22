@@ -88,3 +88,12 @@ Monitoring regressions separate501 monthly records from2 completed/3 pending che
 A second review found legacy custom definitions lacked numbers on new record snapshots even when the catalog displayed45+. Resolution now carries stable numbers into new records and new reviewed revisions; old report rows use an ID-based display fallback. A regression verifies the original archived standard remains deeply equal. No business records, reviewed master associations or CV models/algorithms were modified. No remaining release blocker was identified in the focused reviews.
 
 Pixel fit and physical tablet ergonomics are designed in CSS and reviewed in code, not newly browser/physical-device accepted. The chart-container dimensions supplied in jsdom tests are fixtures for data-flow testing, not evidence of rendered monitor geometry. Physical phone/tablet camera, print, second-computer and corporate database acceptance limits above remain open. Private-file and application-package checks are required before distributing this update.
+
+
+## Update — merged settings and editor availability actions (22 October2026)
+
+The pre-edit version64944fe was confirmed clean and already pushed to origin/feat/frontend-maintenance before product edits began. This preserves the requested pre-change snapshot independently of the subsequent commit.
+
+Command-only tests: Frontend79/79 in21 files; Backend150/150, plus architecture/lint/strict types. Focused UI13/13 covers renamed/ordered tabs, direct equipment-tab URL, Admin/read-only access, moving archive inside the editor, cancel without writes, failed archive draft retention and explicit reactivation. Backend regressions cover strict active-only input, authentication, CSRF, Admin permissions, no-op repeat, latest identity/profile preservation, inactive links, calibration and historical snapshots. Real operational records were not modified by these fixture tests. No browser was used.
+
+A dedicated transactional instrument status endpoint avoids writing a stale/full editor snapshot. Editors submit availability independently of unsaved fields; successful actions close the editor, failed/cancelled actions retain it. The registry includes archived inspections when editing relationships. Legacy /peralatan redirects with replace to /pengaturan?tab=equipment; tab state is URL-derived. Sidebar has four destinations. Independent read-only review found no release blocker. Existing physical-device/print/second-computer/SQL acceptance limits remain unchanged.

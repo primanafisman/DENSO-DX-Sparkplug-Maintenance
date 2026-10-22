@@ -190,6 +190,14 @@
       }
     },
     {
+      "name": "Admin archives or reactivates equipment; preserve identity profile links and history",
+      "request": {
+        "method": "PUT",
+        "url": "{{base_url}}/api/v1/instruments/{id}/status",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
       "name": "Upload original photo and production context",
       "request": {
         "method": "POST",

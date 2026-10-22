@@ -47,3 +47,8 @@ Browser HTTP memakai kamera native. Kamera web dengan kontrol/bingkai memerlukan
 `method=hybrid-cv-v0.2.4` memperbaiki orientasi OCR LED, titik desimal LCD pada foto monitor dan konteks auto-crop. Kontrak endpoint/DTO tetap sama. Tulisan tombol gabungan seperti ORIGIN ON/OFF tidak menjadi kandidat label, kecuali cocok tepat dengan identitas master. Jika nama tidak terbaca, pertahankan pilihan manual; angka yang valid tidak membuktikan identitas alat.
 
 Tampilkan `validated_prediction` sebagai hasil yang lolos pemeriksaan lokal, pisahkan estimasi `candidate.value` yang belum valid, dan tetap minta operator mengonfirmasi nama serta nilai. `confidence.level=medium` adalah tingkat heuristik; `probability_correct=null` tidak boleh diubah menjadi persentase akurasi. Simpan hasil setelah konfirmasi eksplisit. Restart layanan setelah mengganti kode pembaca; unggah ulang foto karena ID sementara dari versi lama tidak dipakai kembali.
+
+
+## Ketersediaan peralatan
+
+Admin memakai PUT /api/v1/instruments/:id/status dengan body ketat {"active":false} atau {"active":true}. Endpoint mengubah active/revision saja di dalam transaksi, mencatat audit, dan mengembalikan InstrumentResponse. Profil, identitas, tautan, kondisi, kalibrasi dan catatan lama dipertahankan. Tidak menyimpan draft editor yang belum disubmit. Status identik bersifat no-op; otorisasi dan CSRF cookie tetap wajib. Kontrak OpenAPI/Postman menyertakan InstrumentStatusInput. UI menempatkan tindakan ini di editor dalam tab Peralatan pada Pengaturan.

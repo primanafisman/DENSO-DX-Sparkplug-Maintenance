@@ -126,3 +126,12 @@ Acknowledgement panduan merupakan state lokal UI dengan kunci session_id+definit
 Formulir otomatis mengirim review_reason dan condition_reason deskriptif. Backend tetap mempertahankan audit/revisi dan validasi yang sama. equipment.code sekarang maksimal100 karakter agar dapat mengikuti equipment.name. Alias otomatis sama dengan Nama alat, termasuk nama yang memiliki koma; alias berbeda dapat diedit di detail.
 
 Monitoring memakai /maintenance/schedule dan /maintenance/due secara berkala. Jangan menampilkan jumlah due lama dengan shift/sesi baru: bandingkan schedule.starts_at penuh, bukan hanya slot_id yang berulang setiap hari. Jumlah catatan bulanan dari /maintenance/summary tidak boleh dipakai sebagai jumlah kewajiban selesai. Frontend ini mengambil semua halaman pencarian peralatan sebelum pengurutan lokal agar urutan konsisten melampaui halaman pertama.
+
+
+## Status pilihan alat dan pengaturan terpadu
+
+PUT /instruments/:id/status menerima hanya {"active":false} untuk mengeluarkan alat dari pilihan, atau {"active":true} untuk mengaktifkan kembali. Wajib Admin dan CSRF untuk sesi cookie, sama dengan penulisan lain. Respons berbentuk Instrument; perubahan status memperbarui revision tetapi tidak mengganti name, profile, aliases, maintenance_check_ids, kondisi atau kalibrasi. Status yang sudah sama tidak membuat revisi tambahan. Jangan memakai PUT profil lengkap hanya untuk menonaktifkan alat, karena endpoint itu mengganti field formulir.
+
+Daftar pemeriksaan tetap memakai PUT /maintenance/definitions/:id/status dengan active dan review_reason otomatis. Konfirmasi UI berada dalam editor dan terpisah dari submit formulir. Gagal/batal mempertahankan draft; sukses menutup editor dan memperbarui daftar. Status ini tidak menghapus riwayat.
+
+Pengaturan memuat tab standards (Daftar Pemeriksaan), equipment (Peralatan) dan general (Line Produksi). /peralatan merupakan tautan kompatibilitas yang redirect replace ke /pengaturan?tab=equipment. Gunakan URL Pengaturan ini untuk integrasi navigasi baru; sidebar tidak lagi memiliki menu Peralatan terpisah.

@@ -1254,6 +1254,94 @@
         }
       }
     },
+    "/api/v1/instruments/{id}/status": {
+      "put": {
+        "summary": "Admin archives or reactivates equipment; preserve identity profile links and history",
+        "operationId": "put__api_v1_instruments__id__status",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for cookie-authenticated writes, issued by GET auth/csrf."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/InstrumentResponse"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstrumentStatusInput"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/photos": {
       "post": {
         "summary": "Upload original photo and production context",
@@ -4266,6 +4354,18 @@
         },
         "required": [
           "name"
+        ],
+        "additionalProperties": false
+      },
+      "InstrumentStatusInput": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "active"
         ],
         "additionalProperties": false
       },

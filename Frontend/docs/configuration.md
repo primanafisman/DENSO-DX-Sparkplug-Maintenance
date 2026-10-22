@@ -61,3 +61,12 @@ Riwayat memakai check_number1–44 yang tetap untuk katalog awal, terpisah dari 
 Sidebar desktop/tablet menampilkan ikon dengan nama aksesibel, tooltip dan penanda merah menu aktif. Nama halaman tetap terlihat di header. Tablet mempertahankan sasaran sentuh minimal48px dan halaman menggulir normal; layar HP memakai navigasi bawah. Grafik/status monitoring desktop ditata dua kolom dengan panel tabel bergulir dan tinggi grafik mengikuti viewport pendek.
 
 Jadwal aktif menunjukkan shift/sesi dari waktu server serta jumlah pemeriksaan sudah/belum untuk line terpilih. Bila hanya satu line aktif, line itu ditampilkan eksplisit. Bila beberapa line aktif dan filter Semua line dipilih, pilih satu line untuk memuat kewajiban jadwal; aplikasi tidak mengasumsikan line pertama. Jumlah ini berbeda dari Total catatan dan OK/NG bulanan. Mengganti bulan/shift laporan tidak mengubah label shift saat ini. Saat jadwal berganti, angka jadwal lama disembunyikan sampai data jadwal baru cocok. Gagal/memuat data menampilkan tanda — dan pemulihan, bukan nol palsu.
+
+
+## Pengaturan terpadu dan hapus dari pilihan
+
+Navigasi utama berisi Ringkasan, Pemeriksaan, Riwayat dan Pengaturan. Pengaturan memiliki urutan tab Daftar Pemeriksaan, Peralatan, Line Produksi. Tab Line Produksi tetap memuat sampler, Type produk dan batas tanggal produksi. Pilihan tab tercermin pada URL (?tab=standards/equipment/general); tautan lama /peralatan diarahkan ke /pengaturan?tab=equipment.
+
+Pada daftar pemeriksaan dan peralatan, buka ikon Edit untuk menambah/mengubah konfigurasi. Hapus dari pilihan tersedia di dalam editor sebagai tombol berikon tempat sampah untuk item yang sudah disimpan, khusus Admin. Tindakan meminta konfirmasi dan tidak menyimpan perubahan formulir lain yang belum disimpan. Batal/gagal tetap mempertahankan isian. Item nonaktif tetap ada di Pengaturan dan dapat diaktifkan kembali dari editornya; riwayat, nomor pemeriksaan, tautan dan kalibrasi tetap dipertahankan.
+
+Status peralatan memakai endpoint khusus yang mengubah active dan revision saja, sehingga nama/profil terbaru dari editor lain tidak ditimpa. Edit biasa pada peralatan memakai katalog yang juga mencakup pemeriksaan nonaktif agar tautan yang lama tetap terlihat. Tidak ada penghapusan fisik data dari tindakan ini.

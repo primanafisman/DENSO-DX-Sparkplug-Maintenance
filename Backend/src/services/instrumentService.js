@@ -2,13 +2,14 @@ import {randomUUID,createHash} from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {AppError} from '../errors/AppError.js';
-import {instrumentInput,calibrationInput} from '../validations/instrumentValidation.js';
+import {instrumentInput,instrumentStatusInput,calibrationInput} from '../validations/instrumentValidation.js';
 import {publicCalibration} from '../sanitizers/calibrationSanitizer.js';
 import {publicInstrument} from './equipmentPolicy.js';
 function check(schema,input){const parsed=schema.safeParse(input);if(!parsed.success)throw new AppError(422,'VALIDATION_ERROR','Check equipment/calibration fields.');return parsed.data;}
 export function createInstrumentService({config,repositories,clock},photos){return {
   async list(input){const page=await (repositories.instruments.search?repositories.instruments.search(input):repositories.instruments.list(input));return {...page,items:page.items.map(publicInstrument)};},
   async get(id){const asset=await repositories.instruments.get(id);if(!asset)throw new AppError(404,'INSTRUMENT_NOT_FOUND','Equipment not found.');return publicInstrument(asset);},
+  async setStatus(id,input,actor){const {active}=check(instrumentStatusInput,input);return repositories.transaction(async tx=>{const previous=await tx.instruments.get(id);if(!previous)throw new AppError(404,'INSTRUMENT_NOT_FOUND','Equipment not found.');if(previous.active===active)return publicInstrument(previous);const saved=await tx.instruments.update(id,{active,revision:(previous.revision??0)+1});await tx.audit.append({actor_id:actor.id,action:'instrument_status_updated',entity_id:id,active,revision:saved.revision});return publicInstrument(saved);});},
   async create(input,actor){const data=check(instrumentInput,input);return repositories.transaction(async tx=>{const saved=await tx.instruments.create({...data,condition:data.condition??'unknown',revision:1});await tx.audit.append({actor_id:actor.id,action:'instrument_created',entity_id:saved.id});return publicInstrument(saved);});},
   async update(id,input,actor){const data=check(instrumentInput,input);return repositories.transaction(async tx=>{const previous=await tx.instruments.get(id);if(!previous)throw new AppError(404,'INSTRUMENT_NOT_FOUND','Equipment not found.');const changed=data.condition!==undefined&&data.condition!==(previous.condition??'unknown');if(changed&&!data.condition_reason)throw new AppError(422,'CONDITION_REASON','Provide a reason for the condition change.');const conditionFields=changed?{condition_changed_by:actor.id,condition_changed_at:new Date(clock()).toISOString()}:{};const saved=await tx.instruments.update(id,{...data,...conditionFields,revision:previous.revision+1});await tx.audit.append({actor_id:actor.id,action:'instrument_updated',entity_id:id,revision:saved.revision,...conditionFields,reason:changed?data.condition_reason:undefined});return publicInstrument(saved);});},
   async calibrations(id){return repositories.calibrations.list({limit:100,filters:{instrument_id:id}});},
