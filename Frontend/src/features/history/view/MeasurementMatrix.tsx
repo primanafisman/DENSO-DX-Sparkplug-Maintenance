@@ -54,14 +54,14 @@ export function MeasurementMatrix({
               <td key={g.occurrence.id}>{number(g.r)}</td>
             ))}
           </tr>
-          <tr>
-            <th>Type</th>
-            {groups.map((g) => (
-              <td key={g.occurrence.id}>
-                {g.occurrence.product_snapshot?.code ?? 'Tidak tercatat'}
-              </td>
-            ))}
-          </tr>
+          {groups.some((group) => group.occurrence.product_snapshot?.code) && (
+            <tr>
+              <th>Type</th>
+              {groups.map((g) => (
+                <td key={g.occurrence.id}>{g.occurrence.product_snapshot?.code ?? '—'}</td>
+              ))}
+            </tr>
+          )}
           <tr>
             <th>Hasil</th>
             {groups.map((g) => (

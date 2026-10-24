@@ -48,6 +48,57 @@ it('settings preserve source guidance without requesting a revision reason', asy
   expect(screen.getByDisplayValue('1 kali per shift')).toBeVisible();
 });
 
+it('lists source standard clauses, requirements and named master samples without inventing limits', async () => {
+  const master = fixtureDefinition({
+    name: 'Pengecekan Master Packing Check',
+    kind: 'functional',
+    input_method: 'ok_ng',
+    limits: null,
+    unit: null,
+    standard_text: 'Zero 8.25 ± 0.02; Plus 9.25 ± 0.02; Minus 7.25 ± 0.02. Semua display CMPLT On.',
+    requirements: [{ id: 'complete', label: 'Display CMPLT On' }],
+    samples: [
+      { id: 'zero', label: 'Zero' },
+      { id: 'plus', label: 'Plus (+)' },
+      { id: 'minus', label: 'Minus (-)' },
+    ],
+    sample_count: 3,
+  });
+  server.use(
+    http.get('/api/v1/auth/me', () =>
+      HttpResponse.json(envelope({ id: 'a', username: 'Admin', role: 'Admin' })),
+    ),
+    http.get('/api/v1/maintenance/settings', () =>
+      HttpResponse.json(
+        envelope({ lines: ['17'], allowed_samplers: ['Ldr'], night_rollover_hour: 12 }),
+      ),
+    ),
+    http.get('/api/v1/maintenance/catalog', () =>
+      HttpResponse.json(
+        envelope({
+          items: [master],
+          count: 1,
+          source_gaps: { missing_rows: [], clipped_row: null },
+        }),
+      ),
+    ),
+  );
+  renderApp(<SettingsPage />);
+  const row = (await screen.findByText(master.name)).closest('tr')!;
+  const standards = within(row).getByRole('list', {
+    name: 'Standar Pengecekan Master Packing Check',
+  });
+  expect(
+    within(standards)
+      .getAllByRole('listitem')
+      .map((item) => item.textContent),
+  ).toEqual(['Zero 8.25 ± 0.02', 'Plus 9.25 ± 0.02', 'Minus 7.25 ± 0.02. Semua display CMPLT On.']);
+  expect(within(row).getByText('Zero', { exact: true })).toBeVisible();
+  expect(within(row).getByText('Plus (+)', { exact: true })).toBeVisible();
+  expect(within(row).getByText('Minus (-)', { exact: true })).toBeVisible();
+  expect(within(row).queryByLabelText('Batas penerimaan')).not.toBeInTheDocument();
+});
+
 it('admin adds a linked inspection and removes it from active options while retaining its row', async () => {
   let rows = [fixtureDefinition()],
     created: Record<string, unknown> | null = null,
@@ -222,6 +273,51 @@ it('settings accept manually named lines beyond17, reject duplicates and remove 
   fireEvent.click(screen.getByRole('button', { name: /Simpan pengaturan/ }));
   await waitFor(() => expect(saved?.lines).toEqual(['18', 'Line A']));
   expect(saved?.allowed_samplers).toEqual(['Leader 2']);
+});
+
+it('shows product names alone, mirrors new names internally and preserves distinct legacy product codes', async () => {
+  let saved: { product_types: { id: string; name: string; code: string }[] } | undefined;
+  server.use(
+    http.get('/api/v1/auth/csrf', () => HttpResponse.json(envelope({ csrf_token: 'test-csrf' }))),
+    http.get('/api/v1/auth/me', () =>
+      HttpResponse.json(envelope({ id: 'a', username: 'Admin', role: 'Admin' })),
+    ),
+    http.get('/api/v1/maintenance/settings', () =>
+      HttpResponse.json(
+        envelope({
+          lines: ['17'],
+          allowed_samplers: ['Ldr'],
+          night_rollover_hour: 12,
+          product_types: [
+            { id: 'legacy', code: 'SP-A', name: 'Sparkplug A', active: true, version: 1 },
+          ],
+        }),
+      ),
+    ),
+    http.get('/api/v1/maintenance/catalog', () =>
+      HttpResponse.json(envelope({ items: [], count: 0 })),
+    ),
+    http.put('/api/v1/maintenance/settings', async ({ request }) => {
+      saved = (await request.json()) as typeof saved;
+      return HttpResponse.json(envelope({ value: saved, version: 2 }));
+    }),
+  );
+  renderApp(<SettingsPage />, '/pengaturan?tab=general');
+  const legacy = await screen.findByLabelText('Nama Type legacy');
+  fireEvent.change(legacy, { target: { value: 'SP-A' } });
+  fireEvent.change(legacy, { target: { value: 'Sparkplug A revisi' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Tambah Type' }));
+  const newName = screen.getAllByLabelText(/^Nama Type /).find((input) => input !== legacy)!;
+  fireEvent.change(newName, { target: { value: 'Sparkplug Baru' } });
+  expect(screen.queryByRole('columnheader', { name: 'KODE' })).not.toBeInTheDocument();
+  expect(screen.queryByLabelText(/^Kode /)).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Simpan pengaturan' }));
+  await waitFor(() =>
+    expect(saved?.product_types).toEqual([
+      expect.objectContaining({ id: 'legacy', name: 'Sparkplug A revisi', code: 'SP-A' }),
+      expect.objectContaining({ name: 'Sparkplug Baru', code: 'Sparkplug Baru' }),
+    ]),
+  );
 });
 
 it('requires classifying a legacy inspection before saving and sends the selected target', async () => {

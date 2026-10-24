@@ -4,10 +4,9 @@ import { Camera, Upload, ImagePlus } from 'lucide-react';
 import { useCapture } from '../controller/captureContext';
 import { useCamera } from '../controller/useCamera';
 import { CameraGuide } from './CameraGuide';
-import { useInspectionStore } from '../../maintenance/model/inspectionStore';
 import { useInspectionGuidance } from '../../maintenance/controller/useInspectionGuidance';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
-import { Card, Button, Loading, ErrorDialog, Badge } from '../../../shared/components/ui';
+import { Card, Button, Loading, ErrorDialog } from '../../../shared/components/ui';
 const stages = {
   idle: 'Siap mengambil foto',
   uploading: 'Mengunggah foto…',
@@ -21,7 +20,6 @@ export function CapturePage() {
   const { state, engine } = useCapture(),
     guidance = useInspectionGuidance(),
     camera = useCamera(),
-    draft = useInspectionStore((s) => s.draft),
     upload = useRef<HTMLInputElement>(null),
     native = useRef<HTMLInputElement>(null),
     [monitor, setMonitor] = useState(false),
@@ -44,16 +42,8 @@ export function CapturePage() {
   };
   return (
     <>
-      <PageHeader
-        title="Foto alat ukur"
-        description={draft?.definition?.name ?? 'Cocokkan label ke peralatan dan pemeriksaan'}
-      />
+      <PageHeader title="Foto alat ukur" />
       <Card>
-        <div className="row wrap section-title">
-          <Badge>Line {draft?.context.line}</Badge>
-          <Badge>{draft?.context.shift === 'day' ? 'Shift 1' : 'Shift 2'}</Badge>
-          <span className="muted">{draft?.context.production_date}</span>
-        </div>
         <input
           ref={upload}
           type="file"
@@ -105,7 +95,7 @@ export function CapturePage() {
               />
               Sedang memfoto layar monitor
             </label>
-            <div className="actions">
+            <div className="actions workflow-actions">
               <Button
                 onClick={async () => {
                   const file = await camera.take(monitor);
@@ -128,7 +118,7 @@ export function CapturePage() {
             <p>
               Seluruh skala/angka terlihat utuh. Letakkan nama alat atau test tepat di bawah gauge.
             </p>
-            <div className="actions">
+            <div className="actions workflow-actions">
               <Button disabled={busy} onClick={() => camera.start()}>
                 <Camera size={19} />
                 Buka kamera
@@ -146,16 +136,19 @@ export function CapturePage() {
         {busy && (
           <div className="analysis-progress">
             <Loading label={stages[state.stage]} />
-            <p>Foto dibaca otomatis. Hasil baru tersimpan setelah konfirmasi.</p>
+
             <Button variant="secondary" onClick={() => engine.invalidate()}>
               Batalkan analisis
             </Button>
           </div>
         )}
-        <p className="info-note">
-          Hindari silau dan gerakan. Untuk foto layar, perbesar foto di monitor dan ubah sedikit
-          jarak jika pola layar mengganggu.
-        </p>
+        <details className="data-details">
+          <summary>Panduan foto</summary>
+          <p>
+            Gauge utuh, label di bawah. Hindari silau. Jika memfoto monitor, ubah jarak saat pola
+            layar terlihat.
+          </p>
+        </details>
         <Link className="link-button" to="/pemeriksaan">
           ← Kembali ke daftar
         </Link>

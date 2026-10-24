@@ -6,6 +6,7 @@ import { nextCapture } from '../../maintenance/model/inspectionStore';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { Card, Field, Button, ErrorDialog, Badge } from '../../../shared/components/ui';
 import { number } from '../../../shared/lib/format';
+import { formatAcceptance } from '../../../shared/lib/acceptance';
 export function ConfirmPage() {
   const { state, engine } = useCapture(),
     inspection = useInspection({ scheduleEnabled: false }),
@@ -29,6 +30,9 @@ export function ConfirmPage() {
   if (!state.result || !d?.definition || !state.instrument)
     return <Navigate to="/pemeriksaan/hasil" replace />;
   const sample = nextCapture(d);
+  const limits =
+    (state.reading?.instrument_snapshot ?? state.instrument).acceptance_limits ??
+    d.definition.limits;
   const confirm = async () => {
     setSaving(true);
     try {
@@ -47,12 +51,21 @@ export function ConfirmPage() {
   };
   return (
     <>
-      <PageHeader
-        title="Konfirmasi hasil"
-        description={d.definition.name + ' · Line ' + d.context.line}
-      />
+      <PageHeader title="Konfirmasi hasil" />
       <Card>
         <Badge>{state.instrument.name}</Badge>
+        {limits && (
+          <div className="acceptance-summary">
+            <strong>Batas OK</strong>
+            <span>
+              {formatAcceptance(
+                limits,
+                state.profile?.unit ?? d.definition.unit ?? '',
+                state.profile?.decimals ?? 3,
+              )}
+            </span>
+          </div>
+        )}
         <div className="reading-value">
           {state.reading
             ? state.reading.final_value + ' ' + state.profile?.unit
@@ -60,16 +73,11 @@ export function ConfirmPage() {
               ' ' +
               state.profile?.unit}
         </div>
-        {!state.result.confidence.valid && (
-          <p className="info-note">
-            Input manual berdasarkan foto. Isi nilai, lalu konfirmasi identitas dan hasil.
-          </p>
-        )}
+        {!state.result.confidence.valid && <p className="info-note">Isi angka sesuai foto.</p>}
         <p className="muted">
           {sample
             ? `${sample.sample_id}${sample.stage ? ' · ' + sample.stage : ''}`
             : 'Seluruh sampel lengkap'}{' '}
-          · {d.context.production_date} · {d.context.shift === 'day' ? 'Shift 1' : 'Shift 2'}
         </p>
         {!state.reading ? (
           <>
@@ -112,7 +120,7 @@ export function ConfirmPage() {
                 Konfirmasi sebelumnya belum pasti. Coba lagi dengan ID dan isi permintaan yang sama.
               </p>
             )}
-            <div className="actions">
+            <div className="actions workflow-actions">
               <Link className="button button-secondary" to="/pemeriksaan/hasil">
                 Kembali
               </Link>
@@ -133,7 +141,7 @@ export function ConfirmPage() {
                 ? 'Ambil foto baru untuk sampel berikutnya.'
                 : 'Semua sampel lengkap; simpan pemeriksaan agar masuk ke laporan maintenance.'}
             </p>
-            <div className="actions">
+            <div className="actions workflow-actions">
               {sample ? (
                 <Button
                   onClick={() => {
@@ -168,10 +176,6 @@ export function ConfirmPage() {
             </p>
           )}
         </div>
-        <p className="info-note">
-          Batas standar: {d.definition.standard_text}. Status OK/NG ditentukan server saat
-          pemeriksaan disimpan.
-        </p>
       </Card>
       <ErrorDialog
         error={error ?? inspection.error}

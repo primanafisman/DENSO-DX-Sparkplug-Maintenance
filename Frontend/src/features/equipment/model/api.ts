@@ -25,6 +25,10 @@ export function equipmentBody(v: EquipmentForm) {
     condition: v.condition,
     condition_reason: v.condition_reason || 'Perubahan kondisi melalui pengaturan peralatan.',
     measurement_mode: v.measurement_mode,
+    acceptance_limits:
+      v.measurement_mode === 'numeric' && v.use_acceptance_limits
+        ? { minimum: v.acceptance_minimum, maximum: v.acceptance_maximum }
+        : null,
     maintenance_check_ids: v.check_ids,
     profile:
       v.measurement_mode === 'visual'

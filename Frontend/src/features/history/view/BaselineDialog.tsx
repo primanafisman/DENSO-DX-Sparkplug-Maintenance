@@ -13,17 +13,13 @@ export function BaselineDialog({
   const save = useSaveBaseline();
   return (
     <div className="modal-backdrop">
-      <section className="modal" role="dialog" aria-modal="true" aria-label="Simpan baseline">
+      <section className="modal" role="dialog" aria-modal="true" aria-label="Simpan batas kontrol">
         <h2>Simpan batas kontrol</h2>
-        <p>
-          Server menghitung dan menyimpan batas dari snapshot periode ini. Ini catatan baseline
-          aplikasi; persetujuan kualitas mengikuti proses perusahaan.
-        </p>
         <ErrorMessage error={save.error} />
-        {save.isSuccess ? <p role="status">Baseline tersimpan.</p> : null}
+        {save.isSuccess ? <p role="status">Batas kontrol tersimpan.</p> : null}
         <div className="actions">
           <Button variant="secondary" onClick={onClose}>
-            Tutup baseline
+            Tutup
           </Button>
           <Button
             disabled={save.isPending || save.isSuccess}
@@ -36,7 +32,7 @@ export function BaselineDialog({
               })
             }
           >
-            {save.isPending ? 'Menyimpan…' : 'Simpan baseline'}
+            {save.isPending ? 'Menyimpan…' : 'Simpan batas kontrol'}
           </Button>
         </div>
       </section>

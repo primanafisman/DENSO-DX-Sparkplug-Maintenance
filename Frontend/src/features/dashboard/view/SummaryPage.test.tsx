@@ -49,8 +49,11 @@ it('current server shift and due checks stay separate from historical monthly re
   expect(await screen.findByText('501')).toBeVisible();
   expect(screen.getByLabelText('Shift')).toHaveValue('day');
   expect(screen.getByLabelText('Bulan')).toHaveValue('2026-09');
-  expect(screen.getByText('Catatan OK')).toBeVisible();
-  expect(screen.getByText('Catatan NG')).toBeVisible();
+  expect(
+    screen.queryByText(/hasil pemeriksaan tersimpan|Snapshot|OK ÷ total catatan/),
+  ).not.toBeInTheDocument();
+  expect(screen.getByText('OK', { selector: '.kpi-grid p' })).toBeVisible();
+  expect(screen.getByText('NG', { selector: '.kpi-grid p' })).toBeVisible();
 });
 it('a multi-line summary requires an explicit line before displaying due counts', async () => {
   setup(['17', '18']);
@@ -62,7 +65,7 @@ it('a multi-line summary requires an explicit line before displaying due counts'
     }),
   );
   renderApp(<SummaryPage />);
-  expect(await screen.findByText(/Pilih line untuk melihat pemeriksaan/)).toBeVisible();
+  expect(await screen.findByText(/^Pilih line$/)).toBeVisible();
   await screen.findByRole('option', { name: '17' });
   expect(calls).toBe(0);
   fireEvent.change(screen.getByLabelText('Line'), { target: { value: '17' } });

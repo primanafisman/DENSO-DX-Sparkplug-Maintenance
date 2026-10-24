@@ -11,7 +11,7 @@ export function useEquipment(
   definitions: MaintenanceDefinition[] = [],
 ) {
   const client = useQueryClient(),
-    [sort, setSort] = useState<EquipmentSort>({ key: 'code', direction: 'asc' });
+    [sort, setSort] = useState<EquipmentSort>({ key: 'name', direction: 'asc' });
   const query = useQuery({
     queryKey: ['equipment', filters],
     queryFn: async ({ signal }) => {

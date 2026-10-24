@@ -5,7 +5,7 @@ import { server } from '../../../test/server';
 import { renderApp } from '../../../test/render';
 import { envelope, fixtureInstrument, fixtureDefinition } from '../../../test/fixtures';
 import { EquipmentPage } from './EquipmentPage';
-it('orders the complete registry by code by default and allows sorting by equipment name', async () => {
+it('shows names alone and naturally sorts the complete registry without exposing private codes', async () => {
   server.use(
     http.get('/api/v1/auth/me', () =>
       HttpResponse.json(envelope({ id: 'a', username: 'Admin', role: 'Admin' })),
@@ -33,14 +33,18 @@ it('orders the complete registry by code by default and allows sorting by equipm
     ),
   );
   renderApp(<EquipmentPage />);
-  await screen.findByText('B10');
-  const codes = () =>
-    [...document.querySelectorAll('tbody tr')].map((row) => row.querySelector('td')?.textContent);
-  expect(codes()).toEqual(['A1', 'B2', 'B10']);
+  await screen.findByText('Alpha');
+  const names = () =>
+    [...document.querySelectorAll('tbody tr')].map(
+      (row) => row.querySelector('strong')?.textContent,
+    );
+  expect(names()).toEqual(['Alpha', 'Beta', 'Zeta']);
+  expect(screen.queryByRole('button', { name: /Nomor \/ kode/ })).not.toBeInTheDocument();
+  expect(screen.queryByText('B10')).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Urutkan berdasarkan Peralatan' }));
-  expect(codes()).toEqual(['B10', 'A1', 'B2']);
+  expect(names()).toEqual(['Zeta', 'Beta', 'Alpha']);
   fireEvent.click(screen.getByRole('button', { name: 'Urutkan berdasarkan Peralatan' }));
-  expect(codes()).toEqual(['B2', 'A1', 'B10']);
+  expect(names()).toEqual(['Alpha', 'Beta', 'Zeta']);
 });
 it('visual tools hide numeric fields, unknown condition is honest and registry search reaches server', async () => {
   const queries: string[] = [];

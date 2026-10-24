@@ -28,6 +28,12 @@ Foto, ROI, profil dan alat membentuk satu snapshot analisis. Jika salah satunya 
 
 Discovery yang cocok dengan master terdaftar diprioritaskan. `roi` gauge, `label_roi` label bila ditemukan, profil, ID alat, dan `photo.context.line` sebagai `area` ikut dalam snapshot/submission. Foto dikirim utuh supaya nama test di bawah gauge tetap tersedia. Kedua crop ditampilkan bersama hasil. Label tidak unik/tidak terbaca tetap memerlukan pilihan manual; konfirmasi identitas dan angka tidak dicentang otomatis. Analisis tidak menyimpan hasil pengukuran.
 
+Nama/alias lengkap yang unik tetap dapat mengenali alat saat line foto berbeda dari area master. Line foto dan master tidak diganti otomatis. Kecocokan parsial tetap hanya saran; kode lama tetap mengikuti area master. Pemilihan nama alat tidak menjalankan CV lagi jika profil fisiknya sesuai dengan hasil yang sudah ada.
+
+`Instrument.acceptance_limits` mengatur batas hasil OK per alat, terpisah dari `profile.minimum/maximum` yang merupakan rentang fisik pembacaan. Kirim `{"minimum":0.35,"maximum":0.45}` untuk batas inklusif; salah satu batas boleh `null`, tetapi keduanya tidak boleh kosong. Batas harus berada dalam rentang fisik. Kirim `null` untuk mengikuti batas definisi pemeriksaan; peralatan visual memakai pilihan OK/NG tanpa batas angka.
+
+Backend menilai hasil dari `instrument_snapshot.acceptance_limits` pada foto yang sudah dikonfirmasi. Hasil di bawah/di atas batas menjadi NG; batas itu sendiri termasuk OK. Setiap outcome menyimpan `acceptance_limits` dan `acceptance_source` (`equipment` atau `inspection`). Perubahan master sesudah konfirmasi tidak mengubah kriteria foto atau hasil lama. Untuk pemeriksaan selisih, batas diterapkan pada selisih hasil; foto sebelum/sesudah harus membawa kriteria yang sama. SPC memisahkan kriteria berbeda dan menyediakan batas efektif pada cohort; Cp tetap kosong bila hanya ada satu batas.
+
 ## Jadwal berdasarkan waktu server
 
 Panggil `GET /api/v1/maintenance/schedule` setelah login, sebelum foto diunggah, dan saat kembali memulai pemeriksaan. Gunakan `server_time`, `production_date`, `shift` dan `slot_id` dari respons. Jam HP tidak menentukan shift. Batas awal WIB berlaku inklusif: Shift 1 07:45, Shift 1 12:45, Shift 2 21:15, Shift 2 01:15. Pilih batas terakhir yang sudah dilalui; contoh 00:30 masih slot Shift 2 21:15 hari sebelumnya, sedangkan 01:15 menjadi slot Shift 2 01:15.

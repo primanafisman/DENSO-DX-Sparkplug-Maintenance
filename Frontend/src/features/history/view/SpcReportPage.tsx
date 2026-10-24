@@ -25,6 +25,8 @@ import {
 import { dateTime, monthRange } from '../../../shared/lib/format';
 import { StatusReportPage } from './StatusReportPage';
 import { useCapabilities } from '../../../shared/controller/useCapabilities';
+import { statusOnlyReport } from '../model/reportMode';
+import { cohortAcceptance } from '../model/measurementFacts';
 export function SpcReportPage() {
   const { definitionId } = useParams(),
     catalog = useCatalog(true),
@@ -41,7 +43,8 @@ export function SpcReportPage() {
     );
   if (catalog.isPending) return <Loading />;
   if (catalog.error) return <ErrorMessage error={catalog.error} />;
-  if (definition?.input_method === 'ok_ng') return <StatusReportPage definition={definition} />;
+  if (definition && statusOnlyReport(definition))
+    return <StatusReportPage definition={definition} />;
   return <NumericReportPage />;
 }
 function NumericReportPage() {
@@ -51,7 +54,8 @@ function NumericReportPage() {
     [params, setParams] = useSearchParams(),
     catalog = useCatalog(true),
     session = useSession(),
-    baselines = useBaselines(),
+    [showSettings, setShowSettings] = useState(false),
+    baselines = useBaselines(showSettings && !f.demo),
     [chosen, setChosen] = useState(''),
     [occurrence, setOccurrence] = useState<Occurrence | null>(null),
     [saveBaseline, setSaveBaseline] = useState(false),
@@ -145,7 +149,6 @@ function NumericReportPage() {
       <div className="no-print">
         <PageHeader
           title={definition?.name ?? 'Laporan pemeriksaan'}
-          description="X̄ / R dan data pengukuran sesuai versi standar tersimpan."
           actions={
             <Link
               className="button button-secondary"
@@ -165,16 +168,10 @@ function NumericReportPage() {
         />
         {f.demo && (
           <div className="demo-banner" role="status">
-            <strong>Data contoh — bukan catatan produksi.</strong> Angka simulasi mengikuti struktur
-            sampel lembar maintenance. Grafik dan statistik dihitung dengan rumus laporan yang sama.
+            <strong>Data contoh — bukan catatan produksi.</strong>
           </div>
         )}
         <ReportFilters filters={f} />
-        {baseline && (
-          <Button variant="secondary" onClick={() => change({ baseline: '' })}>
-            Hitung ulang dari periode
-          </Button>
-        )}
         <div className="filter-bar">
           <Field label="Pemeriksaan">
             <select
@@ -228,6 +225,14 @@ function NumericReportPage() {
         </div>
       </div>
       <ErrorMessage error={q.report.error ?? f.error ?? catalog.error} />
+      {baseline && q.report.isError && (
+        <details className="no-print">
+          <summary>Pengaturan grafik</summary>
+          <Button variant="secondary" onClick={() => change({ baseline: '' })}>
+            Gunakan periode dipilih
+          </Button>
+        </details>
+      )}
       {q.report.isLoading && <Loading />}
       {report && !q.report.error && (
         <>
@@ -243,70 +248,85 @@ function NumericReportPage() {
             </Card>
           ) : (
             <>
-              <div className="no-print">
-                <Field label="Kelompok data kompatibel">
-                  <select value={c?.cohort_id ?? ''} onChange={(e) => setChosen(e.target.value)}>
-                    <option value="">Pilih versi standar / alat / Type</option>
-                    {report.cohorts.map((cohort) => (
-                      <option key={cohort.cohort_id} value={cohort.cohort_id}>
-                        v{cohort.definition_snapshot.definition_version} ·{' '}
-                        {cohort.instruments.map((i) => i.name).join(', ') || 'Alat tidak tercatat'}{' '}
-                        · {cohort.product_snapshot?.name ?? 'Type tidak tercatat'} ·{' '}
-                        {cohort.counts.complete} lengkap
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              </div>
+              {report.cohorts.length > 1 && (
+                <div className="no-print">
+                  <Field label="Kelompok pengukuran">
+                    <select value={c?.cohort_id ?? ''} onChange={(e) => setChosen(e.target.value)}>
+                      <option value="">Pilih kelompok</option>
+                      {report.cohorts.map((cohort, index) => (
+                        <option key={cohort.cohort_id} value={cohort.cohort_id}>
+                          {index + 1} ·{' '}
+                          {[
+                            cohort.product_snapshot?.name,
+                            cohort.instruments.map((i) => i.name).join(', '),
+                            cohort.unit,
+                            'n' + cohort.n,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                </div>
+              )}
               {c ? (
                 <>
                   <Card className="report-header">
-                    <h1>{c.definition_snapshot.name}</h1>
-                    <p>
-                      Line {report.meta.scope.line ?? 'Semua'} · {start} s.d. {end} · {c.unit} · n=
-                      {c.n}
-                    </p>
-                    <p>
-                      Alat: {c.instruments.map((i) => i.name).join(', ') || 'Tidak tercatat'} ·
-                      resolusi {c.definition_snapshot.resolution ?? 'Tidak tercatat'} {c.unit} ·
-                      Type {c.product_snapshot?.name ?? 'Tidak tercatat'}
-                    </p>
-                    <p>
-                      <strong>Standar / LSL–USL:</strong> {c.definition_snapshot.standard_text} ·
-                      versi {c.definition_snapshot.definition_version}
-                    </p>
-                    <p className="muted">
-                      Snapshot {dateTime(report.meta.as_of)} · batas kontrol{' '}
-                      {c.baseline.source === 'frozen'
-                        ? 'baseline tersimpan ' + c.baseline.id
-                        : 'estimasi periode terpilih'}
-                    </p>
+                    <div className="row wrap">
+                      {c.product_snapshot?.name && <strong>Type {c.product_snapshot.name}</strong>}
+                      <span>{c.unit}</span>
+                      <span>n = {c.n}</span>
+                      {cohortAcceptance(c) && (
+                        <span>
+                          <strong>Batas OK:</strong> {cohortAcceptance(c)}
+                        </span>
+                      )}
+                    </div>
                     <div className="no-print">
-                      {!f.demo && (
-                        <Field label="Sumber batas kontrol">
-                          <select
-                            disabled={report.cohorts.length > 1}
-                            value={baseline ?? ''}
-                            onChange={(e) => change({ baseline: e.target.value })}
-                          >
-                            <option value="">Hitung dari periode terpilih</option>
-                            {baselines.data
-                              ?.filter((b) => b.cohort_key === c.cohort_key)
-                              .map((b) => (
-                                <option key={b.id} value={b.id}>
-                                  {dateTime(b.created_at)} · {b.review_reason}
-                                </option>
-                              ))}
-                          </select>
-                        </Field>
-                      )}
-                      {report.cohorts.length > 1 && (
-                        <p className="info-note">
-                          Beberapa kelompok ditemukan. Pemakaian baseline tersimpan memerlukan
-                          filter periode / alat / Type yang menghasilkan satu kelompok kompatibel.
-                        </p>
-                      )}
-                      <ErrorMessage error={baselines.error} />
+                      <details onToggle={(event) => setShowSettings(event.currentTarget.open)}>
+                        <summary>Pengaturan grafik</summary>
+                        {!f.demo && (
+                          <Field label="Batas kontrol">
+                            <select
+                              disabled={report.cohorts.length > 1}
+                              value={baseline ?? ''}
+                              onChange={(e) => change({ baseline: e.target.value })}
+                            >
+                              <option value="">Periode dipilih</option>
+                              {baselines.data
+                                ?.filter((b) => b.cohort_key === c.cohort_key)
+                                .map((b) => (
+                                  <option key={b.id} value={b.id}>
+                                    Tersimpan · {dateTime(b.created_at)}
+                                  </option>
+                                ))}
+                            </select>
+                          </Field>
+                        )}
+                        {report.cohorts.length > 1 && (
+                          <p className="info-note">
+                            Pilih satu kelompok pengukuran untuk memakai batas kontrol tersimpan.
+                          </p>
+                        )}
+                        <ErrorMessage error={baselines.error} />
+                        {baseline && (
+                          <Button variant="secondary" onClick={() => change({ baseline: '' })}>
+                            Gunakan periode dipilih
+                          </Button>
+                        )}
+                        {!f.demo &&
+                          session.user?.role === 'Admin' &&
+                          report.cohorts.length === 1 && (
+                            <Button
+                              variant="secondary"
+                              disabled={c.control_limits.ucl_x === null}
+                              onClick={() => setSaveBaseline(true)}
+                            >
+                              Simpan batas kontrol
+                            </Button>
+                          )}
+                      </details>
                       <div className="actions">
                         <Button onClick={print} disabled={printing}>
                           {printing ? 'Menyiapkan seluruh data…' : 'Cetak laporan A4'}
@@ -324,17 +344,6 @@ function NumericReportPage() {
                         >
                           Unduh CSV
                         </Button>
-                        {!f.demo &&
-                          session.user?.role === 'Admin' &&
-                          report.cohorts.length === 1 && (
-                            <Button
-                              variant="secondary"
-                              disabled={c.control_limits.ucl_x === null}
-                              onClick={() => setSaveBaseline(true)}
-                            >
-                              Simpan batas kontrol
-                            </Button>
-                          )}
                       </div>
                     </div>
                   </Card>
@@ -369,7 +378,7 @@ function NumericReportPage() {
                   {!printGroups && (
                     <p className="print-only">
                       Data mentah belum disiapkan. Gunakan tombol Cetak laporan A4 untuk mencetak
-                      seluruh data pada snapshot yang sama.
+                      seluruh data.
                     </p>
                   )}
                   {printGroups && (
@@ -381,7 +390,7 @@ function NumericReportPage() {
                             {Math.min(printGroups.length, (i + 1) * 8)}
                           </h2>
                           <p>
-                            {start} s.d. {end} · snapshot {dateTime(report.meta.as_of)}
+                            {start} – {end}
                           </p>
                           <MeasurementMatrix
                             cohort={c}
@@ -402,19 +411,21 @@ function NumericReportPage() {
                 </>
               ) : (
                 <Card>
-                  <Empty
-                    title="Pilih satu kelompok data"
-                    description="Versi standar, alat, Type dan kalibrasi yang berbeda tidak digabungkan dalam satu kalkulasi."
-                  />
+                  <Empty title="Pilih kelompok pengukuran" description="" />
                 </Card>
               )}
             </>
           )}
-          {report.meta.warnings.map((w) => (
-            <p key={w} className="info-note">
-              {w}
-            </p>
-          ))}
+          {report.meta.warnings.some((warning) => warning !== 'DEMO_DATA') && (
+            <details className="info-note">
+              <summary>Detail laporan</summary>
+              {report.meta.warnings
+                .filter((warning) => warning !== 'DEMO_DATA')
+                .map((warning) => (
+                  <p key={warning}>{warning}</p>
+                ))}
+            </details>
+          )}
         </>
       )}
       <ErrorDialog error={error} onClose={() => setError(null)} />

@@ -16,7 +16,8 @@ export type Confirmation={analysis_id:string;instrument_id:string;instrument_rev
 export type ApiResponse<T>={success:true;data:T;message:string;request_id:string}|{success:false;code:string;message:string;details?:{field:string;message:string}[];request_id:string};
 export type Page<T>={items:T[];next_cursor:string|null};
 export type User={id:string;username:string;role:Role};
-export type Instrument={id:string;name:string;code:string;aliases:string[];area:string;instrument_type:'pressure_gauge'|'caliper'|'height_gauge'|'gasket_gauge'|'dial_indicator'|'other';active:boolean;profile:Profile|null;measurement_mode?:'numeric'|'visual';condition?:'working'|'not_working'|'unknown';condition_reason?:string;condition_changed_at?:string;condition_changed_by?:string;maintenance_check_ids:string[];revision:number;created_at:string};
+export type AcceptanceLimits={minimum:number|null;maximum:number|null};
+export type Instrument={id:string;name:string;code:string;aliases:string[];area:string;instrument_type:'pressure_gauge'|'caliper'|'height_gauge'|'gasket_gauge'|'dial_indicator'|'other';active:boolean;profile:Profile|null;acceptance_limits?:AcceptanceLimits|null;measurement_mode?:'numeric'|'visual';condition?:'working'|'not_working'|'unknown';condition_reason?:string;condition_changed_at?:string;condition_changed_by?:string;maintenance_check_ids:string[];revision:number;created_at:string};
 export type Point={x:number;y:number};
 export type Calibration={id:string;instrument_id:string;version:number;profile_snapshot:Profile;source_hash:string;template_hash:string;pivot:Point;scale_points:(Point&{value:number})[];clockwise:boolean;resolution:number;created_at:string};
 export type ConfirmedReading={id:string;confirmation_id:string;analysis_id:string;instrument_id:string;instrument_snapshot:Instrument;profile_snapshot:Profile;product_snapshot?:ProductSnapshot|null;calibration_snapshot?:{id:string;template_hash:string|null}|null;final_value:string;raw_prediction:number|null;corrected:boolean;reason:string;context:Context;check_id:string;sample_key:string;actor_id:string;confirmed_at:string;created_at:string;evidence_available:boolean;confidence?:AnalysisResult['confidence'];algorithm_version?:string};
@@ -26,7 +27,7 @@ export type MaintenanceDefinition={inspection_target?:'machine'|'product'|null;c
 export type Schedule={times:{time:string;day_offset:number}[];window:Record<string,unknown>|null};
 export type MaintenanceCatalog={items:MaintenanceDefinition[];count:number;source_gaps:{missing_rows:number[];clipped_row:number}};
 export type MaintenanceObservation={sample_id:string;status:'OK'|'NG'}|{sample_id:string;reading_id:string}|{sample_id:string;before_reading_id:string;after_reading_id:string};
-export type SampleOutcome=MaintenanceObservation&{status:'OK'|'NG';value?:number};
+export type SampleOutcome=MaintenanceObservation&{status:'OK'|'NG';value?:number;acceptance_limits?:AcceptanceLimits;acceptance_source?:'equipment'|'inspection'};
 export type MaintenanceRecord={id:string;definition_id:string;definition_version?:number;context:Context;interval:Interval;trigger:string;checked_at:string;observations:MaintenanceObservation[];actor_id:string;definition_snapshot:MaintenanceDefinition;settings_snapshot:MaintenanceSettings;outcomes:SampleOutcome[];overall_status:'OK'|'NG';saved_at:string;created_at:string;product_snapshot?:ProductSnapshot|null;instrument_snapshot?:Instrument|null;schedule_snapshot?:{slot_id:string;starts_at:string;schedule_version:number;timezone:'Asia/Jakarta'}};
 export type * from './report-types';
 

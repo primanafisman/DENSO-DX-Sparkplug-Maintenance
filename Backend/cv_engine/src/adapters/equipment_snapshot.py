@@ -17,8 +17,7 @@ class EquipmentSnapshot:
         lines=[normalized(line) for line in raw.splitlines() if normalized(line)]
         candidates=[]
         for asset in (self.all() if assets is None else assets):
-            if area and asset['area']!=area:
-                continue
+            same_area=not area or not asset['area'] or asset['area']==area
             best=0.; evidence=''
             options=[('code',asset['code']),('name',asset['name']),*[('alias',s) for s in asset['aliases']]]
             for kind,option in options:
@@ -26,7 +25,14 @@ class EquipmentSnapshot:
                 if not reference:
                     continue
                 for line in lines:
-                    if line==reference:
+                    # The production line is capture context, not equipment identity.
+                    # Only complete named identities may cross that boundary; partial
+                    # suggestions and legacy codes remain scoped to the registered line.
+                    named_exact=(kind!='code' and any(c.isalpha() for c in reference)
+                                 and line.replace(' ','')==reference.replace(' ',''))
+                    if not same_area and not named_exact:
+                        continue
+                    if line==reference or named_exact:
                         score=1. if kind=='code' else .98
                     elif len(line)>=3 and (reference.startswith(line) or line.startswith(reference)):
                         # A prefix can rank a suggestion, never prove the missing characters.

@@ -57,7 +57,7 @@ export function Loading({ label = 'Memuat data…' }: { label?: string }) {
 }
 export function Empty({
   title = 'Belum ada data',
-  description = 'Hasil yang sudah disimpan akan tampil di sini.',
+  description,
 }: {
   title?: string;
   description?: string;
@@ -66,7 +66,7 @@ export function Empty({
     <div className="empty">
       <Inbox size={32} />
       <h3>{title}</h3>
-      <p>{description}</p>
+      {description && <p>{description}</p>}
     </div>
   );
 }

@@ -43,7 +43,6 @@ export function StatusReportPage({ definition }: { definition: MaintenanceDefini
     <>
       <PageHeader
         title={definition.name}
-        description="Hasil OK / NG per tanggal untuk pemeriksaan ini."
         actions={
           <Link
             className="button button-secondary"
@@ -133,7 +132,12 @@ export function StatusReportPage({ definition }: { definition: MaintenanceDefini
         </Card>
       )}
       {selected && (
-        <OccurrenceDrawer demo={f.demo} items={selected} onClose={() => setSelected(null)} />
+        <OccurrenceDrawer
+          demo={f.demo}
+          showStatistics={false}
+          items={selected}
+          onClose={() => setSelected(null)}
+        />
       )}
     </>
   );

@@ -15,17 +15,7 @@ export function VisualCheckPage() {
   );
   return (
     <>
-      <PageHeader
-        title={d.definition.name}
-        description={
-          'Line ' +
-          d.context.line +
-          ' · ' +
-          (d.context.shift === 'day' ? 'Shift 1' : 'Shift 2') +
-          ' · ' +
-          d.context.production_date
-        }
-      />
+      <PageHeader title={d.definition.name} />
       <InspectionGuidance>
         <Card>
           <Badge>Visual / fungsi · OK–NG</Badge>
@@ -75,7 +65,7 @@ export function VisualCheckPage() {
               </button>
             </p>
           )}
-          <div className="actions">
+          <div className="actions workflow-actions">
             <Link className="button button-secondary" to="/pemeriksaan">
               Kembali
             </Link>

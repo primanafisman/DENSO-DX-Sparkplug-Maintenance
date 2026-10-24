@@ -16,10 +16,10 @@ function reportRequest(scope: ReportInput, suffix: string) {
 export const historyApi = {
   deleteRecord: (id: string) =>
     remove<{ id: string; deleted: true }>('/maintenance/records/' + encodeURIComponent(id)),
-  checksheet: async (scope: ReportInput, cursor?: string, signal?: AbortSignal) => {
+  checksheet: async (scope: ReportInput, cursor?: string, signal?: AbortSignal, limit = 25) => {
     const request = reportRequest(scope, 'report');
     const result = await read<ChecksheetPage>(request.path, {
-      params: { ...request.params, limit: 25, cursor },
+      params: { ...request.params, limit, cursor },
       signal,
     });
     checksheetSchema.parse(result);

@@ -128,6 +128,26 @@ it('the actual confirmation page restores its edited value and identity after me
   expect(screen.queryByLabelText(/alasan/i)).not.toBeInTheDocument();
   expect(captureApi.submit).not.toHaveBeenCalled();
 });
+
+it('confirmed results display the frozen equipment bounds after the master changes', () => {
+  captureStore.setState({
+    instrument: { ...instrument, acceptance_limits: { minimum: 4.7, maximum: 4.9 } },
+    profile: instrument.profile,
+    result: job.results[0],
+    stage: 'ready',
+    reading: {
+      id: 'frozen',
+      final_value: '4.5',
+      instrument_snapshot: {
+        ...instrument,
+        acceptance_limits: { minimum: 4.4, maximum: 4.6 },
+      },
+    } as ConfirmedReading,
+  });
+  renderApp(<Workspace confirmation />, '/pemeriksaan/konfirmasi');
+  expect(screen.getByText('4,400–4,600 mm')).toBeVisible();
+  expect(screen.queryByText('4,700–4,900 mm')).not.toBeInTheDocument();
+});
 afterEach(() => {
   useInspectionStore.getState().reset();
   captureStore.setState(captureStore.getInitialState(), true);

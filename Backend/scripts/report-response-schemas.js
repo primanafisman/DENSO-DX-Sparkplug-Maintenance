@@ -28,6 +28,7 @@ export function addReportSchemas(s){
   s.IncompleteGroup=obj({occurrence:ref('Occurrence'),reasons:strings});
   s.SpcCohort=obj({cohort_id:str,cohort_key:str,definition_snapshot:ref('MaintenanceDefinition'),product_snapshot:nullRef('ProductSnapshot'),instruments:arr('InstrumentSnapshot'),unit:str,n:int,counts:obj({complete:int,incomplete:int,excluded:int,observations:int}),series:{type:'array',items:obj({occurrence_id:str,checked_at:str,xbar:num,r:nnum})},incomplete:arr('IncompleteGroup'),statistics:ref('SpcCalculation'),control_limits:ref('ControlLimits'),capability:ref('Capability'),baseline:ref('BaselineSource'),warnings:strings});
   s.SpcReport=obj({meta:ref('ReportMeta'),cohorts:arr('SpcCohort')});
+  Object.assign(s.SpcCohort.properties,{acceptance_limits:ref('AcceptanceLimits'),acceptance_source:{type:'string',enum:['equipment','inspection']}});
   s.Subgroup=obj({occurrence:ref('Occurrence'),values:{type:'array',items:num},xbar:nnum,r:nnum,reasons:strings},['occurrence','values','xbar','r']);
   s.SubgroupPage=obj({meta:ref('ReportMeta'),items:arr('Subgroup'),next_cursor:nstr});
   s.SpcBaseline=obj({id:str,entity_id:str,version:int,scope:ref('ReportScope'),as_of:str,cohort_key:str,cohort_id:str,method:{type:'string',enum:['paper_stdev_s','within_rbar_d2']},constants_version:str,control_limits:ref('ControlLimits'),center:obj({xbar:nnum,rbar:nnum}),created_by:str,created_at:str,review_reason:str});

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Save, Plus, Pencil, Clock3, ClipboardList, Wrench, Factory, Trash2 } from 'lucide-react';
 import type {
@@ -9,6 +9,7 @@ import type {
 import { useSession } from '../../auth/controller/useSession';
 import { useSettings } from '../controller/useSettings';
 import { DefinitionEditor } from './DefinitionEditor';
+import { StandardItems } from './StandardItems';
 import { EquipmentPage } from '../../equipment/view/EquipmentPage';
 import { newDefinition } from '../model/newDefinition';
 import { newId } from '../../../shared/lib/id';
@@ -39,8 +40,71 @@ function GeneralSettings({
     [newSampler, setNewSampler] = useState(''),
     [rollover, setRollover] = useState(initial.night_rollover_hour),
     [products, setProducts] = useState<ProductType[]>(initial.product_types ?? []);
+  const productCodeFollowsName = useRef(
+    new Map(
+      (initial.product_types ?? []).map((product) => [
+        product.id,
+        !product.code || product.code === product.name,
+      ]),
+    ),
+  );
   const change = (id: string, patch: Partial<ProductType>) =>
     setProducts(products.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  const lineAddControls = admin && (
+    <div className="header-actions settings-inline-add">
+      <Field label="Tambah line">
+        <input
+          value={newLine}
+          maxLength={64}
+          placeholder="Nomor atau nama line"
+          onChange={(event) => setNewLine(event.target.value)}
+        />
+      </Field>
+      <Button
+        type="button"
+        variant="secondary"
+        disabled={
+          !newLine.trim() ||
+          lines.length >= 200 ||
+          lines.some(
+            (line) => line.toLocaleLowerCase('id-ID') === newLine.trim().toLocaleLowerCase('id-ID'),
+          )
+        }
+        onClick={() => {
+          setLines([...lines, newLine.trim()]);
+          setNewLine('');
+        }}
+      >
+        <Plus size={16} aria-hidden="true" /> Tambah line
+      </Button>
+    </div>
+  );
+  const samplerAddControls = admin && (
+    <div className="header-actions settings-inline-add">
+      <Field label="Tambah sampler">
+        <input
+          value={newSampler}
+          maxLength={64}
+          onChange={(event) => setNewSampler(event.target.value)}
+        />
+      </Field>
+      <Button
+        type="button"
+        variant="secondary"
+        disabled={
+          !newSampler.trim() ||
+          samplers.length >= 100 ||
+          samplers.some((sampler) => sampler.toLowerCase() === newSampler.trim().toLowerCase())
+        }
+        onClick={() => {
+          setSamplers([...samplers, newSampler.trim()]);
+          setNewSampler('');
+        }}
+      >
+        <Plus size={16} aria-hidden="true" /> Tambah sampler
+      </Button>
+    </div>
+  );
   return (
     <form
       onSubmit={(e) => {
@@ -57,13 +121,18 @@ function GeneralSettings({
       }}
     >
       <Card>
-        <h2 className="section-title">Line dan penanggung jawab</h2>
+        <div className="section-heading">
+          <div className="section-heading-title">
+            <h2>Line Produksi</h2>
+          </div>
+          {lineAddControls}
+        </div>
         <div className="field-row">
           <section>
-            <h3>Line aktif</h3>
-            <p className="muted">
-              Tambahkan nomor atau nama line. Hanya daftar ini yang dapat dipilih.
-            </p>
+            <div className="section-heading">
+              <h3>Line aktif</h3>
+              <Badge>{lines.length} line</Badge>
+            </div>
             <div className="sampler-options">
               {lines.map((line) => (
                 <div className="row between" key={line}>
@@ -82,42 +151,15 @@ function GeneralSettings({
               ))}
             </div>
             {!lines.length && <p className="info-note">Belum ada line aktif.</p>}
-            {admin && (
-              <>
-                <Field label="Tambah line">
-                  <input
-                    value={newLine}
-                    maxLength={64}
-                    placeholder="Contoh: 18 atau Assembly A"
-                    onChange={(event) => setNewLine(event.target.value)}
-                  />
-                </Field>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={
-                    !newLine.trim() ||
-                    lines.length >= 200 ||
-                    lines.some(
-                      (line) =>
-                        line.toLocaleLowerCase('id-ID') ===
-                        newLine.trim().toLocaleLowerCase('id-ID'),
-                    )
-                  }
-                  onClick={() => {
-                    setLines([...lines, newLine.trim()]);
-                    setNewLine('');
-                  }}
-                >
-                  <Plus size={16} aria-hidden="true" /> Tambah line
-                </Button>
-                <small className="block muted">{lines.length}/200 line aktif</small>
-              </>
+            {lines.length >= 200 && (
+              <small className="source-note">Batas 200 line aktif tercapai.</small>
             )}
           </section>
           <section>
-            <h3>Sampler aktif</h3>
-            <p className="muted">Tambah atau hapus nama yang tersedia saat pemeriksaan.</p>
+            <div className="section-heading">
+              <h3>Sampler aktif</h3>
+              {samplerAddControls}
+            </div>
             <div className="sampler-options">
               {samplers.map((s) => (
                 <div className="row between" key={s}>
@@ -129,76 +171,52 @@ function GeneralSettings({
                       aria-label={'Hapus sampler ' + s}
                       onClick={() => setSamplers(samplers.filter((v) => v !== s))}
                     >
-                      Hapus
+                      <Trash2 size={16} aria-hidden="true" />
                     </Button>
                   )}
                 </div>
               ))}
             </div>
             {!samplers.length && <p className="info-note">Belum ada sampler aktif.</p>}
-            {admin && (
-              <>
-                <Field label="Tambah sampler">
-                  <input
-                    value={newSampler}
-                    maxLength={64}
-                    onChange={(e) => setNewSampler(e.target.value)}
-                  />
-                </Field>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={
-                    !newSampler.trim() ||
-                    samplers.length >= 100 ||
-                    samplers.some((s) => s.toLowerCase() === newSampler.trim().toLowerCase())
-                  }
-                  onClick={() => {
-                    setSamplers([...samplers, newSampler.trim()]);
-                    setNewSampler('');
-                  }}
-                >
-                  Tambah sampler
-                </Button>
-              </>
-            )}
           </section>
         </div>
-        <Field label="Batas pergantian tanggal shift malam (jam WIB)">
-          <input
-            type="number"
-            min="1"
-            max="23"
-            value={rollover}
-            onChange={(e) => setRollover(Number(e.target.value))}
-            disabled={!admin}
-          />
-        </Field>
-        <div className="info-note">
-          <Clock3 size={17} /> Waktu server WIB · Shift 1: 07:45,12:45 · Shift 2: 21:15,01:15. Waktu
-          pada HP tidak menentukan shift.
-        </div>
+        <details className="settings-details">
+          <summary>Detail jadwal shift</summary>
+          <Field label="Batas pergantian tanggal shift malam (jam WIB)">
+            <input
+              type="number"
+              min="1"
+              max="23"
+              value={rollover}
+              onChange={(e) => setRollover(Number(e.target.value))}
+              disabled={!admin}
+            />
+          </Field>
+          <div className="info-note">
+            <Clock3 size={17} /> Waktu server WIB · Shift 1: 07:45,12:45 · Shift 2: 21:15,01:15.
+          </div>
+        </details>
       </Card>
       <Card>
-        <div className="row between section-title">
-          <div>
+        <div className="section-heading">
+          <div className="section-heading-title">
             <h2>Type produk</h2>
-            <p className="muted">Varian spark plug untuk pemisahan laporan SPC.</p>
           </div>
           {admin && (
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={() =>
-                setProducts([
-                  ...products,
-                  { id: 'product-' + newId(), code: '', name: '', active: true, version: 1 },
-                ])
-              }
-            >
-              <Plus size={17} />
-              Tambah Type
-            </Button>
+            <div className="header-actions">
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={() => {
+                  const id = 'product-' + newId();
+                  productCodeFollowsName.current.set(id, true);
+                  setProducts([...products, { id, code: '', name: '', active: true, version: 1 }]);
+                }}
+              >
+                <Plus size={17} />
+                Tambah Type
+              </Button>
+            </div>
           )}
         </div>
         {products.length ? (
@@ -206,7 +224,6 @@ function GeneralSettings({
             <table>
               <thead>
                 <tr>
-                  <th>KODE</th>
                   <th>NAMA TYPE</th>
                   <th>AKTIF</th>
                 </tr>
@@ -216,25 +233,24 @@ function GeneralSettings({
                   <tr key={p.id}>
                     <td>
                       <input
-                        aria-label={'Kode ' + p.id}
-                        value={p.code}
-                        onChange={(e) => change(p.id, { code: e.target.value })}
-                        required
-                        readOnly={!admin}
-                      />
-                    </td>
-                    <td>
-                      <input
                         aria-label={'Nama Type ' + p.id}
+                        maxLength={productCodeFollowsName.current.get(p.id) ? 64 : 100}
                         value={p.name}
-                        onChange={(e) => change(p.id, { name: e.target.value })}
+                        onChange={(e) =>
+                          change(p.id, {
+                            name: e.target.value,
+                            ...(productCodeFollowsName.current.get(p.id)
+                              ? { code: e.target.value }
+                              : {}),
+                          })
+                        }
                         required
                         readOnly={!admin}
                       />
                     </td>
                     <td>
                       <input
-                        aria-label={'Type aktif ' + p.code}
+                        aria-label={'Type aktif ' + p.name}
                         type="checkbox"
                         checked={p.active}
                         onChange={(e) => change(p.id, { active: e.target.checked })}
@@ -247,17 +263,15 @@ function GeneralSettings({
             </table>
           </div>
         ) : (
-          <p className="info-note">
-            Belum ada Type. Hasil lama tetap ditampilkan sebagai Tidak tercatat.
-          </p>
+          <p className="info-note">Belum ada Type produk.</p>
         )}
         {admin && (
-          <>
+          <div className="header-actions">
             <Button type="submit" disabled={pending}>
               <Save size={17} />
               {pending ? 'Menyimpan…' : 'Simpan pengaturan'}
             </Button>
-          </>
+          </div>
         )}
       </Card>
     </form>
@@ -283,10 +297,7 @@ export function SettingsPage() {
   };
   return (
     <>
-      <PageHeader
-        title="Pengaturan"
-        description="Standar, metode, jadwal dan master operasional yang terkontrol."
-      />
+      <PageHeader title="Pengaturan" />
       <div className="tabs settings-tabs" role="tablist" aria-label="Pengaturan operasional">
         {tabs.map((item, index) => (
           <button
@@ -323,9 +334,7 @@ export function SettingsPage() {
           </button>
         ))}
       </div>
-      {!admin && (
-        <p className="info-note">Tampilan baca saja. Perubahan konfigurasi memerlukan Admin.</p>
-      )}
+      {!admin && <p className="info-note">Akses baca saja</p>}
       <ErrorMessage error={state.settings.error ?? state.catalog.error} />
       <div role="tabpanel" id="settings-panel" aria-labelledby={'settings-tab-' + tab}>
         {state.settings.isPending || state.catalog.isPending ? (
@@ -341,25 +350,29 @@ export function SettingsPage() {
           />
         ) : (
           <Card>
-            <div className="row between section-title">
-              <h2>Daftar pemeriksaan</h2>
-              <Badge>{state.catalog.data?.count ?? 0} pilihan</Badge>
+            <div className="section-heading">
+              <div className="section-heading-title">
+                <h2>Daftar Pemeriksaan</h2>
+                <Badge>{state.catalog.data?.count ?? 0} pemeriksaan</Badge>
+              </div>
+              {admin && (
+                <div className="header-actions">
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      state.createDefinition.reset();
+                      state.setDefinitionStatus.reset();
+                      setSelected(newDefinition());
+                    }}
+                  >
+                    <Plus size={17} />
+                    Tambah pemeriksaan
+                  </Button>
+                </div>
+              )}
             </div>
-            {admin && (
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  state.createDefinition.reset();
-                  state.setDefinitionStatus.reset();
-                  setSelected(newDefinition());
-                }}
-              >
-                <Plus size={17} />
-                Tambah pemeriksaan
-              </Button>
-            )}
             <div className="table-scroll">
-              <table>
+              <table className="settings-catalog-table">
                 <thead>
                   <tr>
                     <th>PEMERIKSAAN</th>
@@ -381,7 +394,9 @@ export function SettingsPage() {
                           </p>
                         ))}
                       </td>
-                      <td>{d.standard_text}</td>
+                      <td>
+                        <StandardItems definition={d} />
+                      </td>
                       <td>
                         <Badge>
                           {d.input_method === 'ok_ng'
@@ -415,10 +430,17 @@ export function SettingsPage() {
                 </tbody>
               </table>
             </div>
-            <small className="muted">
-              Sumber: baris17–23 belum tersedia; baris45 terpotong. Parameter ber-catatan perlu
-              ditinjau.
-            </small>
+            {!!state.catalog.data?.source_gaps?.missing_rows.length && (
+              <small className="source-note">
+                Sumber belum tersedia: baris{' '}
+                {state.catalog.data.source_gaps.missing_rows.join(', ')}.
+              </small>
+            )}
+            {!!state.catalog.data?.source_gaps?.clipped_row && (
+              <small className="source-note block">
+                Sumber baris {state.catalog.data.source_gaps.clipped_row} terpotong; perlu ditinjau.
+              </small>
+            )}
           </Card>
         )}
       </div>

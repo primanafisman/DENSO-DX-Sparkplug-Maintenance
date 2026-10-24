@@ -22,6 +22,7 @@ function setup(
   selected: Instrument | null = a,
   sourceProfile = a.profile!,
   definition: MaintenanceDefinition | null = ee,
+  catalog: MaintenanceDefinition[] = [ee, gasket],
 ) {
   useInspectionStore.getState().start({
     definition,
@@ -57,7 +58,7 @@ function setup(
   });
   server.use(
     http.get('/api/v1/maintenance/catalog', () =>
-      HttpResponse.json(envelope({ items: [ee, gasket], count: 2 })),
+      HttpResponse.json(envelope({ items: catalog, count: catalog.length })),
     ),
   );
   function Host() {
@@ -102,6 +103,28 @@ it('a detected equipment with one linked check replaces an incompatible default 
   setup([a, b], b);
   await screen.findByRole('option', { name: 'Check Gasket' });
   expect(screen.getByLabelText('Pemeriksaan')).toHaveValue('gasket');
+});
+it('recognized MC Lowering 1 selects its registered inspection and keeps the detected identity visible', async () => {
+  const loweringCheck = fixtureDefinition({
+    id: 'machine-lowering',
+    name: 'Machine Lowering',
+    unit: 'MPa',
+    inspection_target: 'machine',
+  });
+  const lowering = fixtureInstrument({
+    id: 'lowering-1',
+    name: 'MC Lowering 1',
+    code: '',
+    aliases: [],
+    area: '17',
+    profile: { ...a.profile!, unit: 'MPa', maximum: 1, tolerance: 0.01 },
+    maintenance_check_ids: [loweringCheck.id],
+  });
+  const { api } = setup([a, lowering], lowering, lowering.profile!, ee, [ee, loweringCheck]);
+  await screen.findByRole('option', { name: 'Machine Lowering' });
+  expect(screen.getByLabelText('Pemeriksaan')).toHaveValue(loweringCheck.id);
+  expect(screen.getByLabelText(/Nama alat/)).toHaveValue('lowering-1');
+  expect(api.submit).not.toHaveBeenCalled();
 });
 it('a selected length profile cannot relabel an existing pressure result and rereading is explicit', async () => {
   const user = userEvent.setup();

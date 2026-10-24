@@ -82,7 +82,7 @@ it('paper panel renders server Cp/Cpk, separate sigma estimates, all limits and 
   expect(screen.getByText('2,569781')).toBeVisible();
   expect(screen.getByText('2,533070')).toBeVisible();
   expect(screen.getByText('σwithin')).toBeVisible();
-  expect(screen.getByText('Tidak tercatat')).toBeVisible();
+  expect(screen.queryByText('Tidak tercatat')).not.toBeInTheDocument();
   expect(screen.getByText('UCLx')).toBeVisible();
 });
 it('print loads all 101 groups at one fixed snapshot', async () => {
@@ -104,7 +104,7 @@ it('print refuses a changing snapshot or repeating cursor', async () => {
   }));
   await expect(
     collectSubgroups(read, { ...meta.scope, as_of: meta.as_of }, 'cohort'),
-  ).rejects.toThrow(/snapshot/i);
+  ).rejects.toThrow(/berubah/i);
 });
 import { Routes, Route } from 'react-router-dom';
 import { http, HttpResponse } from 'msw';
@@ -152,9 +152,9 @@ it('multiple cohorts require explicit selection and Viewer cannot save a baselin
     </Routes>,
     '/riwayat/chart_ee_length',
   );
-  expect(await screen.findByText('Pilih satu kelompok data')).toBeVisible();
+  expect(await screen.findByRole('heading', { name: 'Pilih kelompok pengukuran' })).toBeVisible();
   expect(screen.queryByText('Cp (lembar)')).not.toBeInTheDocument();
-  fireEvent.change(screen.getByLabelText('Kelompok data kompatibel'), {
+  fireEvent.change(screen.getByLabelText('Kelompok pengukuran'), {
     target: { value: 'cohort' },
   });
   expect(await screen.findByText('Cp (lembar)')).toBeVisible();
@@ -217,6 +217,38 @@ it('a baseline conflict can be cleared without leaving the page', async () => {
     '/riwayat/chart_ee_length?baseline=old',
   );
   expect(await screen.findByText('Baseline conflict')).toBeVisible();
-  fireEvent.click(screen.getByRole('button', { name: 'Hitung ulang dari periode' }));
+  fireEvent.click(screen.getByText('Pengaturan grafik'));
+  fireEvent.click(screen.getByRole('button', { name: 'Gunakan periode dipilih' }));
   expect(await screen.findByText('Cp (lembar)')).toBeVisible();
+});
+
+it('product sampling retains X R math with one title, short facts and collapsed graph settings', async () => {
+  reportHandlers([cohort]);
+  let baselineRequests = 0;
+  server.use(
+    http.get('/api/v1/maintenance/spc-baselines', () => {
+      baselineRequests++;
+      return HttpResponse.json(envelope({ items: [], next_cursor: null }));
+    }),
+  );
+  renderApp(
+    <Routes>
+      <Route path="/riwayat/:definitionId" element={<SpcReportPage />} />
+    </Routes>,
+    '/riwayat/chart_ee_length?month=2026-10',
+  );
+  expect(await screen.findByRole('img', { name: 'Grafik X bar' })).toBeVisible();
+  expect(screen.getByRole('img', { name: 'Grafik R' })).toBeVisible();
+  expect(screen.getAllByRole('heading', { name: 'EE Cutting' })).toHaveLength(1);
+  expect(
+    screen.queryByText(/Snapshot|Line Semua|resolusi|Type tidak tercatat|Alat tidak tercatat/i),
+  ).not.toBeInTheDocument();
+  const settings = screen.getByText('Pengaturan grafik').closest('details')!;
+  expect(settings).not.toHaveAttribute('open');
+  expect(screen.getByLabelText('Batas kontrol')).not.toBeVisible();
+  expect(baselineRequests).toBe(0);
+  fireEvent.click(screen.getByText('Pengaturan grafik'));
+  await waitFor(() => expect(baselineRequests).toBe(1));
+  expect(screen.getByLabelText('Batas kontrol')).toBeVisible();
+  expect(screen.getByText('2,569781')).toBeVisible();
 });

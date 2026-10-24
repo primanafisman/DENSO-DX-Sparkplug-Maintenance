@@ -29,7 +29,7 @@ export function ResultPage() {
         : '';
   return (
     <>
-      <PageHeader title="Hasil pembacaan" description="Periksa angka, crop dan identitas alat." />
+      <PageHeader title="Hasil pembacaan" />
       <Card>
         {busy ? (
           <Loading
@@ -66,7 +66,10 @@ export function ResultPage() {
             <div className="result-images">
               <section>
                 <h3>Crop gauge / display</h3>
-                <img src={state.gaugeUrl || state.sourceUrl} alt="Gauge yang dianalisis" />
+                <img
+                  src={state.gaugeUrl || state.sourceUrl || undefined}
+                  alt="Gauge yang dianalisis"
+                />
                 <Button
                   variant="secondary"
                   onClick={() => navigate('/pemeriksaan/crop?region=gauge')}
@@ -79,9 +82,7 @@ export function ResultPage() {
                 {state.labelUrl ? (
                   <img src={state.labelUrl} alt="Crop label nama alat" />
                 ) : (
-                  <p className="info-note">
-                    Label belum ditemukan. Tandai area label atau pilih nama alat secara manual.
-                  </p>
+                  <p className="info-note">Pilih nama alat.</p>
                 )}
                 {raw && <p className="muted">Teks terbaca: {raw}</p>}
                 <Button
@@ -121,14 +122,7 @@ export function ResultPage() {
                   ))}
                 </select>
               </Field>
-              <Field
-                label="Nama alat"
-                hint={
-                  store.draft?.definition
-                    ? 'Hanya alat yang terhubung ke pemeriksaan ini. Identitas tetap dikonfirmasi operator.'
-                    : 'Pilih alat atau pemeriksaan. Label yang cocok mengisi pilihan secara otomatis.'
-                }
-              >
+              <Field label="Nama alat">
                 <select
                   disabled={selection.locked}
                   value={state.instrument?.id ?? ''}
@@ -137,7 +131,6 @@ export function ResultPage() {
                   <option value="">Pilih nama alat</option>
                   {candidates.map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.code ? `${a.code} · ` : ''}
                       {a.name}
                     </option>
                   ))}
@@ -145,16 +138,10 @@ export function ResultPage() {
               </Field>
             </div>
             {store.draft?.definition && !candidates.length && (
-              <p className="info-note">
-                Belum ada alat aktif yang terhubung ke pemeriksaan ini. Admin perlu mengaturnya di
-                Peralatan.
-              </p>
+              <p className="info-note">Alat belum terhubung. Atur di Pengaturan.</p>
             )}
             {state.requiresReanalysis && (
-              <p className="info-note">
-                Profil alat berbeda dari pembacaan foto ini. Hasil di atas tetap memakai satuan
-                asli. Pilih baca ulang, atau isi angka manual berdasarkan foto.
-              </p>
+              <p className="info-note">Profil berbeda. Baca ulang atau isi manual.</p>
             )}
             {state.instrument && (state.requiresReanalysis || !result) && (
               <Button variant="secondary" onClick={() => void engine.reanalyse()}>
@@ -169,9 +156,7 @@ export function ResultPage() {
                 </p>
               )}
             {state.instrument?.condition === 'unknown' && (
-              <p className="info-note">
-                Kondisi alat belum tercatat. Periksa kelayakan alat sebelum konfirmasi.
-              </p>
+              <p className="info-note">Kondisi alat belum diisi.</p>
             )}
             <details className="info-note">
               <summary>Detail pembacaan</summary>
@@ -183,7 +168,7 @@ export function ResultPage() {
                 Ketelitian fisik mengikuti alat. Jumlah desimal tidak menyatakan akurasi pengukuran.
               </p>
             </details>
-            <div className="actions result-footer">
+            <div className="actions result-footer workflow-actions">
               <Link className="button button-secondary" to="/pemeriksaan/foto">
                 Foto ulang
               </Link>

@@ -49,7 +49,6 @@ export function RoiPage() {
     <>
       <PageHeader
         title={label ? 'Crop label nama alat' : 'Crop indikator'}
-        description="Geser kotak, gunakan tombol arah, atau perbesar foto."
         actions={
           <Button
             variant="secondary"

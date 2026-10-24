@@ -41,11 +41,11 @@ function setup() {
     ),
   );
 }
-it('summary uses server aggregate 501 and labels ratio rather than completion', async () => {
+it('summary uses server aggregate501 and labels the OK percentage', async () => {
   setup();
   renderApp(<SummaryPage />);
   expect(await screen.findByText('501')).toBeVisible();
-  expect(screen.getByText('Rasio catatan OK')).toBeVisible();
+  expect(screen.getByText('OK %')).toBeVisible();
   expect(screen.queryByText(/persentase selesai/i)).not.toBeInTheDocument();
 });
 it('monthly history is table-only, preserves blank cells and opens both occurrences', async () => {

@@ -28,5 +28,7 @@ it('icon navigation retains accessible names, tooltips and active page status', 
   expect(within(nav).getAllByRole('link')).toHaveLength(4);
   expect(within(nav).queryByRole('link', { name: 'Peralatan' })).not.toBeInTheDocument();
   expect(await screen.findByText('Ldr')).toBeVisible();
+  expect(screen.getAllByRole('img', { name: 'DENSO' })).toHaveLength(1);
+  expect(screen.queryByText('DENSO · Sparkplug Maintenance')).not.toBeInTheDocument();
   expect(screen.getByRole('status', { name: 'Mode pembacaan' })).toHaveTextContent('CV lokal');
 });

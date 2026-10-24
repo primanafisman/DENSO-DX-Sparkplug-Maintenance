@@ -21,7 +21,7 @@ export async function collectSubgroups(
     if (signal?.aborted) throw new DOMException('Dibatalkan', 'AbortError');
     const page = await read(scope, id, cursor, baseline, signal);
     if (page.meta.as_of !== scope.as_of)
-      throw new Error('Snapshot laporan berubah; muat ulang sebelum mencetak.');
+      throw new Error('Laporan berubah; muat ulang sebelum mencetak.');
     groups.push(...page.items);
     if (groups.length > 5000) throw new Error('Persempit periode; batas cetak 5000 subgroup.');
     cursor = page.next_cursor ?? undefined;
@@ -65,9 +65,10 @@ export function useSpcReport(scope: ReportInput | null, chosen: string, baseline
     },
   };
 }
-export function useBaselines() {
+export function useBaselines(enabled = true) {
   return useQuery({
     queryKey: ['spc-baselines'],
+    enabled,
     queryFn: async () => {
       const rows = [];
       let cursor: string | undefined;

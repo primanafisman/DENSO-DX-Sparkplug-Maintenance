@@ -23,7 +23,8 @@ export function addBusinessSchemas(schemas){
   schemas.MaintenanceCatalog=object({items:{type:'array',items:ref('MaintenanceDefinition')},count:integer,source_gaps:object({missing_rows:{type:'array',items:integer},clipped_row:integer})});
   schemas.MaintenanceSettings={...schemas.SettingsInput};
   schemas.SavedSettings=object({id:string,value:ref('MaintenanceSettings'),version:integer,created_at:string});
-  schemas.SampleOutcome=object({sample_id:string,status,value:number,reading_id:string,before_reading_id:string,after_reading_id:string},['sample_id','status']);
+  schemas.AcceptanceLimits=object({minimum:nullable(number),maximum:nullable(number)});
+  schemas.SampleOutcome=object({sample_id:string,status,value:number,reading_id:string,before_reading_id:string,after_reading_id:string,acceptance_limits:ref('AcceptanceLimits'),acceptance_source:{type:'string',enum:['equipment','inspection']}},['sample_id','status']);
   schemas.MaintenanceRecord=object({id:string,definition_id:string,context:ref('Context'),interval:string,trigger:string,checked_at:string,observations:{type:'array',items:object({sample_id:string,status,reading_id:string,before_reading_id:string,after_reading_id:string},['sample_id'])},actor_id:string,definition_snapshot:ref('MaintenanceDefinition'),settings_snapshot:ref('MaintenanceSettings'),outcomes:{type:'array',items:ref('SampleOutcome')},overall_status:status,saved_at:string,created_at:string});
   schemas.MaintenancePage=page('MaintenanceRecord');
   return schemas;

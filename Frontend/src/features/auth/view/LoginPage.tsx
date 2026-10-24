@@ -1,10 +1,11 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Navigate } from 'react-router-dom';
-import { ShieldCheck, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { loginSchema } from '../model/schemas';
 import type { LoginInput } from '../model/schemas';
 import { useSession } from '../controller/useSession';
+import { BrandLogo } from '../../../shared/components/layout/BrandLogo';
 import { Button, Field, ErrorMessage } from '../../../shared/components/ui';
 export function LoginPage() {
   const session = useSession(),
@@ -13,23 +14,12 @@ export function LoginPage() {
   return (
     <main className="login-page">
       <div className="login-brand">
-        <div className="brand-mark">DENSO</div>
-        <span>SPARKPLUG MAINTENANCE</span>
-        <h1>
-          Pemeriksaan lebih mudah.
-          <br />
-          Catatan lebih teratur.
-        </h1>
-        <p>Dokumentasikan hasil ukur dan tinjau kondisi proses dalam satu tempat.</p>
-        <div className="login-proof">
-          <ShieldCheck size={20} />
-          Pembacaan CV lokal · Konfirmasi operator
-        </div>
+        <BrandLogo />
+        <h1>Sparkplug Maintenance</h1>
       </div>
       <section className="login-card">
-        <p className="eyebrow">SELAMAT DATANG</p>
-        <h2>Masuk ke workspace</h2>
-        <p className="muted">Gunakan akun yang diberikan administrator.</p>
+        <h2>Masuk</h2>
+
         <form onSubmit={form.handleSubmit((input) => session.login.mutate(input))}>
           <Field label="User ID">
             <input autoComplete="username" {...form.register('username')} required />
@@ -48,7 +38,6 @@ export function LoginPage() {
             <ArrowRight size={18} />
           </Button>
         </form>
-        <small className="muted">Akses sesuai peran · Data tersimpan di server lokal</small>
       </section>
     </main>
   );

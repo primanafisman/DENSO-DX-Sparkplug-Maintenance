@@ -23,7 +23,7 @@ export function useSettings(includeInactive = false) {
     client.invalidateQueries({ queryKey: ['equipment'] });
     client.invalidateQueries({ queryKey: ['definition-equipment'] });
     client.invalidateQueries({ queryKey: ['maintenance-due'] });
-    toast.success('Konfigurasi dan revisi disimpan');
+    toast.success('Pengaturan disimpan');
   };
   return {
     settings,

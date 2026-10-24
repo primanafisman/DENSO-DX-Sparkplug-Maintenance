@@ -1,4 +1,4 @@
-import type {Context,Instrument,MaintenanceDefinition,SampleOutcome,Page} from './frontend-types';
+import type {Context,Instrument,MaintenanceDefinition,SampleOutcome,Page,AcceptanceLimits} from './frontend-types';
 export type ProductType={id:string;code:string;name:string;active:boolean;version:number};
 export type ProductSnapshot=Pick<ProductType,'id'|'code'|'name'|'version'>;
 export type ReportScope={production_date_from:string;production_date_to:string;line?:string;shift?:'day'|'night';definition_id?:string;product_type_id?:string;instrument_id?:string};
@@ -16,7 +16,7 @@ export type Capability={method:SigmaMethod;sigma:number|null;cp:number|null;cpk:
 export type SpcCalculation={k:number;n:number;N:number;sum_raw:number|null;sum_xbar:number|null;sum_r:number|null;grand_mean:number|null;rbar:number|null;s_overall:number|null;sigma_within:number|null;three_sigma:number|null;six_sigma:number|null;r_max:number|null;control_limits:ControlLimits;capability:Capability;reasons:string[];constants_version:string};
 export type Subgroup={occurrence:Occurrence;values:number[];xbar:number|null;r:number|null;reasons?:string[]};
 export type SubgroupPage=Page<Subgroup>&{meta:ReportMeta};
-export type SpcCohort={cohort_id:string;cohort_key:string;definition_snapshot:MaintenanceDefinition;product_snapshot:ProductSnapshot|null;instruments:InstrumentSnapshot[];unit:string;n:number;counts:{complete:number;incomplete:number;excluded:number;observations:number};series:{occurrence_id:string;checked_at:string;xbar:number;r:number|null}[];incomplete:{occurrence:Occurrence;reasons:string[]}[];statistics:SpcCalculation;control_limits:ControlLimits;capability:Capability;baseline:{id:string|null;source:'selected_period'|'frozen';as_of:string;scope:ReportScope;method?:SigmaMethod};warnings:string[]};
+export type SpcCohort={cohort_id:string;cohort_key:string;definition_snapshot:MaintenanceDefinition;acceptance_limits?:AcceptanceLimits;acceptance_source?:'equipment'|'inspection';product_snapshot:ProductSnapshot|null;instruments:InstrumentSnapshot[];unit:string;n:number;counts:{complete:number;incomplete:number;excluded:number;observations:number};series:{occurrence_id:string;checked_at:string;xbar:number;r:number|null}[];incomplete:{occurrence:Occurrence;reasons:string[]}[];statistics:SpcCalculation;control_limits:ControlLimits;capability:Capability;baseline:{id:string|null;source:'selected_period'|'frozen';as_of:string;scope:ReportScope;method?:SigmaMethod};warnings:string[]};
 export type SpcReport={meta:ReportMeta;cohorts:SpcCohort[]};
 export type SpcBaseline={id:string;entity_id:string;version:number;scope:ReportScope;as_of:string;cohort_key:string;cohort_id:string;method:SigmaMethod;constants_version:string;control_limits:ControlLimits;center:{xbar:number|null;rbar:number|null};created_by:string;created_at:string;review_reason:string};
 export type BaselineInput={scope:ReportInput;cohort_id:string;method:SigmaMethod;review_reason:string};

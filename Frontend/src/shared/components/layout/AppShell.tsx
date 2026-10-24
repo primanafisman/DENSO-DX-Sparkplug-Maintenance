@@ -1,4 +1,5 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
+import { BrandLogo } from './BrandLogo';
 import {
   House,
   ClipboardCheck,
@@ -19,21 +20,10 @@ const links = [
 ];
 export function AppShell() {
   const session = useSession(),
-    location = useLocation(),
     [menu, setMenu] = useState(false);
-  const current = links.find((l) => l.to !== '/' && location.pathname.startsWith(l.to)) ?? links[0];
   return (
     <div className="app-shell">
       <aside className={'sidebar ' + (menu ? 'sidebar-open' : '')}>
-        <div className="sidebar-brand">
-          <div
-            className="rail-brand"
-            title="DENSO · Sparkplug Maintenance"
-            aria-label="DENSO Sparkplug Maintenance"
-          >
-            DENSO
-          </div>
-        </div>
         <nav aria-label="Navigasi utama">
           {links.map((link) => (
             <NavLink
@@ -63,10 +53,7 @@ export function AppShell() {
             >
               <Menu />
             </button>
-            <div className="workspace-title">
-              <span>DENSO · Sparkplug Maintenance</span>
-              <strong>{current.label}</strong>
-            </div>
+            <BrandLogo />
           </div>
           <div className="row">
             <span className="environment-tag local-mode" role="status" aria-label="Mode pembacaan">

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { CheckCircle2, Clock3, ArrowRight, Check, X } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { useMonthlySummary } from '../controller/useMonthlySummary';
 import { useCurrentWorkload } from '../controller/useCurrentWorkload';
@@ -6,7 +7,7 @@ import { useReportFilters } from '../../../shared/controller/useReportFilters';
 import { ReportFilters } from '../../../shared/components/layout/ReportFilters';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { Card, Loading, ErrorMessage, Empty, Button } from '../../../shared/components/ui';
-import { dateTime, number, monthLabel } from '../../../shared/lib/format';
+import { number } from '../../../shared/lib/format';
 export function SummaryPage() {
   const filters = useReportFilters(),
     query = useMonthlySummary(filters),
@@ -17,11 +18,6 @@ export function SummaryPage() {
     <div className="summary-page">
       <PageHeader
         title="Ringkasan"
-        description={
-          filters.month
-            ? monthLabel(filters.month) + ' · hasil pemeriksaan tersimpan'
-            : 'Memuat bulan produksi…'
-        }
         actions={
           <Link className="button button-primary" to="/pemeriksaan">
             Mulai pemeriksaan
@@ -31,29 +27,29 @@ export function SummaryPage() {
       <ReportFilters filters={filters} />
       <section className="current-workload" aria-label="Jadwal aktif">
         <div className="current-shift">
-          <small>Jadwal aktif · waktu server</small>
+          <small>Jadwal aktif</small>
           <strong>{schedule?.slot_label ?? 'Memuat shift…'}</strong>
-          <span>
-            {current.activeLine ? 'Line ' + current.activeLine : 'Seluruh line · ringkasan bulanan'}
-          </span>
+          <span>{current.activeLine ? 'Line ' + current.activeLine : 'Semua line'}</span>
         </div>
         {!current.activeLine ? (
-          <p className="muted">
-            Pilih line untuk melihat pemeriksaan yang sudah dan belum diperiksa pada jadwal aktif.
-          </p>
+          <p className="muted">Pilih line</p>
         ) : (
           <>
             <div className="workload-count">
               <strong className="text-ok">
                 {current.countsReady ? current.data!.completed_count : '—'}
               </strong>
-              <span>Sudah diperiksa</span>
+              <span>
+                <CheckCircle2 size={17} /> Selesai
+              </span>
             </div>
             <div className="workload-count">
               <strong className="text-ng">
                 {current.countsReady ? current.data!.pending_count : '—'}
               </strong>
-              <span>Belum diperiksa</span>
+              <span>
+                <Clock3 size={17} /> Tersisa
+              </span>
             </div>
             {(current.isFetching || current.staleOccurrence) && (
               <span className="muted" role="status">
@@ -77,22 +73,24 @@ export function SummaryPage() {
         <>
           <div className="kpi-grid">
             <Card>
-              <p>Total catatan</p>
+              <p>Total</p>
               <strong>{d.total}</strong>
-              <small>Seluruh hasil pada periode terpilih</small>
             </Card>
             <Card>
-              <p>Catatan OK</p>
+              <p>
+                <Check size={18} /> OK
+              </p>
               <strong className="text-ok">{d.ok}</strong>
             </Card>
             <Card>
-              <p>Catatan NG</p>
+              <p>
+                <X size={18} /> NG
+              </p>
               <strong className="text-ng">{d.ng}</strong>
             </Card>
             <Card>
-              <p>Rasio catatan OK</p>
+              <p>OK %</p>
               <strong>{d.ok_ratio === null ? '—' : number(d.ok_ratio * 100, 1) + '%'}</strong>
-              <small>OK ÷ total catatan tersimpan</small>
             </Card>
           </div>
           <div className="summary-detail-grid">
@@ -106,11 +104,7 @@ export function SummaryPage() {
                 </span>
               </div>
               {d.total ? (
-                <div
-                  className="chart-box"
-                  role="img"
-                  aria-label="Grafik jumlah catatan OK dan NG per hari"
-                >
+                <div className="chart-box" role="img" aria-label="Grafik OK dan NG per hari">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={d.daily}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -158,7 +152,7 @@ export function SummaryPage() {
                               })
                             }
                           >
-                            Lihat laporan
+                            Detail <ArrowRight size={14} />
                           </Link>
                         </td>
                       </tr>
@@ -168,10 +162,14 @@ export function SummaryPage() {
               </div>
             </Card>
           </div>
-          <p className="muted summary-note">
-            Snapshot {dateTime(d.meta.as_of)} · satu catatan dapat memuat beberapa sampel.{' '}
-            {d.meta.warnings.join(' ')}
-          </p>
+          {d.meta.warnings.length > 0 && (
+            <details className="data-details">
+              <summary>Detail data</summary>
+              {d.meta.warnings.map((w) => (
+                <p key={w}>{w}</p>
+              ))}
+            </details>
+          )}
         </>
       )}
     </div>

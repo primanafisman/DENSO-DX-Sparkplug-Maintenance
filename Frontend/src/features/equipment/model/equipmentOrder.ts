@@ -1,5 +1,5 @@
 import type { Instrument, MaintenanceDefinition } from '../../../shared/lib/contracts';
-export type EquipmentSortKey = 'code' | 'name' | 'input' | 'condition' | 'active' | 'frequency';
+export type EquipmentSortKey = 'name' | 'input' | 'condition' | 'active' | 'frequency';
 export type EquipmentSort = { key: EquipmentSortKey; direction: 'asc' | 'desc' };
 export function equipmentFrequency(a: Instrument, definitions: MaintenanceDefinition[]) {
   return (
@@ -20,8 +20,6 @@ export function sortEquipment(
   const collator = new Intl.Collator('id', { numeric: true, sensitivity: 'base' });
   const value = (a: Instrument) => {
     switch (sort.key) {
-      case 'code':
-        return a.code || a.name;
       case 'name':
         return a.name;
       case 'input':

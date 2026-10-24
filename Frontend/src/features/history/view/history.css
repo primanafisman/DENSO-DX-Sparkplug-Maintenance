@@ -1,0 +1,20 @@
+.sm-history-toolbar {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.sm-history-toolbar .filter-bar {
+  flex: 1 1 450px;
+  margin: 0;
+}
+.sm-history-toolbar > .field {
+  flex: 0 1 215px;
+  margin: 0;
+}
+@media (max-width: 700px) {
+  .sm-history-toolbar > .field {
+    flex-basis: 100%;
+  }
+}

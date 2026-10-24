@@ -8,6 +8,7 @@ import { envelope, fixtureDefinition, meta, schedule } from '../../../test/fixtu
 import { chartLayout } from '../../../test/chartLayout';
 import { HistoryPage } from './HistoryPage';
 import { SpcReportPage } from './SpcReportPage';
+import { historyOccurrence, historyRow } from '../test/monthlyFixtures';
 chartLayout();
 const definition = fixtureDefinition({
   id: 'packing_depth_tool',
@@ -111,9 +112,98 @@ it('demo toggle loads isolated endpoint and prevents production export', async (
   renderApp(<HistoryPage />, '/riwayat?month=2026-10');
   fireEvent.click(await screen.findByRole('button', { name: 'Lihat data contoh' }));
   expect(await screen.findByText('Data contoh — bukan catatan produksi.')).toBeVisible();
-  await screen.findByText(/DEMO_DATA/);
+  expect(screen.queryByText(/DEMO_DATA/)).not.toBeInTheDocument();
   expect(demoRequests).toBe(1);
   expect(screen.getByRole('button', { name: 'Unduh CSV' })).toBeDisabled();
   fireEvent.click(screen.getByRole('button', { name: 'Kembali ke data produksi' }));
   expect(screen.queryByText('Data contoh — bukan catatan produksi.')).not.toBeInTheDocument();
+});
+
+it('legacy pressureMPa without target uses only daily OK NG and retains its reading and frozen acceptance limits', async () => {
+  setup();
+  const pressure = fixtureDefinition({
+    id: 'pressure',
+    name: 'Pressure Machine',
+    inspection_target: undefined,
+    kind: 'numeric',
+    input_method: 'photo',
+    unit: 'MPa',
+    sample_count: 1,
+    samples: [{ id: 'n1', label: 'n1' }],
+    limits: { minimum: 0, maximum: 1 },
+  });
+  let spc = 0,
+    baselines = 0;
+  server.use(
+    http.get('/api/v1/auth/me', () =>
+      HttpResponse.json(envelope({ id: 'v', username: 'Viewer', role: 'Viewer' })),
+    ),
+    http.get('/api/v1/maintenance/catalog', () =>
+      HttpResponse.json(envelope({ items: [pressure], count: 1 })),
+    ),
+    http.get('/api/v1/maintenance/spc', () => {
+      spc++;
+      return HttpResponse.json(envelope({ meta, cohorts: [] }));
+    }),
+    http.get('/api/v1/maintenance/spc-baselines', () => {
+      baselines++;
+      return HttpResponse.json(envelope({ items: [], next_cursor: null }));
+    }),
+    http.get('/api/v1/maintenance/report', ({ request }) => {
+      expect(new URL(request.url).searchParams.get('definition_id')).toBe('pressure');
+      return HttpResponse.json(
+        envelope({
+          meta,
+          next_cursor: null,
+          rows: [
+            historyRow({
+              definition_id: pressure.id,
+              unit: 'MPa',
+              cells: [
+                {
+                  date: '2026-10-21',
+                  count: 1,
+                  occurrences: [
+                    historyOccurrence('pressure-reading', {
+                      definition_snapshot: {
+                        ...pressure,
+                        inspection_target: undefined,
+                        sample_count: 4,
+                      },
+                      numeric_summary: { complete: true, xbar: 0.417, r: 0 },
+                      outcomes: [
+                        {
+                          sample_id: 'n1',
+                          reading_id: 'r',
+                          value: 0.417,
+                          status: 'OK',
+                          ...{ acceptance_limits: { minimum: 0.35, maximum: 0.45 } },
+                        },
+                      ],
+                    }),
+                  ],
+                },
+              ],
+            }),
+          ],
+        }),
+      );
+    }),
+  );
+  renderApp(
+    <Routes>
+      <Route path="/riwayat/:definitionId" element={<SpcReportPage />} />
+    </Routes>,
+    '/riwayat/pressure?month=2026-10',
+  );
+  expect(await screen.findByRole('img', { name: 'Grafik OK NG per tanggal' })).toBeVisible();
+  expect(screen.queryByRole('img', { name: 'Grafik X bar' })).not.toBeInTheDocument();
+  expect(screen.queryByText('Cp (lembar)')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Rincian 2026-10-21' }));
+  const drawer = within(screen.getByRole('dialog', { name: 'Rincian pemeriksaan' }));
+  expect(drawer.getByText(/n1: 0,417 MPa/)).toBeVisible();
+  expect(drawer.getByText(/0,350–0,450 MPa/)).toBeVisible();
+  expect(drawer.queryByText(/X̄.*R/)).not.toBeInTheDocument();
+  expect(spc).toBe(0);
+  expect(baselines).toBe(0);
 });

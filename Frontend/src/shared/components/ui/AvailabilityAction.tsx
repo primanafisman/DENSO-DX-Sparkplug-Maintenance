@@ -35,10 +35,7 @@ export function AvailabilityAction({
           <h3>
             {active ? 'Hapus dari pilihan' : 'Aktifkan kembali'} · {name}
           </h3>
-          <p>
-            Riwayat dan data alat tetap tersimpan. Perubahan formulir yang belum disimpan tidak ikut
-            disimpan.
-          </p>
+          <p>Data dan riwayat tetap tersimpan. Draf tidak ikut disimpan.</p>
           <ErrorMessage error={error} />
           <div className="actions">
             <Button

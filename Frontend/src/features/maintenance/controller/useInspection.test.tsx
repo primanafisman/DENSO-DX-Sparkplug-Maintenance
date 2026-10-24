@@ -40,7 +40,10 @@ it('catalog exposes 44 options with requirement filters and Viewer cannot start 
     ),
   );
   renderApp(<InspectionHub />);
-  expect(await screen.findByText('44 belum diperiksa')).toBeVisible();
+  expect(
+    await screen.findByRole('status', { name: '44 Tersisa' }, { timeout: 5000 }),
+  ).toBeVisible();
+  fireEvent.click(screen.getByText('Filter', { selector: 'summary' }));
   expect(screen.getByLabelText('Persyaratan')).toBeVisible();
   expect(screen.getAllByRole('button', { name: /Mulai Check/ })[0]).toBeDisabled();
 });

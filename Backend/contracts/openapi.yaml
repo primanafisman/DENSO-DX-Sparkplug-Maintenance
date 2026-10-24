@@ -4908,6 +4908,25 @@
             "additionalProperties": false,
             "nullable": true
           },
+          "acceptance_limits": {
+            "type": "object",
+            "properties": {
+              "minimum": {
+                "type": "number",
+                "nullable": true
+              },
+              "maximum": {
+                "type": "number",
+                "nullable": true
+              }
+            },
+            "required": [
+              "minimum",
+              "maximum"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
           "maintenance_check_ids": {
             "type": "array",
             "items": {
@@ -6305,6 +6324,25 @@
             "additionalProperties": false,
             "nullable": true
           },
+          "acceptance_limits": {
+            "type": "object",
+            "properties": {
+              "minimum": {
+                "type": "number",
+                "nullable": true
+              },
+              "maximum": {
+                "type": "number",
+                "nullable": true
+              }
+            },
+            "required": [
+              "minimum",
+              "maximum"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
           "maintenance_check_ids": {
             "type": "array",
             "items": {
@@ -7123,6 +7161,23 @@
           "created_at"
         ]
       },
+      "AcceptanceLimits": {
+        "type": "object",
+        "properties": {
+          "minimum": {
+            "type": "number",
+            "nullable": true
+          },
+          "maximum": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "minimum",
+          "maximum"
+        ]
+      },
       "SampleOutcome": {
         "type": "object",
         "properties": {
@@ -7147,6 +7202,16 @@
           },
           "after_reading_id": {
             "type": "string"
+          },
+          "acceptance_limits": {
+            "$ref": "#/components/schemas/AcceptanceLimits"
+          },
+          "acceptance_source": {
+            "type": "string",
+            "enum": [
+              "equipment",
+              "inspection"
+            ]
           }
         },
         "required": [
@@ -7366,6 +7431,25 @@
                   "maximum",
                   "decimals",
                   "tolerance"
+                ],
+                "additionalProperties": false,
+                "nullable": true
+              },
+              "acceptance_limits": {
+                "type": "object",
+                "properties": {
+                  "minimum": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "maximum": {
+                    "type": "number",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "minimum",
+                  "maximum"
                 ],
                 "additionalProperties": false,
                 "nullable": true
@@ -7835,6 +7919,25 @@
               "maximum",
               "decimals",
               "tolerance"
+            ],
+            "additionalProperties": false,
+            "nullable": true
+          },
+          "acceptance_limits": {
+            "type": "object",
+            "properties": {
+              "minimum": {
+                "type": "number",
+                "nullable": true
+              },
+              "maximum": {
+                "type": "number",
+                "nullable": true
+              }
+            },
+            "required": [
+              "minimum",
+              "maximum"
             ],
             "additionalProperties": false,
             "nullable": true
@@ -8801,6 +8904,16 @@
             "items": {
               "type": "string"
             }
+          },
+          "acceptance_limits": {
+            "$ref": "#/components/schemas/AcceptanceLimits"
+          },
+          "acceptance_source": {
+            "type": "string",
+            "enum": [
+              "equipment",
+              "inspection"
+            ]
           }
         },
         "required": [

@@ -115,11 +115,13 @@ export function DefinitionEditor({
         aria-modal="true"
         aria-labelledby="definition-title"
       >
-        <div className="row between">
+        <div className="section-heading modal-heading">
           <h2 id="definition-title">{creating ? 'Tambah pemeriksaan' : 'Standar · ' + d.name}</h2>
-          <Button variant="ghost" onClick={onClose} disabled={statusPending}>
-            Tutup
-          </Button>
+          <div className="header-actions">
+            <Button variant="ghost" onClick={onClose} disabled={statusPending}>
+              Tutup
+            </Button>
+          </div>
         </div>
         <form onSubmit={form.handleSubmit(submit)}>
           <fieldset className="editor-fields" disabled={statusPrompt || statusPending}>
@@ -149,10 +151,6 @@ export function DefinitionEditor({
                 </select>
               </Field>
             </div>
-            <p className="info-note">
-              Mesin / line mencatat kondisi dan parameter mesin. Sampling produk memisahkan hasil
-              berdasarkan Type sparkplug.
-            </p>
             <Field label="Persyaratan / standar">
               <textarea {...form.register('standard_text')} required />
             </Field>
@@ -278,7 +276,6 @@ export function DefinitionEditor({
             {manageEquipment && (
               <fieldset>
                 <legend>Alat terhubung</legend>
-                <p className="muted">Label alat ini dapat memilih pemeriksaan secara otomatis.</p>
                 <ErrorMessage error={equipment.error} />
                 {equipment.isPending && <p>Memuat daftar alat…</p>}
                 {equipment.data

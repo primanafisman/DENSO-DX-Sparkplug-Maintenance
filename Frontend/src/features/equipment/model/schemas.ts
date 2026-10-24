@@ -23,6 +23,9 @@ export const equipmentSchema = z
     maximum: z.number(),
     decimals: z.number().int().min(0).max(6),
     tolerance: z.number().positive().max(1),
+    use_acceptance_limits: z.boolean(),
+    acceptance_minimum: z.number().nullable(),
+    acceptance_maximum: z.number().nullable(),
     check_ids: z.array(z.string()),
   })
   .superRefine((v, c) => {
@@ -38,6 +41,33 @@ export const equipmentSchema = z
         path: ['maximum'],
         message: 'Maksimum harus melebihi minimum.',
       });
+    if (v.measurement_mode === 'numeric' && v.use_acceptance_limits) {
+      if (v.acceptance_minimum === null && v.acceptance_maximum === null)
+        c.addIssue({
+          code: 'custom',
+          path: ['acceptance_minimum'],
+          message: 'Isi minimal satu batas OK.',
+        });
+      if (
+        v.acceptance_minimum !== null &&
+        v.acceptance_maximum !== null &&
+        v.acceptance_maximum < v.acceptance_minimum
+      )
+        c.addIssue({
+          code: 'custom',
+          path: ['acceptance_maximum'],
+          message: 'Maksimum OK harus ≥ Minimum OK.',
+        });
+      for (const field of ['acceptance_minimum', 'acceptance_maximum'] as const) {
+        const bound = v[field];
+        if (bound !== null && (bound < v.minimum || bound > v.maximum))
+          c.addIssue({
+            code: 'custom',
+            path: [field],
+            message: 'Batas OK harus berada dalam rentang fisik alat.',
+          });
+      }
+    }
     if (
       v.measurement_mode === 'numeric' &&
       v.kind === 'analog' &&

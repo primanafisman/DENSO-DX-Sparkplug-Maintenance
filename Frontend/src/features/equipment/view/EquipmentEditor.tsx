@@ -4,8 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type { Instrument, MaintenanceDefinition } from '../../../shared/lib/contracts';
 import { equipmentSchema } from '../model/schemas';
 import type { EquipmentForm } from '../model/schemas';
-import { Button, Field, ErrorMessage } from '../../../shared/components/ui';
+import { Button, Field, ErrorMessage, Badge } from '../../../shared/components/ui';
 import { AvailabilityAction } from '../../../shared/components/ui/AvailabilityAction';
+const nullableBound = (value: unknown) => (value === '' || value == null ? null : Number(value));
 export function EquipmentEditor({
   equipment,
   definitions,
@@ -47,10 +48,15 @@ export function EquipmentEditor({
       maximum: p?.maximum ?? 1,
       decimals: p?.decimals ?? 3,
       tolerance: p?.tolerance ?? 0.01,
+      use_acceptance_limits: !!equipment?.acceptance_limits,
+      acceptance_minimum: equipment?.acceptance_limits?.minimum ?? null,
+      acceptance_maximum: equipment?.acceptance_limits?.maximum ?? null,
       check_ids: equipment?.maintenance_check_ids ?? [],
     },
   });
-  const mode = form.watch('measurement_mode');
+  const mode = form.watch('measurement_mode'),
+    useAcceptance = form.watch('use_acceptance_limits'),
+    unit = form.watch('unit');
   const automatic = useRef({
     code: !equipment?.code || equipment.code === equipment.name,
     aliases:
@@ -69,11 +75,13 @@ export function EquipmentEditor({
         aria-modal="true"
         aria-labelledby="equipment-title"
       >
-        <div className="row between">
+        <div className="section-heading modal-heading">
           <h2 id="equipment-title">{equipment ? 'Edit peralatan' : 'Tambah peralatan'}</h2>
-          <Button variant="ghost" onClick={onClose} disabled={statusPending}>
-            Tutup
-          </Button>
+          <div className="header-actions">
+            <Button variant="ghost" onClick={onClose} disabled={statusPending}>
+              Tutup
+            </Button>
+          </div>
         </div>
         <form
           onSubmit={form.handleSubmit((v) => {
@@ -103,20 +111,7 @@ export function EquipmentEditor({
             </div>
             <details className="identity-details">
               <summary>Detail identitas alat</summary>
-              <p className="muted">
-                Nomor dan alias mengikuti Nama alat. Buka detail untuk memakai identitas berbeda.
-                Area kosong berlaku untuk semua line.
-              </p>
               <div className="field-row">
-                <Field label="Nomor / kode alat">
-                  <input
-                    {...form.register('code', {
-                      onChange: () => {
-                        automatic.current.code = false;
-                      },
-                    })}
-                  />
-                </Field>
                 <Field label="Alias pada label">
                   <input
                     {...form.register('aliases', {
@@ -127,7 +122,7 @@ export function EquipmentEditor({
                     placeholder="Pisahkan dengan koma"
                   />
                 </Field>
-                <Field label="Line / area">
+                <Field label="Line / area" hint="Kosong untuk semua line.">
                   <input {...form.register('area')} />
                 </Field>
               </div>
@@ -136,12 +131,11 @@ export function EquipmentEditor({
                 variant="secondary"
                 onClick={() => {
                   const name = form.getValues('name');
-                  form.setValue('code', name);
                   form.setValue('aliases', name);
-                  automatic.current = { code: true, aliases: true };
+                  automatic.current.aliases = true;
                 }}
               >
-                Samakan dengan Nama Alat
+                Gunakan nama sebagai alias
               </Button>
             </details>
             <div className="field-row">
@@ -184,55 +178,93 @@ export function EquipmentEditor({
             {mode === 'numeric' && (
               <>
                 <hr className="divider" />
-                <h3 className="section-title">Parameter fisik alat</h3>
-                <p className="info-note">
-                  Batas ini mengikuti alat. Batas OK/NG proses diatur pada pemeriksaan.
-                </p>
-                <div className="field-row">
-                  <Field label="Pembacaan">
-                    <select {...form.register('kind')}>
-                      <option value="auto">Otomatis analog / digital</option>
-                      <option value="digital">Digital</option>
-                      <option value="analog">Analog 0–1 MPa</option>
-                    </select>
-                  </Field>
-                  <Field label="Satuan">
-                    <select {...form.register('unit')}>
-                      {['MPa', 'mm', 'kN', 'N', 'bar'].map((u) => (
-                        <option key={u}>{u}</option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Rentang fisik minimum">
-                    <input
-                      type="number"
-                      step="any"
-                      {...form.register('minimum', { valueAsNumber: true })}
-                    />
-                  </Field>
-                  <Field label="Rentang fisik maksimum">
-                    <input
-                      type="number"
-                      step="any"
-                      {...form.register('maximum', { valueAsNumber: true })}
-                    />
-                  </Field>
-                  <Field label="Desimal tampilan">
-                    <input
-                      type="number"
-                      min="0"
-                      max="6"
-                      {...form.register('decimals', { valueAsNumber: true })}
-                    />
-                  </Field>
-                  <Field label="Toleransi verifikasi">
-                    <input
-                      type="number"
-                      step="any"
-                      {...form.register('tolerance', { valueAsNumber: true })}
-                    />
-                  </Field>
-                </div>
+                <section className="equipment-acceptance" aria-labelledby="acceptance-title">
+                  <div className="section-heading">
+                    <h3 id="acceptance-title">Batas OK</h3>
+                    <Badge>{unit}</Badge>
+                  </div>
+                  <label className="check-label">
+                    <input type="checkbox" {...form.register('use_acceptance_limits')} />
+                    Gunakan batas OK alat
+                  </label>
+                  {useAcceptance ? (
+                    <>
+                      <div className="field-row">
+                        <Field label="Minimum OK">
+                          <input
+                            type="number"
+                            step="any"
+                            {...form.register('acceptance_minimum', {
+                              setValueAs: nullableBound,
+                            })}
+                          />
+                        </Field>
+                        <Field label="Maksimum OK">
+                          <input
+                            type="number"
+                            step="any"
+                            {...form.register('acceptance_maximum', {
+                              setValueAs: nullableBound,
+                            })}
+                          />
+                        </Field>
+                      </div>
+                      <small className="block muted">Di luar batas: NG</small>
+                    </>
+                  ) : (
+                    <small className="block muted">Ikuti standar pemeriksaan</small>
+                  )}
+                </section>
+                <details className="settings-details">
+                  <summary>Detail alat · rentang fisik</summary>
+                  <div className="field-row">
+                    <Field label="Pembacaan">
+                      <select {...form.register('kind')}>
+                        <option value="auto">Otomatis analog / digital</option>
+                        <option value="digital">Digital</option>
+                        <option value="analog">Analog 0–1 MPa</option>
+                      </select>
+                    </Field>
+                    <Field label="Satuan">
+                      <select {...form.register('unit')}>
+                        {['MPa', 'mm', 'kN', 'N', 'bar'].map((u) => (
+                          <option key={u}>{u}</option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="Rentang fisik minimum">
+                      <input
+                        type="number"
+                        step="any"
+                        {...form.register('minimum', { valueAsNumber: true })}
+                      />
+                    </Field>
+                    <Field label="Rentang fisik maksimum">
+                      <input
+                        type="number"
+                        step="any"
+                        {...form.register('maximum', { valueAsNumber: true })}
+                      />
+                    </Field>
+                  </div>
+                  <div className="field-row">
+                    <Field label="Desimal tampilan">
+                      <input
+                        type="number"
+                        min="0"
+                        max="6"
+                        {...form.register('decimals', { valueAsNumber: true })}
+                      />
+                    </Field>
+                    <Field label="Toleransi verifikasi">
+                      <input
+                        type="number"
+                        step="any"
+                        {...form.register('tolerance', { valueAsNumber: true })}
+                      />
+                    </Field>
+                  </div>
+                </details>
               </>
             )}
             <hr className="divider" />

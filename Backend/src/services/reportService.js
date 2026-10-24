@@ -28,13 +28,13 @@ export function createReportService({repositories,clock}){
     const {entries,meta}=await load(input),cohorts=new Map();
     if(entries.filter(e=>e.numeric).length>5000)throw new AppError(422,'REPORT_TOO_LARGE','Narrow the date range; report exceeds 5000 subgroups.');
     for(const entry of entries.filter(e=>e.numeric)){
-      if(!cohorts.has(entry.cohort_id))cohorts.set(entry.cohort_id,{cohort_id:entry.cohort_id,cohort_key:entry.cohort_key,definition_snapshot:entry.occurrence.definition_snapshot,product_snapshot:entry.occurrence.product_snapshot,instruments:entry.occurrence.instruments,unit:entry.occurrence.definition_snapshot.unit,n:entry.occurrence.definition_snapshot.sample_count,groups:[],incomplete:[]});
+      if(!cohorts.has(entry.cohort_id))cohorts.set(entry.cohort_id,{cohort_id:entry.cohort_id,cohort_key:entry.cohort_key,definition_snapshot:entry.occurrence.definition_snapshot,product_snapshot:entry.occurrence.product_snapshot,instruments:entry.occurrence.instruments,unit:entry.occurrence.definition_snapshot.unit,n:entry.occurrence.definition_snapshot.sample_count,...entry.acceptance,groups:[],incomplete:[]});
       const cohort=cohorts.get(entry.cohort_id);
       if(entry.complete)cohort.groups.push({occurrence:entry.occurrence,values:entry.values,xbar:entry.xbar,r:entry.r});else cohort.incomplete.push({occurrence:entry.occurrence,reasons:entry.reasons});
     }
     const result=[];
     for(const c of cohorts.values()){
-      const statistics=calculateSpc({groups:c.groups.map(g=>g.values),lsl:c.definition_snapshot.limits?.minimum??null,usl:c.definition_snapshot.limits?.maximum??null,method});
+      const statistics=calculateSpc({groups:c.groups.map(g=>g.values),lsl:c.acceptance_limits?.minimum??null,usl:c.acceptance_limits?.maximum??null,method});
       const {groups,...details}=c;
       result.push({...details,counts:{complete:groups.length,incomplete:c.incomplete.length,excluded:c.incomplete.length,observations:statistics.N},series:groups.map(g=>({occurrence_id:g.occurrence.id,checked_at:g.occurrence.checked_at,xbar:g.xbar,r:g.r})),statistics,control_limits:statistics.control_limits,capability:statistics.capability,baseline:{id:null,source:'selected_period',as_of:meta.as_of,scope:meta.scope},warnings:[...statistics.reasons,...c.definition_snapshot.review_notes],_groups:groups});
     }

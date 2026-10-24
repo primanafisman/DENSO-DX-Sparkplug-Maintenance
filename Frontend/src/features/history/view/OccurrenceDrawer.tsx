@@ -6,14 +6,39 @@ import { Button, Status, ErrorMessage } from '../../../shared/components/ui';
 import { EvidenceDialog } from './EvidenceDialog';
 import { useDeleteRecord } from '../controller/useDeleteRecord';
 import { useSession } from '../../auth/controller/useSession';
+import { statusOnlyReport } from '../model/reportMode';
+import { measurementUnit, occurrenceAcceptance } from '../model/measurementFacts';
+function Acceptance({ occurrence, unit }: { occurrence: Occurrence; unit?: string | null }) {
+  const limits = occurrenceAcceptance(occurrence, unit),
+    labels = [...new Set(limits.map((item) => item.label))];
+  if (!labels.length) return null;
+  return labels.length === 1 ? (
+    <p>
+      <strong>Batas OK:</strong> {labels[0]}
+    </p>
+  ) : (
+    <details>
+      <summary>Batas OK per sampel</summary>
+      {limits.map((item) => (
+        <p key={item.sample_id}>
+          {item.sample_id}: {item.label}
+        </p>
+      ))}
+    </details>
+  );
+}
 export function OccurrenceDrawer({
   items,
   onClose,
   demo = false,
+  units,
+  showStatistics = true,
 }: {
   items: Occurrence[];
   onClose: () => void;
   demo?: boolean;
+  units?: Record<string, string | null>;
+  showStatistics?: boolean;
 }) {
   const [evidence, setEvidence] = useState<EvidenceRef | null>(null),
     [confirming, setConfirming] = useState<string | null>(null),
@@ -41,24 +66,37 @@ export function OccurrenceDrawer({
                 <Status value={o.overall_status} />
               </div>
               <p>
-                Line {o.context.line} · {o.slot_id ?? 'Slot tidak tercatat'} · {o.context.sampler}
+                Line {o.context.line} · Shift {o.context.shift === 'day' ? '1' : '2'} ·{' '}
+                {o.slot_id ?? 'Slot tidak tercatat'} · {o.context.sampler}
               </p>
-              <p>Type: {o.product_snapshot?.name ?? 'Tidak tercatat'}</p>
-              <p>Alat: {o.instruments.map((i) => i.name).join(', ') || 'Tidak tercatat'}</p>
+              {o.product_snapshot?.name && <p>Type: {o.product_snapshot.name}</p>}
+              {!!o.instruments.length && <p>Alat: {o.instruments.map((i) => i.name).join(', ')}</p>}
               {o.outcomes.map((s, i) => (
                 <p key={i}>
-                  {s.sample_id}: {'value' in s ? number(s.value) : s.status}{' '}
+                  {s.sample_id}:{' '}
+                  {'value' in s
+                    ? number(s.value) + ' ' + (measurementUnit(o, s, units?.[o.id]) ?? '')
+                    : s.status}{' '}
                   <Status value={s.status} />
                 </p>
               ))}
-              {o.numeric_summary && (
-                <p>
-                  X̄ {number(o.numeric_summary.xbar)} · R {number(o.numeric_summary.r)}
-                </p>
+              <Acceptance occurrence={o} unit={units?.[o.id]} />
+              {showStatistics &&
+                o.numeric_summary?.complete &&
+                (o.definition_snapshot?.sample_count ?? 0) >= 2 &&
+                !statusOnlyReport(o.definition_snapshot) && (
+                  <p>
+                    X̄ {number(o.numeric_summary.xbar)}{' '}
+                    {o.definition_snapshot?.unit ?? units?.[o.id]} · R {number(o.numeric_summary.r)}{' '}
+                    {o.definition_snapshot?.unit ?? units?.[o.id]}
+                  </p>
+                )}
+              {o.definition_snapshot?.standard_text && (
+                <details>
+                  <summary>Detail pemeriksaan</summary>
+                  <p>Standar saat diperiksa: {o.definition_snapshot.standard_text}</p>
+                </details>
               )}
-              <p className="muted">
-                Standar saat diperiksa: {o.definition_snapshot?.standard_text ?? 'Tidak tercatat'}
-              </p>
               <div className="actions">
                 {!demo &&
                   o.evidence.map((e, i) => (

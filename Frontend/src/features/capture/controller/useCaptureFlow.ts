@@ -314,6 +314,45 @@ export function createCaptureFlow({
     });
     return analyze(id);
   }
+  async function reanalyse() {
+    const state = store.getState();
+    if (state.pending || state.reading)
+      throw new Error('Periksa konfirmasi dan riwayat sebelum membaca ulang.');
+    if (!state.photo) return null;
+    const id = invalidate();
+    store.setState({ stage: 'locating' });
+    try {
+      const instruments = await api.instruments();
+      if (!current(id)) return null;
+      const selected = state.instrument
+        ? instruments.find(
+            (asset) =>
+              asset.id === state.instrument!.id &&
+              asset.active &&
+              asset.measurement_mode !== 'visual' &&
+              asset.condition !== 'not_working' &&
+              asset.profile,
+          )
+        : null;
+      store.setState({ instruments });
+      if (state.instrument && !selected) {
+        store.setState({
+          instrument: null,
+          profile: null,
+          analysisProfile: null,
+          analysisInstrumentId: null,
+          requiresReanalysis: false,
+        });
+        throw new Error(
+          'Alat tidak tersedia untuk pengukuran. Pilih alat lain atau periksa Pengaturan.',
+        );
+      }
+      if (selected) store.setState({ instrument: selected, profile: selected.profile });
+      return analyze(id);
+    } catch (error) {
+      return failed(error, id);
+    }
+  }
   async function confirm(review: Review) {
     const state = store.getState(),
       input = getInput();
@@ -357,8 +396,14 @@ export function createCaptureFlow({
       store.setState({ reading, pending: null });
       return reading;
     } catch (error) {
-      if (current(id) && error instanceof ApiError && error.status >= 400 && error.status < 500)
-        store.setState({ pending: null });
+      if (current(id) && error instanceof ApiError && error.status >= 400 && error.status < 500) {
+        store.setState({
+          pending: null,
+          ...(error.code === 'PROFILE_CHANGED'
+            ? { requiresReanalysis: true, reviewDraft: null }
+            : {}),
+        });
+      }
       throw error;
     }
   }
@@ -382,7 +427,7 @@ export function createCaptureFlow({
         },
       });
     },
-    reanalyse: () => analyze(invalidate()),
+    reanalyse,
     dispose: () => {
       invalidate();
       release(['sourceUrl', 'gaugeUrl', 'labelUrl']);

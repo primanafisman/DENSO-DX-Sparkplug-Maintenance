@@ -3,7 +3,15 @@ import { Link } from 'react-router-dom';
 import { useStore } from 'zustand';
 import { captureStore } from '../../capture/model/captureStore';
 import { captureResumePath } from '../../capture/controller/captureWorkspace';
-import { Camera, Upload, ArrowRight, ClipboardCheck } from 'lucide-react';
+import {
+  Camera,
+  Upload,
+  ArrowRight,
+  ClipboardCheck,
+  CheckCircle2,
+  Clock3,
+  SlidersHorizontal,
+} from 'lucide-react';
 import { useSession } from '../../auth/controller/useSession';
 import { useSettings } from '../../settings/controller/useSettings';
 import { useInspection, useMaintenanceDue } from '../controller/useInspection';
@@ -72,35 +80,39 @@ export function InspectionHub() {
     if (state.draft) setReplaceDraft(() => run);
     else run();
   };
+  const countsReady =
+    !!selection.line &&
+    !!due.data &&
+    !due.isError &&
+    (!state.schedule.data || due.data.schedule.starts_at === state.schedule.data.starts_at);
   return (
-    <>
+    <div className="inspection-page">
       <PageHeader
         title="Pemeriksaan"
-        description="Pilih konteks kerja, lalu mulai pemeriksaan atau ambil foto alat."
+        actions={
+          selection.line && (
+            <div className="status-strip" aria-label="Progres pemeriksaan">
+              <span
+                className="status-chip status-chip-ok"
+                role="status"
+                aria-label={(countsReady ? due.data!.completed_count : '—') + ' Selesai'}
+              >
+                <CheckCircle2 size={18} />
+                <strong>{countsReady ? due.data!.completed_count : '—'}</strong> Selesai
+              </span>
+              <span
+                className="status-chip status-chip-pending"
+                role="status"
+                aria-label={(countsReady ? due.data!.pending_count : '—') + ' Tersisa'}
+              >
+                <Clock3 size={18} />
+                <strong>{countsReady ? due.data!.pending_count : '—'}</strong> Tersisa
+              </span>
+            </div>
+          )
+        }
       />
-      {state.draft && (
-        <Card className="resume-banner">
-          <div>
-            <strong>Pemeriksaan belum selesai</strong>
-            <p>
-              {state.draft.definition?.name ?? 'Input foto alat'} · Line {state.draft.context.line}{' '}
-              · {state.draft.observations.length} sampel terisi
-            </p>
-          </div>
-          <Link
-            className="button"
-            to={
-              state.draft.definition?.input_method === 'ok_ng'
-                ? '/pemeriksaan/visual'
-                : captureResumePath(capture)
-            }
-          >
-            Lanjutkan pemeriksaan
-          </Link>
-        </Card>
-      )}
-      <Card>
-        <h2 className="section-title">Konteks pemeriksaan</h2>
+      <Card className="inspection-entry">
         {settings.settings.data && (
           <InspectionContextForm
             settings={settings.settings.data}
@@ -110,107 +122,118 @@ export function InspectionHub() {
           />
         )}
         <ErrorMessage error={settings.settings.error ?? state.schedule.error} />
+        <div className="quick-capture">
+          <div className="capture-heading">
+            <span className="capture-symbol">
+              <Camera size={27} />
+            </span>
+            <h2>Input otomatis</h2>
+          </div>
+          <div className="actions header-actions">
+            <Button disabled={!canWrite} onClick={() => start(null, selection, 'camera')}>
+              <Camera size={19} /> Buka kamera
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={!canWrite}
+              onClick={() => start(null, selection, 'upload')}
+            >
+              <Upload size={19} /> Upload gambar
+            </Button>
+          </div>
+        </div>
       </Card>
-      <div className="quick-capture">
-        <div>
-          <span className="eyebrow">INPUT OTOMATIS</span>
-          <h2>Mulai dari foto alat ukur</h2>
-          <p>Angka dan label dicocokkan ke peralatan terdaftar. Hasil ditinjau sebelum disimpan.</p>
-        </div>
-        <div className="actions">
-          <Button
-            disabled={!canWrite || !selection.line || !selection.sampler}
-            onClick={() => start(null, selection, 'camera')}
+      {state.draft && (
+        <Card className="resume-banner">
+          <div>
+            <strong>{state.draft.definition?.name ?? 'Foto alat'}</strong>
+            <span>
+              {' '}
+              · Line {state.draft.context.line} · {state.draft.observations.length} sampel
+            </span>
+          </div>
+          <Link
+            className="button button-secondary"
+            to={
+              state.draft.definition?.input_method === 'ok_ng'
+                ? '/pemeriksaan/visual'
+                : captureResumePath(capture)
+            }
           >
-            <Camera size={20} />
-            Buka kamera
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={!canWrite || !selection.line || !selection.sampler}
-            onClick={() => start(null, selection, 'upload')}
-          >
-            <Upload size={19} />
-            Upload gambar
-          </Button>
-        </div>
-      </div>
-      <Card>
-        <div className="row between section-title">
+            Lanjutkan pemeriksaan <ArrowRight size={16} />
+          </Link>
+        </Card>
+      )}
+      <Card className="inspection-list-panel">
+        <div className="section-heading">
           <h2>Daftar pemeriksaan</h2>
-          <Badge>{due.data?.pending_count ?? 0} belum diperiksa</Badge>
+          <div className="header-actions">
+            <Field label="Cari pemeriksaan">
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Nama pemeriksaan"
+              />
+            </Field>
+            <details className="filter-disclosure">
+              <summary>
+                <SlidersHorizontal size={17} /> Filter
+              </summary>
+              <div className="filter-popover">
+                <Field label="Sasaran pemeriksaan">
+                  <select value={target} onChange={(e) => setTarget(e.target.value)}>
+                    <option value="">Semua pemeriksaan</option>
+                    <option value="machine">Mesin / line</option>
+                    <option value="product">Sampling produk sparkplug</option>
+                    <option value="unclassified">Belum diklasifikasikan</option>
+                  </select>
+                </Field>
+                <Field label="Kelompok">
+                  <select value={group} onChange={(e) => setGroup(e.target.value)}>
+                    <option value="">Semua proses</option>
+                    {[...new Set(defs.map((d) => d.group))].map((g) => (
+                      <option key={g}>{g}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Metode input">
+                  <select value={kind} onChange={(e) => setKind(e.target.value)}>
+                    <option value="">Semua metode</option>
+                    <option value="ok_ng">OK / NG</option>
+                    <option value="photo">Angka foto</option>
+                    <option value="photo_difference">Before / after</option>
+                  </select>
+                </Field>
+                <Field label="Persyaratan">
+                  <select value={requirement} onChange={(e) => setRequirement(e.target.value)}>
+                    <option value="">Semua persyaratan</option>
+                    {[
+                      ...new Map(
+                        defs.flatMap((d) => d.requirements.map((r) => [r.id, r.label] as const)),
+                      ).entries(),
+                    ].map(([id, label]) => (
+                      <option key={id} value={id}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+            </details>
+          </div>
         </div>
-        {!canWrite && (
-          <p className="info-note">
-            Akun Viewer dapat membaca panduan. Pengisian membutuhkan Operator atau Admin.
-          </p>
-        )}
-        <div className="filters">
-          <Field label="Sasaran pemeriksaan">
-            <select value={target} onChange={(e) => setTarget(e.target.value)}>
-              <option value="">Semua pemeriksaan</option>
-              <option value="machine">Mesin / line</option>
-              <option value="product">Sampling produk sparkplug</option>
-              <option value="unclassified">Belum diklasifikasikan</option>
-            </select>
-          </Field>
-          <Field label="Cari pemeriksaan">
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Nama pemeriksaan"
-            />
-          </Field>
-          <Field label="Kelompok">
-            <select value={group} onChange={(e) => setGroup(e.target.value)}>
-              <option value="">Semua proses</option>
-              {[...new Set(defs.map((d) => d.group))].map((g) => (
-                <option key={g}>{g}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Metode input">
-            <select value={kind} onChange={(e) => setKind(e.target.value)}>
-              <option value="">Semua metode</option>
-              <option value="ok_ng">OK / NG</option>
-              <option value="photo">Angka foto</option>
-              <option value="photo_difference">Before / after</option>
-            </select>
-          </Field>
-          <Field label="Persyaratan">
-            <select value={requirement} onChange={(e) => setRequirement(e.target.value)}>
-              <option value="">Semua persyaratan</option>
-              {[
-                ...new Map(
-                  defs.flatMap((d) => d.requirements.map((r) => [r.id, r.label] as const)),
-                ).entries(),
-              ].map(([id, label]) => (
-                <option key={id} value={id}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
-        {!selection.line && (
-          <p className="info-note">Pilih line untuk melihat pemeriksaan yang belum selesai.</p>
-        )}
-        {selection.line && due.data && (
-          <p className="muted">
-            {due.data.completed_count} pemeriksaan sudah selesai pada jadwal ini. Item muncul
-            kembali saat jadwal berikutnya; hasil OK / NG tetap ada di Riwayat.
-          </p>
-        )}
-        <ErrorMessage error={due.error} />
+        {user?.role === 'Viewer' && <Badge>Hanya lihat</Badge>}
+        <ErrorMessage error={due.error ?? settings.catalog.error} />
         {due.isError && (
           <Button variant="secondary" onClick={() => due.refetch()}>
-            Muat ulang jadwal
+            Coba lagi
           </Button>
         )}
-        {selection.line && due.data?.pending_count === 0 && !due.isError && (
-          <p className="info-note">
-            Semua pemeriksaan pada jadwal ini sudah selesai atau belum waktunya.
-          </p>
+        {!selection.line && (
+          <div className="compact-empty">
+            <ClipboardCheck size={24} />
+            <strong>Pilih line</strong>
+          </div>
         )}
         {settings.catalog.isPending || (!!selection.line && due.isPending) ? (
           <Loading />
@@ -222,40 +245,33 @@ export function InspectionHub() {
                   {d.check_number ?? d.source_number ?? <ClipboardCheck size={20} />}
                 </div>
                 <div className="inspection-option-body">
-                  <div className="row wrap">
-                    <h3>{d.name}</h3>
-                    <Badge>
-                      {d.inspection_target === 'product'
-                        ? 'Sampling sparkplug'
-                        : d.inspection_target === 'machine'
-                          ? 'Mesin / line'
-                          : 'Sasaran belum diatur'}
-                    </Badge>
-                    <Badge>
+                  <h3>{d.name}</h3>
+                  <div className="inspection-facts">
+                    <span>
                       {d.input_method === 'ok_ng'
                         ? 'OK / NG'
                         : d.input_method === 'photo_difference'
-                          ? 'Before / after'
-                          : 'Angka foto'}
-                    </Badge>
+                          ? 'Foto sebelum / sesudah'
+                          : 'Foto'}
+                    </span>
+                    <span>{d.sample_count} sampel</span>
+                    <span>{d.interval_guide.description}</span>
                   </div>
-                  <p>{d.standard_text}</p>
-                  {d.inspection_target === 'product' && (
-                    <small className="info-note">
-                      Satu rangkaian {d.sample_count} sampel untuk satu Type. Mulai rangkaian baru
-                      untuk Type berbeda.
-                    </small>
-                  )}
-                  <small className="muted">
-                    {d.tool} · {d.interval_guide.description} · {d.sample_count} sampel
-                  </small>
-                  <details>
-                    <summary>Persyaratan dan panduan</summary>
+                  <details className="inspection-guide">
+                    <summary>Standar & metode</summary>
+                    <ul>
+                      {d.requirements.length ? (
+                        d.requirements.map((r) => <li key={r.id}>{r.label}</li>)
+                      ) : (
+                        <li>{d.standard_text}</li>
+                      )}
+                    </ul>
+                    {d.limits && (
+                      <strong>
+                        {d.limits.minimum}–{d.limits.maximum} {d.unit}
+                      </strong>
+                    )}
                     <p>{d.method_text}</p>
-                    {d.requirements.map((r) => (
-                      <p key={r.id}>• {r.label}</p>
-                    ))}
-                    <p>{d.interval_guide.note}</p>
                     {d.review_notes.map((n) => (
                       <p key={n} className="source-note">
                         {n}
@@ -266,14 +282,19 @@ export function InspectionHub() {
                 <Button
                   variant="secondary"
                   aria-label={'Mulai ' + d.name}
-                  disabled={!canWrite || !selection.line || !selection.sampler}
+                  disabled={!canWrite}
                   onClick={() => start(d, selection)}
                 >
-                  Mulai
-                  <ArrowRight size={16} />
+                  Mulai <ArrowRight size={16} />
                 </Button>
               </article>
             ))}
+          </div>
+        )}
+        {selection.line && !due.isPending && !due.isError && !filtered.length && (
+          <div className="compact-empty">
+            <CheckCircle2 size={25} />
+            <strong>{due.data?.pending_count === 0 ? 'Selesai' : 'Tidak ada hasil'}</strong>
           </div>
         )}
       </Card>
@@ -286,11 +307,8 @@ export function InspectionHub() {
             aria-modal="true"
             aria-label="Mulai pemeriksaan baru"
           >
-            <h2>Mulai pemeriksaan baru?</h2>
-            <p>
-              Progres yang belum disimpan akan diganti. Pilih Lanjutkan pemeriksaan untuk meneruskan
-              isian sebelumnya.
-            </p>
+            <h2>Ganti pemeriksaan?</h2>
+            <p>Progres yang belum disimpan akan diganti.</p>
             <div className="actions">
               <Button variant="secondary" onClick={() => setReplaceDraft(null)}>
                 Batal
@@ -307,6 +325,6 @@ export function InspectionHub() {
           </section>
         </div>
       )}
-    </>
+    </div>
   );
 }

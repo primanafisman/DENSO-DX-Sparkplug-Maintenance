@@ -11,25 +11,26 @@ import {
   Field,
   ErrorDialog,
 } from '../../../shared/components/ui';
-import { useChecksheet } from '../controller/useChecksheet';
+import { useMonthlyChecksheet } from '../controller/useMonthlyChecksheet';
 import { downloadReport } from '../controller/useEvidence';
 import { MonthlyTable } from './MonthlyTable';
-import { dateTime } from '../../../shared/lib/format';
 import { useCapabilities } from '../../../shared/controller/useCapabilities';
+import './history.css';
+import type { MonthlyMode } from '../model/monthlyRows';
 export function HistoryPage() {
   const f = useReportFilters(),
     capabilities = useCapabilities(),
     demoAvailable = capabilities.data?.demo_reports === true,
-    q = useChecksheet(f.demo && !demoAvailable ? null : f.scope),
-    [mode, setMode] = useState<'status' | 'value'>('status'),
+    q = useMonthlyChecksheet(f.demo && !demoAvailable ? null : f.scope),
+    [mode, setMode] = useState<MonthlyMode>('all'),
     [error, setError] = useState<unknown>(null);
-  const rows = q.data?.pages.flatMap((p) => p.rows) ?? [],
-    meta = q.data?.pages[0].meta;
+  const rows = q.data?.rows ?? [],
+    meta = q.data?.meta,
+    warnings = meta?.warnings.filter((warning) => warning !== 'DEMO_DATA') ?? [];
   return (
     <>
       <PageHeader
         title="Riwayat pemeriksaan"
-        description="Pilih bulan, lalu buka pemeriksaan untuk rincian dan grafik."
         actions={
           <>
             {(demoAvailable || f.demo) && (
@@ -52,12 +53,19 @@ export function HistoryPage() {
       />
       {f.demo && (
         <div className="demo-banner" role="status">
-          <strong>Data contoh — bukan catatan produksi.</strong> Nilai ilustrasi mengikuti struktur
-          lembar maintenance. Buka EE Cutting atau pemeriksaan angka lain untuk melihat grafik X̄ /
-          R.
+          <strong>Data contoh — bukan catatan produksi.</strong> Simulasi tabel dan grafik.
         </div>
       )}
-      <ReportFilters filters={f} />
+      <div className="sm-history-toolbar no-print">
+        <ReportFilters filters={f} />
+        <Field label="Isi sel tabel">
+          <select value={mode} onChange={(e) => setMode(e.target.value as typeof mode)}>
+            <option value="all">Semua Data</option>
+            <option value="status">Hasil NG / OK</option>
+            <option value="measurement">Rata-rata sampel X dan R</option>
+          </select>
+        </Field>
+      </div>
       {f.demo &&
         !demoAvailable &&
         (capabilities.isPending ? (
@@ -68,14 +76,13 @@ export function HistoryPage() {
             description="Kembali ke data produksi untuk melihat catatan pemeriksaan."
           />
         ))}
-      <Field label="Isi sel tabel">
-        <select value={mode} onChange={(e) => setMode(e.target.value as typeof mode)}>
-          <option value="status">Hasil OK / NG</option>
-          <option value="value">Rata-rata sampel (X̄)</option>
-        </select>
-      </Field>
       <ErrorMessage error={f.error ?? q.error} />
-      {q.isLoading && <Loading />}
+      {q.error && (
+        <Button variant="secondary" onClick={() => q.refetch()}>
+          Muat ulang riwayat
+        </Button>
+      )}
+      {q.isLoading && <Loading label="Memuat seluruh hasil bulan…" />}
       {!q.isLoading && !q.error && meta && (
         <Card>
           {rows.length ? (
@@ -89,22 +96,15 @@ export function HistoryPage() {
           ) : (
             <Empty title="Belum ada catatan bulan ini" />
           )}
-          {q.hasNextPage && (
-            <Button
-              variant="secondary"
-              disabled={q.isFetchingNextPage}
-              onClick={() => q.fetchNextPage()}
-            >
-              Tampilkan baris berikutnya
-            </Button>
-          )}
         </Card>
       )}
-      {meta && (
-        <p className="muted">
-          Snapshot {dateTime(meta.as_of)}. Sel kosong berarti belum ada catatan; beberapa catatan
-          tetap ditampilkan terpisah. {meta.warnings.join(' ')}
-        </p>
+      {!!warnings.length && (
+        <details className="info-note">
+          <summary>Catatan laporan</summary>
+          {warnings.map((warning) => (
+            <p key={warning}>{warning}</p>
+          ))}
+        </details>
       )}
       <ErrorDialog error={error} onClose={() => setError(null)} />
     </>

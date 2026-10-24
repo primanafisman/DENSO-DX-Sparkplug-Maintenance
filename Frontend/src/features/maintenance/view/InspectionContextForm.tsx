@@ -13,7 +13,7 @@ export function InspectionContextForm({
   onChange: (v: ContextSelection) => void;
 }) {
   return (
-    <>
+    <div className="inspection-context">
       <div className="context-grid">
         <Field label="Line">
           <select
@@ -39,29 +39,26 @@ export function InspectionContextForm({
             ))}
           </select>
         </Field>
-        <Field
-          label="Type produk"
-          hint="Sampling: isi seluruh sampel dalam satu Type; ulangi pemeriksaan untuk Type berbeda."
-        >
+        <Field label="Type produk">
           <select
             value={value.product_type_id ?? ''}
             onChange={(e) => onChange({ ...value, product_type_id: e.target.value })}
           >
-            <option value="">Tidak tercatat / belum dipilih</option>
+            <option value="">Pilih Type</option>
             {settings.product_types
               ?.filter((p) => p.active)
               .map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.code} · {p.name}
+                  {p.name}
                 </option>
               ))}
           </select>
         </Field>
       </div>
-      <div className="row wrap">
+      <div className="context-time">
         <Badge>{schedule?.slot_label ?? 'Memeriksa waktu server…'}</Badge>
-        <small className="muted">Tanggal produksi {schedule?.production_date ?? '—'} · WIB</small>
+        <time>{schedule?.production_date ?? '—'}</time>
       </div>
-    </>
+    </div>
   );
 }

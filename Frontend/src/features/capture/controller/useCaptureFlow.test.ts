@@ -226,10 +226,125 @@ it('changing to an incompatible equipment profile retains the source result unti
     engine.confirm({ final_value: '0.000', identity_verified: true, verified: true, reason: '' }),
   ).rejects.toThrow(/profil/i);
   expect(api.confirm).not.toHaveBeenCalled();
+  api.instruments.mockResolvedValueOnce([
+    fixtureInstrument({ profile: { ...profile, unit: 'mm' } }),
+  ]);
   await engine.reanalyse();
   expect(api.submit).toHaveBeenCalledTimes(2);
   expect(api.submit.mock.calls[1][1][0].profile.unit).toBe('mm');
 });
+it('PROFILE_CHANGED exposes explicit rereading and refreshes registry revision, limits and profile before confirmation', async () => {
+  const { engine, api, state } = setup();
+  await engine.upload(new File(['x'], 'gauge.jpg', { type: 'image/jpeg' }));
+  engine.setReviewDraft({ value: '0.410', identity: true, verified: true });
+  const updated = fixtureInstrument({
+    profile: { ...profile, maximum: 2 },
+    maintenance_check_ids: ['check'],
+    revision: 2,
+    acceptance_limits: { minimum: 0.35, maximum: 0.45 },
+  });
+  api.confirm.mockImplementation(async (body) => {
+    if (body.instrument_revision !== 2)
+      throw new ApiError(
+        'Equipment changed after analysis. Analyze again.',
+        409,
+        'PROFILE_CHANGED',
+      );
+    return { id: 'new-reading', instrument_snapshot: updated } as ConfirmedReading;
+  });
+  const review = { final_value: '0.410', identity_verified: true, verified: true };
+  await expect(engine.confirm(review)).rejects.toMatchObject({ code: 'PROFILE_CHANGED' });
+  expect(state.getState().requiresReanalysis).toBe(true);
+  expect(state.getState().reviewDraft).toBeNull();
+  await expect(engine.confirm(review)).rejects.toThrow(/profil/i);
+  api.instruments.mockResolvedValueOnce([updated]);
+  api.submit.mockResolvedValueOnce({
+    ...job,
+    results: [{ ...job.results[0], analysis_id: 'fresh-analysis' }],
+  });
+  await engine.reanalyse();
+  expect(state.getState().instrument).toEqual(updated);
+  expect(state.getState().analysisProfile?.maximum).toBe(2);
+  expect(api.submit.mock.calls[1][1][0].profile.maximum).toBe(2);
+  expect(state.getState().reviewDraft).toBeNull();
+  const reading = await engine.confirm(review);
+  expect(reading?.instrument_snapshot?.acceptance_limits).toEqual({ minimum: 0.35, maximum: 0.45 });
+  expect(api.confirm.mock.calls.at(-1)?.[0]).toMatchObject({
+    analysis_id: 'fresh-analysis',
+    instrument_revision: 2,
+  });
+  engine.dispose();
+});
+it.each([
+  ['removed', []],
+  ['archived', [fixtureInstrument({ profile, active: false })]],
+  ['not working', [fixtureInstrument({ profile, condition: 'not_working' })]],
+  ['visual', [fixtureInstrument({ profile: null, measurement_mode: 'visual' })]],
+  ['without profile', [fixtureInstrument({ profile: null })]],
+])(
+  'rereading unavailable equipment (%s) clears stale identity and blocks analysis',
+  async (_label, assets) => {
+    const { engine, api, state } = setup();
+    await engine.upload(new File(['x'], 'gauge.jpg', { type: 'image/jpeg' }));
+    engine.setReviewDraft({ value: '0.410', identity: true, verified: true });
+    api.instruments.mockResolvedValueOnce(assets);
+    await engine.reanalyse();
+    expect(api.submit).toHaveBeenCalledTimes(1);
+    expect(state.getState()).toMatchObject({
+      instrument: null,
+      profile: null,
+      result: null,
+      reviewDraft: null,
+      stage: 'error',
+    });
+    expect(state.getState().error).toBeInstanceOf(Error);
+    expect(state.getState().photo?.image_id).toBe('p');
+    await expect(
+      engine.confirm({ final_value: '0.410', identity_verified: true, verified: true }),
+    ).rejects.toThrow();
+    engine.dispose();
+  },
+);
+it('an in-flight registry refresh cannot restore a disposed capture or trigger navigation', async () => {
+  const { engine, api, state, ready } = setup();
+  await engine.upload(new File(['x'], 'gauge.jpg', { type: 'image/jpeg' }));
+  ready.mockClear();
+  let resolve!: (assets: (typeof instrument)[]) => void;
+  api.instruments.mockImplementationOnce(
+    () =>
+      new Promise((done) => {
+        resolve = done;
+      }),
+  );
+  const rereading = engine.reanalyse();
+  expect(api.instruments).toHaveBeenCalledTimes(2);
+  engine.dispose();
+  resolve([fixtureInstrument({ profile, revision: 2 })]);
+  await rereading;
+  expect(state.getState().file).toBeNull();
+  expect(state.getState().instrument).toBeNull();
+  expect(api.submit).toHaveBeenCalledTimes(1);
+  expect(ready).not.toHaveBeenCalled();
+});
+it.each(['uncertain', 'confirmed'])(
+  'rereading cannot discard %s confirmed evidence',
+  async (outcome) => {
+    const { engine, api, state } = setup();
+    await engine.upload(new File(['x'], 'gauge.jpg', { type: 'image/jpeg' }));
+    if (outcome === 'uncertain') api.confirm.mockRejectedValueOnce(new ApiError('lost', 0));
+    await engine
+      .confirm({ final_value: '0.000', identity_verified: true, verified: true })
+      .catch(() => null);
+    const pending = state.getState().pending,
+      reading = state.getState().reading;
+    await expect(engine.reanalyse()).rejects.toThrow(/konfirmasi|riwayat/i);
+    expect(state.getState().pending).toBe(pending);
+    expect(state.getState().reading).toBe(reading);
+    expect(api.instruments).toHaveBeenCalledTimes(1);
+    expect(api.submit).toHaveBeenCalledTimes(1);
+    engine.dispose();
+  },
+);
 it('an uncertain reading confirmation cannot be reassigned to another instrument', async () => {
   const { engine, api, state } = setup();
   await engine.upload(new File(['x'], 'x.jpg', { type: 'image/jpeg' }));
@@ -483,6 +598,46 @@ it('complete label text found in the reading fills identity without changing a r
   expect(state.getState().instrument?.id).toBe('b3601');
   expect(state.getState().result?.confidence.valid).toBe(false);
   expect(state.getState().result?.validated_prediction).toBeNull();
+  expect(api.submit).toHaveBeenCalledTimes(1);
+});
+it('MC Lowering 1 label fills a registered tool on another selected line without another CV job', async () => {
+  const { engine, api, state } = setup();
+  const registered = fixtureInstrument({
+    id: 'lowering-1',
+    name: 'MC Lowering 1',
+    code: '',
+    aliases: [],
+    area: '17',
+    profile,
+    maintenance_check_ids: ['machine-lowering'],
+  });
+  api.upload.mockResolvedValueOnce({ ...photo, context: { ...photo.context, line: '1' } });
+  api.instruments.mockResolvedValueOnce([registered]);
+  api.discover.mockResolvedValueOnce({
+    instruments: [
+      {
+        client_id: 'indicator',
+        roi: { x: 0, y: 0, width: 1, height: 1 },
+        label_roi: null,
+        instrument: null,
+        suggested_profile: profile,
+        profile_source: 'display-default',
+        requires_confirmation: true,
+        requires_profile_confirmation: true,
+        kind_hint: 'analog',
+      },
+    ],
+    warnings: [],
+    confidence_calibrated: false,
+  });
+  api.submit.mockResolvedValueOnce({
+    ...job,
+    results: [{ ...job.results[0], label: { raw_text: 'MC Lowering 1' } }],
+  });
+  await engine.upload(new File(['x'], 'gauge.jpg', { type: 'image/jpeg' }));
+  expect(state.getState().instrument?.id).toBe('lowering-1');
+  expect(state.getState().photo?.context.line).toBe('1');
+  expect(state.getState().instrument?.area).toBe('17');
   expect(api.submit).toHaveBeenCalledTimes(1);
 });
 it('a registered text label on a later detected indicator selects that indicator and its crop', async () => {

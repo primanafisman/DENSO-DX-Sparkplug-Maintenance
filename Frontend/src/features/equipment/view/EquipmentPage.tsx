@@ -25,35 +25,36 @@ export function EquipmentPage({ embedded = false }: { embedded?: boolean }) {
     catalog = useCatalog(true),
     definitions = catalog.data?.items ?? [],
     equipment = useEquipment({ q, ...(condition ? { condition } : {}) }, definitions);
+  const addAction = user?.role === 'Admin' && (
+    <Button
+      onClick={() => {
+        equipment.save.reset();
+        equipment.setStatus.reset();
+        setSelected(null);
+      }}
+    >
+      <Plus size={18} aria-hidden="true" /> Tambah alat
+    </Button>
+  );
   return (
     <>
-      <PageHeader
-        level={embedded ? 2 : 1}
-        title="Peralatan"
-        description="Identitas, kondisi dan parameter alat ukur."
-        actions={
-          user?.role === 'Admin' && (
-            <Button
-              onClick={() => {
-                equipment.save.reset();
-                equipment.setStatus.reset();
-                setSelected(null);
-              }}
-            >
-              <Plus size={18} />
-              Tambah alat
-            </Button>
-          )
-        }
-      />
+      {!embedded && <PageHeader title="Peralatan" actions={addAction} />}
       <Card>
+        {embedded && (
+          <div className="section-heading">
+            <div className="section-heading-title">
+              <h2>Peralatan</h2>
+            </div>
+            <div className="header-actions">{addAction}</div>
+          </div>
+        )}
         <div className="filters">
           <Field label="Cari peralatan">
             <div className="search-field">
               <Search size={18} />
               <input
                 value={q}
-                placeholder="Nama, nomor atau alias"
+                placeholder="Cari nama alat"
                 onChange={(e) => setQ(e.target.value)}
               />
             </div>
@@ -72,21 +73,12 @@ export function EquipmentPage({ embedded = false }: { embedded?: boolean }) {
         {equipment.isPending ? (
           <Loading />
         ) : !equipment.items.length ? (
-          <Empty
-            title="Peralatan belum tersedia"
-            description="Administrator dapat menambahkan alat dan alias untuk pencocokan label."
-          />
+          <Empty title="Peralatan belum tersedia" description="" />
         ) : (
           <div className="table-scroll">
             <table>
               <thead>
                 <tr>
-                  <SortHeading
-                    field="code"
-                    label="Nomor / kode"
-                    sort={equipment.sort}
-                    onSort={equipment.sortBy}
-                  />
                   <SortHeading
                     field="name"
                     label="Peralatan"
@@ -124,11 +116,8 @@ export function EquipmentPage({ embedded = false }: { embedded?: boolean }) {
                 {equipment.items.map((a) => (
                   <tr key={a.id}>
                     <td>
-                      <strong>{a.code || a.name}</strong>
-                    </td>
-                    <td>
-                      {a.name}
-                      <small className="block muted">{a.area || 'Area belum diisi'}</small>
+                      <strong>{a.name}</strong>
+                      {a.area && <small className="block muted">Line {a.area}</small>}
                     </td>
                     <td>
                       <Badge>

@@ -40,7 +40,9 @@ export async function applicationFiles(root) {
         !/(?:test-access|online-access|password|secret)|\.(?:log|db|sqlite|pem|key|pfx|p12|zip)$/i.test(
           name,
         ) &&
-        (dist || /\.(?:[cm]?js|tsx?|json|css|html|md|cmd|ps1|svg)$/.test(name))
+        (dist ||
+          name === "Frontend/src/assets/denso-logo.png" ||
+          /\.(?:[cm]?js|tsx?|json|css|html|md|cmd|ps1|svg)$/.test(name))
       )
         files.push(name);
     }

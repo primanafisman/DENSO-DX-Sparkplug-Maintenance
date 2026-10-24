@@ -49,12 +49,8 @@ export function CalculationPanel({ cohort: c }: { cohort: SpcCohort }) {
           </div>
         ))}
       </dl>
-      <p>
-        Subgroup belum lengkap: {c.counts.incomplete} · tidak disertakan: {c.counts.excluded}
-      </p>
-      {cap.reason && <p className="info-note">{cap.reason}</p>}
       <details className="info-note no-print">
-        <summary>Penjelasan metode dan batas</summary>
+        <summary>Detail perhitungan</summary>
         <p>
           STDEV.S memakai sebaran seluruh sampel (metode lembar). σwithin = R̄ / d₂ ditampilkan
           terpisah. Penamaan Cp/Cpk metode lembar perlu peninjauan tim kualitas. Batas kontrol
@@ -64,12 +60,16 @@ export function CalculationPanel({ cohort: c }: { cohort: SpcCohort }) {
           Standar: {c.definition_snapshot.standard_text}. Nilai kosong berarti data belum cukup /
           metode tidak sesuai.
         </p>
+        {(c.counts.incomplete > 0 || c.counts.excluded > 0) && (
+          <p>
+            Subgroup belum lengkap: {c.counts.incomplete} · tidak disertakan: {c.counts.excluded}
+          </p>
+        )}
+        {cap.reason && <p>{cap.reason}</p>}
+        {[...new Set([...s.reasons, ...c.warnings])].map((reason) => (
+          <p key={reason}>{reason}</p>
+        ))}
       </details>
-      {[...new Set([...s.reasons, ...c.warnings])].map((reason) => (
-        <p className="source-note" key={reason}>
-          {reason}
-        </p>
-      ))}
     </section>
   );
 }
