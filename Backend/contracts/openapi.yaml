@@ -2774,6 +2774,84 @@
         }
       }
     },
+    "/api/v1/maintenance/records/{id}": {
+      "delete": {
+        "summary": "Admin soft-deletes a maintenance record; evidence and audit retained; idempotent",
+        "operationId": "delete__api_v1_maintenance_records__id_",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required for cookie-authenticated writes, issued by GET auth/csrf."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/MaintenanceDelete"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/maintenance/summary": {
       "get": {
         "summary": "Scoped maintenance summary",
@@ -3487,6 +3565,496 @@
               "text/csv": {
                 "schema": {
                   "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/maintenance/demo/report": {
+      "get": {
+        "summary": "Development-only Data contoh: synthetic report; no operational writes or photo evidence",
+        "operationId": "get__api_v1_maintenance_demo_report",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "production_date_from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "required": true
+          },
+          {
+            "name": "production_date_to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "required": true
+          },
+          {
+            "name": "line",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": false
+          },
+          {
+            "name": "shift",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "night"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "definition_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": false
+          },
+          {
+            "name": "product_type_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": false
+          },
+          {
+            "name": "instrument_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": false
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ChecksheetPage"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/maintenance/demo/spc": {
+      "get": {
+        "summary": "Development-only Data contoh: synthetic spc; no operational writes or photo evidence",
+        "operationId": "get__api_v1_maintenance_demo_spc",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "production_date_from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "required": true
+          },
+          {
+            "name": "production_date_to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "required": true
+          },
+          {
+            "name": "line",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": false
+          },
+          {
+            "name": "shift",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "night"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "definition_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": false
+          },
+          {
+            "name": "product_type_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": false
+          },
+          {
+            "name": "instrument_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": false
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "required": false
+          },
+          {
+            "name": "baseline_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SpcReport"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Safe error envelope; 401 auth, 403 role/origin/CSRF, 409 conflict, 410 expiry, 413 size, 422 invalid, 429 capacity, 503 worker/schema.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/maintenance/demo/spc/subgroups": {
+      "get": {
+        "summary": "Development-only Data contoh: synthetic spc/subgroups; no operational writes or photo evidence",
+        "operationId": "get__api_v1_maintenance_demo_spc_subgroups",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "production_date_from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "required": true
+          },
+          {
+            "name": "production_date_to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "required": true
+          },
+          {
+            "name": "line",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": false
+          },
+          {
+            "name": "shift",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "day",
+                "night"
+              ]
+            },
+            "required": false
+          },
+          {
+            "name": "definition_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": false
+          },
+          {
+            "name": "product_type_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": false
+          },
+          {
+            "name": "instrument_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": false
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            },
+            "required": false
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "required": false
+          },
+          {
+            "name": "cohort_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": true
+          },
+          {
+            "name": "baseline_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "message",
+                    "data",
+                    "request_id"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/SubgroupPage"
+                    },
+                    "request_id": {
+                      "type": "string"
+                    }
+                  }
                 }
               }
             }
@@ -4283,8 +4851,7 @@
             "type": "string",
             "enum": [
               "working",
-              "not_working",
-              "unknown"
+              "not_working"
             ]
           },
           "condition_reason": {
@@ -4353,7 +4920,8 @@
           }
         },
         "required": [
-          "name"
+          "name",
+          "condition"
         ],
         "additionalProperties": false
       },
@@ -4766,27 +5334,10 @@
             "type": "array",
             "items": {
               "type": "string",
-              "enum": [
-                "1",
-                "2",
-                "3",
-                "4",
-                "5",
-                "6",
-                "7",
-                "8",
-                "9",
-                "10",
-                "11",
-                "12",
-                "13",
-                "14",
-                "15",
-                "16",
-                "17"
-              ]
+              "minLength": 1,
+              "maxLength": 64
             },
-            "maxItems": 17
+            "maxItems": 200
           },
           "allowed_samplers": {
             "type": "array",
@@ -4857,6 +5408,13 @@
       "DefinitionUpdate": {
         "type": "object",
         "properties": {
+          "inspection_target": {
+            "type": "string",
+            "enum": [
+              "machine",
+              "product"
+            ]
+          },
           "instrument_ids": {
             "type": "array",
             "items": {
@@ -5191,6 +5749,13 @@
       "DefinitionCreate": {
         "type": "object",
         "properties": {
+          "inspection_target": {
+            "type": "string",
+            "enum": [
+              "machine",
+              "product"
+            ]
+          },
           "instrument_ids": {
             "type": "array",
             "items": {
@@ -6338,6 +6903,14 @@
           "outcome_guide": {
             "type": "string"
           },
+          "inspection_target": {
+            "type": "string",
+            "enum": [
+              "machine",
+              "product"
+            ],
+            "nullable": true
+          },
           "check_number": {
             "type": "integer",
             "nullable": true
@@ -6456,27 +7029,10 @@
             "type": "array",
             "items": {
               "type": "string",
-              "enum": [
-                "1",
-                "2",
-                "3",
-                "4",
-                "5",
-                "6",
-                "7",
-                "8",
-                "9",
-                "10",
-                "11",
-                "12",
-                "13",
-                "14",
-                "15",
-                "16",
-                "17"
-              ]
+              "minLength": 1,
+              "maxLength": 64
             },
-            "maxItems": 17
+            "maxItems": 200
           },
           "allowed_samplers": {
             "type": "array",
@@ -7624,6 +8180,14 @@
               "outcome_guide": {
                 "type": "string"
               },
+              "inspection_target": {
+                "type": "string",
+                "enum": [
+                  "machine",
+                  "product"
+                ],
+                "nullable": true
+              },
               "check_number": {
                 "type": "integer",
                 "nullable": true
@@ -8494,6 +9058,25 @@
           "items",
           "next_cursor"
         ]
+      },
+      "MaintenanceDelete": {
+        "type": "object",
+        "required": [
+          "id",
+          "deleted"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        }
       },
       "PhotoMetadata": {
         "type": "object",

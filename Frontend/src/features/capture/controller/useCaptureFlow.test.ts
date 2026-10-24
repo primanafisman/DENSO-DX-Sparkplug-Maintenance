@@ -259,15 +259,50 @@ it('manual input from an uploaded photo creates unvalidated evidence without ano
   expect(state.getState().result?.analysis_id).toBe('manual');
   expect(state.getState().result?.confidence.valid).toBe(false);
   await expect(
-    engine.confirm({ final_value: '0.427', verified: true, identity_verified: true, reason: '' }),
-  ).rejects.toThrow(/alasan/i);
+    engine.confirm({ final_value: '0.427', verified: false, identity_verified: true }),
+  ).rejects.toThrow(/konfirmasi/i);
   await engine.confirm({
     final_value: '0.427',
     verified: true,
     identity_verified: true,
-    reason: 'Baca angka langsung dari foto.',
   });
-  expect(api.confirm.mock.calls[0][0].final_value).toBe('0.427');
+  expect(api.confirm.mock.calls[0][0]).toMatchObject({
+    analysis_id: 'manual',
+    final_value: '0.427',
+    reason: '',
+    identity_verified: true,
+    verified: true,
+  });
+});
+
+it('a corrected photo-backed value needs verification without requiring a correction reason', async () => {
+  const { engine, api } = setup();
+  await engine.upload(new File(['x'], 'x.jpg', { type: 'image/jpeg' }));
+  await engine.confirm({ final_value: '0.410', identity_verified: true, verified: true });
+  expect(api.confirm.mock.calls[0][0]).toMatchObject({
+    analysis_id: 'a',
+    final_value: '0.410',
+    reason: '',
+  });
+});
+
+it('binds a review draft to the analysis and equipment and clears it when its evidence changes', async () => {
+  const { engine, state } = setup();
+  await engine.upload(new File(['x'], 'x.jpg', { type: 'image/jpeg' }));
+  engine.setReviewDraft({ value: '0.410', identity: true, verified: false });
+  expect(state.getState().reviewDraft).toEqual({
+    analysis_id: 'a',
+    instrument_id: instrument.id,
+    value: '0.410',
+    identity: true,
+    verified: false,
+  });
+  await engine.selectInstrument(fixtureInstrument({ id: 'other', profile }));
+  expect(state.getState().reviewDraft).toBeNull();
+  engine.setReviewDraft({ value: '0.411', identity: true, verified: true });
+  engine.invalidate();
+  expect(state.getState().reviewDraft).toBeNull();
+  engine.dispose();
 });
 
 it('failed gauge discovery retains registered choices and allows photo-backed manual entry without CV', async () => {

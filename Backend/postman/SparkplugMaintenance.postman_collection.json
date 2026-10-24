@@ -334,6 +334,14 @@
       }
     },
     {
+      "name": "Admin soft-deletes a maintenance record; evidence and audit retained; idempotent",
+      "request": {
+        "method": "DELETE",
+        "url": "{{base_url}}/api/v1/maintenance/records/{id}",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
       "name": "Scoped maintenance summary",
       "request": {
         "method": "GET",
@@ -370,6 +378,30 @@
       "request": {
         "method": "GET",
         "url": "{{base_url}}/api/v1/maintenance/export.csv",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Development-only Data contoh: synthetic report; no operational writes or photo evidence",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/maintenance/demo/report",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Development-only Data contoh: synthetic spc; no operational writes or photo evidence",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/maintenance/demo/spc",
+        "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
+      }
+    },
+    {
+      "name": "Development-only Data contoh: synthetic spc/subgroups; no operational writes or photo evidence",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/api/v1/maintenance/demo/spc/subgroups",
         "description": "See OpenAPI for required fields and auth. Fill domain IDs; do not use private engine IDs."
       }
     },

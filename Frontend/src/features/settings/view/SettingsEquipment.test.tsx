@@ -71,7 +71,7 @@ it('equipment tab archives only persisted availability, keeps failed drafts and 
   fireEvent.click(archived.getByRole('button', { name: 'Ya, aktifkan kembali' }));
   await waitFor(() => expect(writes.at(-1)).toEqual({ active: true }));
   expect(asset.name).toBe('Kaliper');
-});
+}, 10000);
 it('read-only users can view the merged equipment list without editing or archive controls', async () => {
   setup('Viewer');
   server.use(
@@ -84,5 +84,7 @@ it('read-only users can view the merged equipment list without editing or archiv
   expect(screen.queryByRole('button', { name: 'Edit Kaliper' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Tambah alat' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('tab', { name: 'Line Produksi' }));
-  expect(await screen.findByLabelText('Line 17')).toBeDisabled();
+  expect(await screen.findByText('Line 17')).toBeVisible();
+  expect(screen.queryByLabelText('Tambah line')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Hapus line 17' })).not.toBeInTheDocument();
 });

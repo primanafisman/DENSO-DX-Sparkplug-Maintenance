@@ -114,10 +114,15 @@ import { envelope, schedule } from '../../../test/fixtures';
 import { SpcReportPage } from './SpcReportPage';
 function reportHandlers(cohorts: SpcCohort[], visual = false) {
   server.use(
+    http.get('/api/v1/capabilities', () => HttpResponse.json(envelope({ demo_reports: true }))),
     http.get('/api/v1/auth/me', () =>
       HttpResponse.json(envelope({ id: 'v', username: 'Viewer', role: 'Viewer' })),
     ),
-    http.get('/api/v1/maintenance/settings', () => HttpResponse.json(envelope({ lines: ['17'] }))),
+    http.get('/api/v1/maintenance/settings', () =>
+      HttpResponse.json(
+        envelope({ lines: ['17'], allowed_samplers: ['Ldr'], night_rollover_hour: 7 }),
+      ),
+    ),
     http.get('/api/v1/maintenance/schedule', () => HttpResponse.json(envelope(schedule))),
     http.get('/api/v1/maintenance/catalog', () =>
       HttpResponse.json(
@@ -131,6 +136,9 @@ function reportHandlers(cohorts: SpcCohort[], visual = false) {
       HttpResponse.json(envelope({ items: [], next_cursor: null })),
     ),
     http.get('/api/v1/maintenance/spc', () => HttpResponse.json(envelope({ meta, cohorts }))),
+    http.get('/api/v1/maintenance/report', () =>
+      HttpResponse.json(envelope({ meta, rows: [], next_cursor: null })),
+    ),
     http.get('/api/v1/maintenance/spc/subgroups', () =>
       HttpResponse.json(envelope({ meta, items: [], next_cursor: null })),
     ),
@@ -152,7 +160,7 @@ it('multiple cohorts require explicit selection and Viewer cannot save a baselin
   expect(await screen.findByText('Cp (lembar)')).toBeVisible();
   expect(screen.queryByRole('button', { name: 'Simpan batas kontrol' })).not.toBeInTheDocument();
 });
-it('visual check has no fabricated charts or capability', async () => {
+it('empty visual check has no fabricated status charts or numeric capability', async () => {
   reportHandlers([], true);
   renderApp(
     <Routes>
@@ -160,7 +168,7 @@ it('visual check has no fabricated charts or capability', async () => {
     </Routes>,
     '/riwayat/chart_ee_length',
   );
-  expect(await screen.findByText('Pemeriksaan OK / NG tidak memiliki grafik X̄ / R')).toBeVisible();
+  expect(await screen.findByText('Belum ada hasil OK / NG pada periode ini')).toBeVisible();
   expect(screen.queryByText('Cp (lembar)')).not.toBeInTheDocument();
 });
 import { act, waitFor } from '@testing-library/react';

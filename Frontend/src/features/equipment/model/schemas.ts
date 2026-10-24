@@ -26,6 +26,12 @@ export const equipmentSchema = z
     check_ids: z.array(z.string()),
   })
   .superRefine((v, c) => {
+    if (v.condition === 'unknown')
+      c.addIssue({
+        code: 'custom',
+        path: ['condition'],
+        message: 'Pilih kondisi alat: Berfungsi atau Tidak berfungsi.',
+      });
     if (v.measurement_mode === 'numeric' && v.maximum <= v.minimum)
       c.addIssue({
         code: 'custom',

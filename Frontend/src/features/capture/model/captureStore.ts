@@ -9,6 +9,13 @@ import type {
   Confirmation,
   ConfirmedReading,
 } from '../../../shared/lib/contracts';
+export type CaptureReviewDraft = {
+  analysis_id: string;
+  instrument_id: string;
+  value: string;
+  identity: boolean;
+  verified: boolean;
+};
 export type CaptureState = {
   file: File | null;
   photo: Photo | null;
@@ -31,6 +38,7 @@ export type CaptureState = {
   error: unknown;
   pending: Confirmation | null;
   reading: ConfirmedReading | null;
+  reviewDraft: CaptureReviewDraft | null;
   generation: number;
 };
 const initial = (): CaptureState => ({
@@ -55,6 +63,7 @@ const initial = (): CaptureState => ({
   error: null,
   pending: null,
   reading: null,
+  reviewDraft: null,
   generation: 0,
 });
 export const createCaptureStore = () => createStore<CaptureState>(() => initial());

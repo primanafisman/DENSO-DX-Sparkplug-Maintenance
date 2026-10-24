@@ -8,10 +8,12 @@ export function MonthlyTable({
   rows,
   scope,
   mode,
+  demo = false,
 }: {
   rows: ChecksheetRow[];
   scope: ReportScope;
   mode: 'status' | 'value';
+  demo?: boolean;
 }) {
   const [selected, setSelected] = useState<Occurrence[] | null>(null),
     dates: string[] = [];
@@ -28,7 +30,7 @@ export function MonthlyTable({
           <caption className="sr-only">Catatan pemeriksaan bulanan</caption>
           <thead>
             <tr>
-              <th className="frozen-col">No. · Pemeriksaan / alat</th>
+              <th className="frozen-col">No. Pemeriksaan</th>
               <th>Shift</th>
               {dates.map((d) => (
                 <th key={d}>{d.slice(8)}</th>
@@ -47,17 +49,20 @@ export function MonthlyTable({
                       '?' +
                       new URLSearchParams({
                         month: scope.production_date_from.slice(0, 7),
+                        ...(demo
+                          ? {
+                              demo: '1',
+                              from: scope.production_date_from,
+                              to: scope.production_date_to,
+                            }
+                          : {}),
                         ...(scope.line ? { line: scope.line } : {}),
+                        ...(scope.shift ? { shift: scope.shift } : {}),
                       })
                     }
                   >
                     {row.name}
                   </Link>
-                  <small>
-                    {row.equipment_name ?? 'Alat tidak tercatat'} · v{row.definition_version}
-                    <br />
-                    {row.standard.text}
-                  </small>
                 </th>
                 <td>{row.shift === 'day' ? '1' : '2'}</td>
                 {dates.map((d) => {
@@ -70,16 +75,18 @@ export function MonthlyTable({
                           aria-label={cell.count + ' pemeriksaan'}
                           onClick={() => setSelected(cell.occurrences)}
                         >
-                          {cell.count > 1 ? (
-                            <span>{cell.count} catatan</span>
-                          ) : mode === 'value' && row.input_method !== 'ok_ng' ? (
-                            <span>
-                              {number(cell.occurrences[0].numeric_summary?.xbar)}
-                              <small>{row.unit}</small>
-                            </span>
-                          ) : (
-                            <Status value={cell.occurrences[0].overall_status} />
-                          )}
+                          <span className={'cell-statuses ' + (cell.count > 1 ? 'two-rows' : '')}>
+                            {cell.occurrences.map((o) => (
+                              <span className="cell-result" key={o.id}>
+                                {mode === 'value' && row.input_method !== 'ok_ng' && (
+                                  <span>
+                                    {number(o.numeric_summary?.xbar)} <small>{row.unit}</small>
+                                  </span>
+                                )}
+                                <Status value={o.overall_status} />
+                              </span>
+                            ))}
+                          </span>
                         </button>
                       ) : null}
                     </td>
@@ -90,7 +97,9 @@ export function MonthlyTable({
           </tbody>
         </table>
       </div>
-      {selected && <OccurrenceDrawer items={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <OccurrenceDrawer demo={demo} items={selected} onClose={() => setSelected(null)} />
+      )}
     </>
   );
 }

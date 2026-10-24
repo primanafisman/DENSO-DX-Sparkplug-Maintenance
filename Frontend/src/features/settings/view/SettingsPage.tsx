@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Save, Plus, Pencil, Clock3, ClipboardList, Wrench, Factory } from 'lucide-react';
+import { Save, Plus, Pencil, Clock3, ClipboardList, Wrench, Factory, Trash2 } from 'lucide-react';
 import type {
   MaintenanceDefinition,
   MaintenanceSettings,
@@ -34,6 +34,7 @@ function GeneralSettings({
   pending: boolean;
 }) {
   const [lines, setLines] = useState(initial.lines),
+    [newLine, setNewLine] = useState(''),
     [samplers, setSamplers] = useState(initial.allowed_samplers),
     [newSampler, setNewSampler] = useState(''),
     [rollover, setRollover] = useState(initial.night_rollover_hour),
@@ -45,9 +46,9 @@ function GeneralSettings({
       onSubmit={(e) => {
         e.preventDefault();
         onSave({
-          lines: lines
-            .filter((l) => /^(?:[1-9]|1[0-7])$/.test(l))
-            .sort((a, b) => Number(a) - Number(b)),
+          lines: [...lines].sort((a, b) =>
+            a.localeCompare(b, 'id', { numeric: true, sensitivity: 'base' }),
+          ),
           allowed_samplers: samplers,
           night_rollover_hour: rollover,
           product_types: products,
@@ -58,28 +59,62 @@ function GeneralSettings({
       <Card>
         <h2 className="section-title">Line dan penanggung jawab</h2>
         <div className="field-row">
-          <fieldset className="active-line-options">
-            <legend>Line aktif (1–17)</legend>
-            <p className="muted">Hanya line yang dicentang muncul sebagai pilihan.</p>
-            <div className="line-option-grid">
-              {Array.from({ length: 17 }, (_, i) => String(i + 1)).map((line) => (
-                <label className="check-label" key={line}>
-                  <input
-                    type="checkbox"
-                    aria-label={'Line ' + line}
-                    checked={lines.includes(line)}
-                    disabled={!admin}
-                    onChange={(e) =>
-                      setLines(
-                        e.target.checked ? [...lines, line] : lines.filter((v) => v !== line),
-                      )
-                    }
-                  />
-                  Line {line}
-                </label>
+          <section>
+            <h3>Line aktif</h3>
+            <p className="muted">
+              Tambahkan nomor atau nama line. Hanya daftar ini yang dapat dipilih.
+            </p>
+            <div className="sampler-options">
+              {lines.map((line) => (
+                <div className="row between" key={line}>
+                  <span>Line {line}</span>
+                  {admin && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      aria-label={'Hapus line ' + line}
+                      onClick={() => setLines(lines.filter((value) => value !== line))}
+                    >
+                      <Trash2 size={16} aria-hidden="true" />
+                    </Button>
+                  )}
+                </div>
               ))}
             </div>
-          </fieldset>
+            {!lines.length && <p className="info-note">Belum ada line aktif.</p>}
+            {admin && (
+              <>
+                <Field label="Tambah line">
+                  <input
+                    value={newLine}
+                    maxLength={64}
+                    placeholder="Contoh: 18 atau Assembly A"
+                    onChange={(event) => setNewLine(event.target.value)}
+                  />
+                </Field>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={
+                    !newLine.trim() ||
+                    lines.length >= 200 ||
+                    lines.some(
+                      (line) =>
+                        line.toLocaleLowerCase('id-ID') ===
+                        newLine.trim().toLocaleLowerCase('id-ID'),
+                    )
+                  }
+                  onClick={() => {
+                    setLines([...lines, newLine.trim()]);
+                    setNewLine('');
+                  }}
+                >
+                  <Plus size={16} aria-hidden="true" /> Tambah line
+                </Button>
+                <small className="block muted">{lines.length}/200 line aktif</small>
+              </>
+            )}
+          </section>
           <section>
             <h3>Sampler aktif</h3>
             <p className="muted">Tambah atau hapus nama yang tersedia saat pemeriksaan.</p>
@@ -115,6 +150,7 @@ function GeneralSettings({
                   variant="secondary"
                   disabled={
                     !newSampler.trim() ||
+                    samplers.length >= 100 ||
                     samplers.some((s) => s.toLowerCase() === newSampler.trim().toLowerCase())
                   }
                   onClick={() => {
@@ -309,10 +345,6 @@ export function SettingsPage() {
               <h2>Daftar pemeriksaan</h2>
               <Badge>{state.catalog.data?.count ?? 0} pilihan</Badge>
             </div>
-            <p className="info-note">
-              Setiap perubahan membentuk versi baru. Persyaratan dan metode terdahulu tetap
-              tersimpan pada riwayat.
-            </p>
             {admin && (
               <Button
                 variant="secondary"
@@ -334,7 +366,6 @@ export function SettingsPage() {
                     <th>STANDAR</th>
                     <th>METODE / SAMPEL</th>
                     <th>INTERVAL</th>
-                    <th>VERSI</th>
                     <th />
                   </tr>
                 </thead>
@@ -364,7 +395,6 @@ export function SettingsPage() {
                         </small>
                       </td>
                       <td>{d.interval_guide.description}</td>
-                      <td>v{d.definition_version}</td>
                       <td>
                         {admin && (
                           <button

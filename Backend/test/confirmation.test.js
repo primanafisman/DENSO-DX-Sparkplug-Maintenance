@@ -6,7 +6,7 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {database} from './support-db.js';
 import {context,profile,item} from './support.js';
-test('confirmation requires identity, context binding and reason, and duplicate retries stay idempotent',async()=>{
+test('confirmation requires identity and context binding, and duplicate retries stay idempotent',async()=>{
   const {createReadingService}=await import('../src/services/readingService.js');const {repo,close}=await database();const directory=await fs.mkdtemp(path.join(os.tmpdir(),'spm-evidence-'));const bytes=Buffer.from('original');const source_hash=createHash('sha256').update(bytes).digest('hex');
   const asset={id:'g1',name:'Gauge',active:true,profile,maintenance_check_ids:['check1']};await repo.instruments.create(asset);
   const snapshot={submitted:{...item,instrument_id:'g1',calibration_id:'cal-v1',calibration:{template_hash:'template'}},instrument_snapshot:asset,context,photo:{bytes,mimeType:'image/jpeg',source_hash},result:{candidate:{value:.438,unit:'MPa'},confidence:{valid:true},validated_prediction:.438,method:'local'}};
@@ -15,7 +15,6 @@ test('confirmation requires identity, context binding and reason, and duplicate 
   try{
     await assert.rejects(service.confirm({...input,identity_verified:false},actor),/identity/i);
     await assert.rejects(service.confirm({...input,context:{...context,line:'99'}},actor),/context/i);
-    await assert.rejects(service.confirm({...input,final_value:.43},actor),/reason/i);
     const saved=await service.confirm(input,actor);assert.equal(saved.final_value,'0.438');assert.deepEqual(saved.calibration_snapshot,{id:'cal-v1',template_hash:'template'});
     assert.equal((await service.confirm(input,actor)).id,saved.id);
     await assert.rejects(service.confirm({...input,final_value:.43,reason:'corrected'},actor),/conflict|different/i);
@@ -69,3 +68,18 @@ test('equipment reassignment still rejects incompatible profiles, transferred ca
  const service=createReadingService({config:{runtimeDir:directory},repositories:repo,clock:()=>Date.now()},{getResult:()=>snapshot},{crop:async()=>({bytes,mimeType:'image/jpeg'})}),input={analysis_id:'mode-analysis',instrument_id:selected.id,instrument_revision:1,equipment_reassigned:true,final_value:.438,verified:true,identity_verified:true,context,check_id:'check1',sample_key:'n1',reason:'',confirmation_id:'mode-confirm'};
  try{snapshot.result.candidate.kind='analog';await assert.rejects(service.confirm(input,{id:'u'}),e=>e.code==='PROFILE_CHANGED');snapshot.result.candidate.kind='digital';const saved=await service.confirm(input,{id:'u'});assert.equal(saved.final_value,'0.438');assert.equal((await repo.readings.get(saved.id)).analysis.equipment_selection.original_profile.kind,'auto');}finally{await close();await fs.rm(directory,{recursive:true,force:true});}
  });
+
+
+test('a verified correction may omit the written reason while retaining the original prediction and idempotency',async()=>{
+ const {createReadingService}=await import('../src/services/readingService.js');
+ const {repo,close}=await database(),directory=await fs.mkdtemp(path.join(os.tmpdir(),'spm-correction-')),bytes=Buffer.from('correction-photo');
+ try {
+  const asset=await repo.instruments.create({id:'g-correction',name:'Gauge',active:true,profile,maintenance_check_ids:['check1']});
+  const snapshot={submitted:{...item,instrument_id:asset.id},instrument_snapshot:asset,context,photo:{bytes,mimeType:'image/jpeg',source_hash:createHash('sha256').update(bytes).digest('hex')},result:{candidate:{value:.438},confidence:{valid:true},validated_prediction:.438}};
+  const service=createReadingService({config:{runtimeDir:directory},repositories:repo,clock:()=>Date.now()},{getResult:()=>snapshot},{crop:async()=>({bytes,mimeType:'image/jpeg'})});
+  const input={analysis_id:'correction',instrument_id:asset.id,final_value:.430,verified:true,identity_verified:true,context,check_id:'check1',sample_key:'n1',confirmation_id:'without-reason'};
+  const saved=await service.confirm(input,{id:'operator'});
+  assert.equal(saved.final_value,'0.430');assert.equal(saved.raw_prediction,.438);assert.equal(saved.corrected,true);assert.equal(saved.reason,'');
+  assert.equal((await service.confirm({...input,reason:''},{id:'operator'})).id,saved.id);
+ }finally{await close();await fs.rm(directory,{recursive:true,force:true});}
+});

@@ -6,7 +6,7 @@ import {database} from './support-db.js';
 import {context,profile,item} from './support.js';
 import {createAnalysisService} from '../src/services/analysisService.js';
 import {createReadingService} from '../src/services/readingService.js';
-test('manual entry keeps photo evidence, skips OCR and requires a reviewed reason before saving',async()=>{
+test('manual entry keeps photo evidence and explicit verification without requiring a written reason',async()=>{
  const {repo,close}=await database(),directory=await fs.mkdtemp(path.join(os.tmpdir(),'spm-manual-'));
  const actor={id:'operator'},bytes=Buffer.from('manual-photo');
  const asset=await repo.instruments.create({id:'g',name:'Gauge',active:true,profile,maintenance_check_ids:['check1']});
@@ -19,8 +19,9 @@ test('manual entry keeps photo evidence, skips OCR and requires a reviewed reaso
   assert.equal(result.confidence.valid,false);assert.equal(result.validated_prediction,null);assert.equal(result.candidate.value,null);
   const reading=createReadingService({config:{runtimeDir:directory},repositories:repo,clock:()=>Date.now()},analyses,photos);
   const input={analysis_id:result.analysis_id,instrument_id:asset.id,instrument_revision:asset.revision,final_value:.427,verified:true,identity_verified:true,context,check_id:'check1',sample_key:'n1',reason:'',confirmation_id:'manual-confirm'};
-  await assert.rejects(reading.confirm(input,actor),e=>e.code==='REASON_REQUIRED');
-  const saved=await reading.confirm({...input,reason:'Display dibaca langsung dari foto.'},actor);
+  await assert.rejects(reading.confirm({...input,verified:false},actor),e=>e.code==='VERIFICATION_REQUIRED');
+  const saved=await reading.confirm(input,actor);
+  assert.equal(saved.reason,'');
   assert.equal(saved.final_value,'0.427');assert.equal(saved.corrected,true);assert.equal(saved.confidence.valid,false);assert.equal(saved.evidence_available,true);
   await assert.rejects(analyses.manual({image_id:'photo',instrument_id:asset.id,roi:item.roi},{id:'other'}),/forbidden/);
  }finally{await close();await fs.rm(directory,{recursive:true,force:true});}

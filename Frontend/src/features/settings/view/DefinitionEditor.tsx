@@ -5,8 +5,8 @@ import type { MaintenanceDefinition, Profile } from '../../../shared/lib/contrac
 import type { DefinitionUpdate } from '../model/types';
 import { definitionFormSchema } from '../model/schemas';
 import type { DefinitionForm } from '../model/schemas';
-import { useDefinitionRevisions, useDefinitionEquipment } from '../controller/useSettings';
-import { Button, Field, ErrorMessage, Badge } from '../../../shared/components/ui';
+import { useDefinitionEquipment } from '../controller/useSettings';
+import { Button, Field, ErrorMessage } from '../../../shared/components/ui';
 import { AvailabilityAction } from '../../../shared/components/ui/AvailabilityAction';
 const slots = [
   ['day-0745', 'Shift 1 · 07:45'],
@@ -46,6 +46,7 @@ export function DefinitionEditor({
       method_text: d.method_text,
       tool: d.tool,
       kind: d.kind,
+      inspection_target: d.inspection_target ?? undefined,
       unit: (d.unit ?? 'mm') as Profile['unit'],
       minimum: d.limits?.minimum ?? 0,
       maximum: d.limits?.maximum ?? 1,
@@ -60,11 +61,9 @@ export function DefinitionEditor({
   const [slotIds, setSlots] = useState(d.occurrence_rule?.slot_ids ?? []),
     [weekdays, setDays] = useState(d.occurrence_rule?.weekdays ?? []),
     [shifts, setShifts] = useState(d.shifts),
-    [showRevisions, setShowRevisions] = useState(false),
     [statusPrompt, setStatusPrompt] = useState(false);
   const equipment = useDefinitionEquipment(manageEquipment);
   const [equipmentIds, setEquipmentIds] = useState<string[] | null>(creating ? [] : null);
-  const revisions = useDefinitionRevisions(d.id, showRevisions);
   const submit = (v: DefinitionForm) => {
     if (statusPrompt || statusPending) return;
     if (!shifts.length) {
@@ -88,6 +87,7 @@ export function DefinitionEditor({
       method_text: v.method_text,
       tool: v.tool,
       kind: v.kind,
+      inspection_target: v.inspection_target,
       input_method: v.kind === 'difference' ? 'photo_difference' : numeric ? 'photo' : 'ok_ng',
       unit: numeric ? v.unit : null,
       limits: numeric ? { minimum: v.minimum, maximum: v.maximum } : null,
@@ -121,10 +121,6 @@ export function DefinitionEditor({
             Tutup
           </Button>
         </div>
-        <p className="info-note">
-          Versi {d.definition_version} → {d.definition_version + 1}. Berlaku sejak disimpan; hasil
-          lama tetap memakai snapshot terdahulu.
-        </p>
         <form onSubmit={form.handleSubmit(submit)}>
           <fieldset className="editor-fields" disabled={statusPrompt || statusPending}>
             <div className="field-row">
@@ -139,7 +135,24 @@ export function DefinitionEditor({
                   <option value="difference">Selisih before / after</option>
                 </select>
               </Field>
+              <Field label="Sasaran pemeriksaan">
+                <select
+                  {...form.register('inspection_target')}
+                  required
+                  defaultValue={d.inspection_target ?? ''}
+                >
+                  <option value="" disabled>
+                    Pilih sasaran pemeriksaan
+                  </option>
+                  <option value="machine">Mesin / line</option>
+                  <option value="product">Sampling produk sparkplug</option>
+                </select>
+              </Field>
             </div>
+            <p className="info-note">
+              Mesin / line mencatat kondisi dan parameter mesin. Sampling produk memisahkan hasil
+              berdasarkan Type sparkplug.
+            </p>
             <Field label="Persyaratan / standar">
               <textarea {...form.register('standard_text')} required />
             </Field>
@@ -314,19 +327,11 @@ export function DefinitionEditor({
             <ErrorMessage error={error} />
           </fieldset>
           <div className="actions">
-            <Button
-              variant="secondary"
-              type="button"
-              disabled={creating || statusPrompt || statusPending}
-              onClick={() => setShowRevisions(!showRevisions)}
-            >
-              Riwayat revisi
-            </Button>
             <Button variant="secondary" type="button" onClick={onClose} disabled={statusPending}>
               Batal
             </Button>
             <Button type="submit" disabled={saving || statusPrompt || statusPending}>
-              {saving ? 'Menyimpan…' : creating ? 'Tambah pemeriksaan' : 'Simpan revisi'}
+              {saving ? 'Menyimpan…' : creating ? 'Tambah pemeriksaan' : 'Simpan pemeriksaan'}
             </Button>
           </div>
         </form>
@@ -340,17 +345,6 @@ export function DefinitionEditor({
             pending={statusPending || saving}
             error={statusError}
           />
-        )}
-        {showRevisions && (
-          <div className="revision-list">
-            <ErrorMessage error={revisions.error} />
-            {revisions.data?.items.map((r) => (
-              <p key={r.id}>
-                <Badge>Versi {r.version}</Badge> {r.reason} ·{' '}
-                {r.effective_at ?? 'Waktu awal tidak tercatat'}
-              </p>
-            ))}
-          </div>
         )}
       </section>
     </div>

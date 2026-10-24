@@ -2,7 +2,7 @@ import type {Context,Instrument,MaintenanceDefinition,SampleOutcome,Page} from '
 export type ProductType={id:string;code:string;name:string;active:boolean;version:number};
 export type ProductSnapshot=Pick<ProductType,'id'|'code'|'name'|'version'>;
 export type ReportScope={production_date_from:string;production_date_to:string;line?:string;shift?:'day'|'night';definition_id?:string;product_type_id?:string;instrument_id?:string};
-export type ReportInput=ReportScope&{as_of?:string};
+export type ReportInput=ReportScope&{as_of?:string;demo?:boolean};
 export type ReportMeta={report_version:'1';as_of:string;scope:ReportScope;scanned_records:number;count_unit:'maintenance_record';warnings:string[]};
 export type MaintenanceSummary={meta:ReportMeta;total:number;ok:number;ng:number;ok_ratio:number|null;daily:{date:string;ok:number;ng:number}[];groups:{definition_id:string;name:string;total:number;ok:number;ng:number}[]};
 export type EvidenceRef={reading_id:string;variant:'original'|'crop'};

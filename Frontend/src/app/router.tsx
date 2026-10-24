@@ -20,6 +20,7 @@ import type { Role } from '../shared/lib/contracts';
 import { useSession } from '../features/auth/controller/useSession';
 import { LoginPage } from '../features/auth/view/LoginPage';
 import { AppShell } from '../shared/components/layout/AppShell';
+import { CaptureWorkspaceProvider } from '../features/capture/controller/captureWorkspace';
 
 import { Loading, Empty } from '../shared/components/ui';
 export function RequireRole({ roles }: { roles?: Role[] }) {
@@ -41,7 +42,11 @@ export const router = createBrowserRouter([
     element: <RequireRole />,
     children: [
       {
-        element: <AppShell />,
+        element: (
+          <CaptureWorkspaceProvider>
+            <AppShell />
+          </CaptureWorkspaceProvider>
+        ),
         children: [
           { index: true, element: <SummaryPage /> },
           { path: 'pemeriksaan', element: <InspectionHub /> },

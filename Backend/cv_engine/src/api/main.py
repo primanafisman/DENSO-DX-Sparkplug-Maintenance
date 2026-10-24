@@ -9,6 +9,7 @@ from ..config.settings import Settings
 from ..contracts.requests import JobRequest,DiscoveryRequest
 from ..contracts.responses import PhotoMetadata,EngineJob
 from ..vision.models import ROI
+from ..vision.hybrid import VERSION as ALGORITHM_VERSION
 from ..vision.text_ocr import LocalTextOCR
 from ..services.image_service import ImageService
 from ..services.analysis_service import AnalysisService
@@ -33,7 +34,7 @@ def create_app(settings,ocr=None):
     @app.exception_handler(Exception)
     async def safe_error(request,error):return JSONResponse(status_code=500,content={'code':'ENGINE_ERROR','message':'Engine could not complete the request.'})
     @app.get('/internal/v1/health',dependencies=[Depends(private)])
-    def health():return {'status':'up','mode':'LOCAL_CV','algorithm_version':'hybrid-cv-v0.2.3','ocr':{'packages_present':bool(getattr(reader,'installed',False)),'weights_present':weights_present(),'initialized':getattr(reader,'engine',None) is not None},'workers':1}
+    def health():return {'status':'up','mode':'LOCAL_CV','algorithm_version':ALGORITHM_VERSION,'ocr':{'packages_present':bool(getattr(reader,'installed',False)),'weights_present':weights_present(),'initialized':getattr(reader,'engine',None) is not None},'workers':1}
     @app.post('/internal/v1/photos',status_code=201,response_model=PhotoMetadata,dependencies=[Depends(private)])
     async def upload(request:Request):
         if request.headers.get('content-type','').split(';')[0] not in ('image/jpeg','image/png','image/webp'):raise HTTPException(415,'Use JPEG, PNG or WebP.')

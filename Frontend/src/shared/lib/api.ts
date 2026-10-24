@@ -79,6 +79,9 @@ export async function write<T>(
 export async function update<T>(path: string, body: unknown): Promise<T> {
   return unwrap((await api.put<ApiResponse<T>>(path, body)).data);
 }
+export async function remove<T>(path: string): Promise<T> {
+  return unwrap((await api.delete<ApiResponse<T>>(path)).data);
+}
 export async function binary(path: string, config?: AxiosRequestConfig): Promise<Blob> {
   return (await api.get<Blob>(path, { ...config, responseType: 'blob' })).data;
 }

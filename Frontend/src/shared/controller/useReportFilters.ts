@@ -41,13 +41,19 @@ export function useReportFilters() {
     serverSchedule: schedule.data,
     productionDate: schedule.data?.production_date,
     month,
+    demo: params.get('demo') === '1',
     line,
     shift,
     months,
     change,
     lines: settings.data?.lines ?? [],
     scope: month
-      ? { ...monthRange(month), ...(line ? { line } : {}), ...(shift ? { shift } : {}) }
+      ? {
+          ...monthRange(month),
+          ...(params.get('demo') === '1' ? { demo: true } : {}),
+          ...(line ? { line } : {}),
+          ...(shift ? { shift } : {}),
+        }
       : null,
     error: schedule.error ?? settings.error,
   };

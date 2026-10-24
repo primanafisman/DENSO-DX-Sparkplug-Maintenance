@@ -44,6 +44,7 @@ it('settings preserve source guidance without requesting a revision reason', asy
   expect(screen.queryByRole('button', { name: 'Hapus dari pilihan' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Edit EE Cutting' }));
   expect(screen.queryByLabelText('Alasan revisi')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Riwayat revisi' })).not.toBeInTheDocument();
   expect(screen.getByDisplayValue('1 kali per shift')).toBeVisible();
 });
 
@@ -152,7 +153,7 @@ it('weekly edit sends explicit weekdays and retains original paper time guidance
   fireEvent.click(screen.getByText('Waktu pemeriksaan dan sumber'));
   fireEvent.click(screen.getByLabelText('Shift 1 · 07:45'));
   fireEvent.click(screen.getByLabelText('Sen'));
-  fireEvent.click(screen.getByRole('button', { name: 'Simpan revisi' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Simpan pemeriksaan' }));
   await waitFor(() => expect(save).toHaveBeenCalled());
   const body = save.mock.calls[0][0];
   expect(body.occurrence_rule).toEqual({ slot_ids: ['day-0745'], weekdays: [1] });
@@ -172,12 +173,12 @@ it('clearing all occurrence slots explicitly resets the saved rule', async () =>
   );
   fireEvent.click(screen.getByText('Waktu pemeriksaan dan sumber'));
   fireEvent.click(screen.getByLabelText('Shift 1 · 07:45'));
-  fireEvent.click(screen.getByRole('button', { name: 'Simpan revisi' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Simpan pemeriksaan' }));
   await waitFor(() => expect(save).toHaveBeenCalled());
   expect(save.mock.calls[0][0].occurrence_rule).toBeNull();
 });
 
-it('settings add or remove active lines1 to17 and sampler options through controls', async () => {
+it('settings accept manually named lines beyond17, reject duplicates and remove lines and samplers', async () => {
   let saved: { lines: string[]; allowed_samplers: string[] } | undefined;
   server.use(
     http.get('/api/v1/auth/csrf', () => HttpResponse.json(envelope({ csrf_token: 'test-csrf' }))),
@@ -206,14 +207,65 @@ it('settings add or remove active lines1 to17 and sampler options through contro
   );
   renderApp(<SettingsPage />);
   fireEvent.click(await screen.findByRole('tab', { name: 'Line Produksi' }));
-  const first = await screen.findByLabelText('Line 1');
-  expect(screen.queryByLabelText('Line 18')).not.toBeInTheDocument();
-  fireEvent.click(first);
-  fireEvent.click(screen.getByLabelText('Line 17'));
+  const addLine = await screen.findByLabelText('Tambah line');
+  fireEvent.change(addLine, { target: { value: '18' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Tambah line' }));
+  expect(screen.getByRole('button', { name: 'Hapus line 18' })).toBeVisible();
+  fireEvent.change(addLine, { target: { value: 'Line A' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Tambah line' }));
+  fireEvent.change(addLine, { target: { value: ' line a ' } });
+  expect(screen.getByRole('button', { name: 'Tambah line' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Hapus line 17' }));
   fireEvent.change(screen.getByLabelText('Tambah sampler'), { target: { value: 'Leader 2' } });
   fireEvent.click(screen.getByRole('button', { name: 'Tambah sampler' }));
   fireEvent.click(screen.getByRole('button', { name: 'Hapus sampler Ldr' }));
   fireEvent.click(screen.getByRole('button', { name: /Simpan pengaturan/ }));
-  await waitFor(() => expect(saved?.lines).toEqual(['1']));
+  await waitFor(() => expect(saved?.lines).toEqual(['18', 'Line A']));
   expect(saved?.allowed_samplers).toEqual(['Leader 2']);
+});
+
+it('requires classifying a legacy inspection before saving and sends the selected target', async () => {
+  const save = vi.fn();
+  renderApp(
+    <DefinitionEditor
+      definition={fixtureDefinition({ inspection_target: undefined })}
+      onClose={() => {}}
+      onSave={save}
+      saving={false}
+      error={null}
+    />,
+  );
+  const field = screen.getByLabelText('Sasaran pemeriksaan');
+  expect(field).toBeRequired();
+  expect(field).toHaveValue('');
+  fireEvent.submit(screen.getByRole('button', { name: 'Simpan pemeriksaan' }).closest('form')!);
+  expect(await screen.findByText('Pilih sasaran pemeriksaan.')).toBeVisible();
+  expect(save).not.toHaveBeenCalled();
+  fireEvent.change(field, { target: { value: 'machine' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Simpan pemeriksaan' }));
+  await waitFor(() => expect(save).toHaveBeenCalledOnce());
+  expect(save.mock.calls[0][0].inspection_target).toBe('machine');
+});
+
+it('keeps all configured lines up to the supported200-line limit without a fixed numeric range', async () => {
+  const lines = Array.from({ length: 200 }, (_, index) => String(index + 1));
+  server.use(
+    http.get('/api/v1/auth/me', () =>
+      HttpResponse.json(envelope({ id: 'a', username: 'Admin', role: 'Admin' })),
+    ),
+    http.get('/api/v1/maintenance/settings', () =>
+      HttpResponse.json(envelope({ lines, allowed_samplers: ['Ldr'], night_rollover_hour: 12 })),
+    ),
+    http.get('/api/v1/maintenance/catalog', () =>
+      HttpResponse.json(envelope({ items: [], count: 0 })),
+    ),
+  );
+  renderApp(<SettingsPage />, '/pengaturan?tab=general');
+  const field = await screen.findByLabelText('Tambah line');
+  expect(screen.getByText('Line 200')).toBeVisible();
+  fireEvent.change(field, { target: { value: '201' } });
+  const addButton = screen.getByText('Tambah line', { selector: 'button' });
+  expect(addButton).toBeDisabled();
+  fireEvent.click(screen.getByLabelText('Hapus line 200'));
+  expect(addButton).toBeEnabled();
 });

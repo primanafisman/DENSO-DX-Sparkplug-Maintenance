@@ -10,6 +10,7 @@ export function newDefinition(): MaintenanceDefinition {
     group: 'custom',
     process: 'Spark Plug Final Assy',
     kind: 'visual',
+    inspection_target: 'machine',
     input_method: 'ok_ng',
     standard_text: '',
     method_text: '',

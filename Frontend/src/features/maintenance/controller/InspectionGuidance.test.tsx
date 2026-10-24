@@ -8,6 +8,7 @@ import { InspectionGuidance } from '../view/InspectionGuidance';
 import { CaptureLayout } from '../../capture/view/CaptureLayout';
 import { ConfirmPage } from '../../capture/view/ConfirmPage';
 import { captureStore } from '../../capture/model/captureStore';
+import { CaptureWorkspaceProvider } from '../../capture/controller/captureWorkspace';
 const input = {
   definition: fixtureDefinition(),
   context: { line: '17', production_date: '2026-10-21', shift: 'day' as const, sampler: 'Ldr' },
@@ -134,11 +135,13 @@ it('opening confirmation directly still requires the inspection briefing', () =>
     stage: 'ready',
   });
   renderApp(
-    <Routes>
-      <Route element={<CaptureLayout />}>
-        <Route path="/pemeriksaan/konfirmasi" element={<ConfirmPage />} />
-      </Route>
-    </Routes>,
+    <CaptureWorkspaceProvider>
+      <Routes>
+        <Route element={<CaptureLayout />}>
+          <Route path="/pemeriksaan/konfirmasi" element={<ConfirmPage />} />
+        </Route>
+      </Routes>
+    </CaptureWorkspaceProvider>,
     '/pemeriksaan/konfirmasi',
   );
   expect(screen.getByRole('dialog')).toBeVisible();

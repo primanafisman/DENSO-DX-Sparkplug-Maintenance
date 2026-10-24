@@ -13,31 +13,28 @@ export function ConfirmPage() {
     [value, setValue] = useState(
       state.pending
         ? String(state.pending.final_value)
-        : state.result?.confidence.valid &&
-            state.result.validated_prediction !== null &&
-            state.result.validated_prediction !== undefined
-          ? String(state.result.validated_prediction)
-          : '',
+        : state.reviewDraft
+          ? state.reviewDraft.value
+          : state.result?.confidence.valid &&
+              state.result.validated_prediction !== null &&
+              state.result.validated_prediction !== undefined
+            ? String(state.result.validated_prediction)
+            : '',
     ),
-    [reason, setReason] = useState(state.pending?.reason ?? ''),
-    [identity, setIdentity] = useState(false),
-    [verified, setVerified] = useState(false),
+    [identity, setIdentity] = useState(state.reviewDraft?.identity ?? false),
+    [verified, setVerified] = useState(state.reviewDraft?.verified ?? false),
     [saving, setSaving] = useState(false),
     [error, setError] = useState<unknown>(null);
   const d = inspection.draft;
   if (!state.result || !d?.definition || !state.instrument)
     return <Navigate to="/pemeriksaan/hasil" replace />;
-  const sample = nextCapture(d),
-    manual =
-      !state.result.confidence.valid ||
-      state.result.validated_prediction === null ||
-      Number(value.replace(',', '.')) !== state.result.validated_prediction;
+  const sample = nextCapture(d);
   const confirm = async () => {
     setSaving(true);
     try {
       const reading = await engine.confirm({
         final_value: value,
-        reason,
+        reason: '',
         identity_verified: identity,
         verified,
       });
@@ -65,7 +62,7 @@ export function ConfirmPage() {
         </div>
         {!state.result.confidence.valid && (
           <p className="info-note">
-            Input manual berdasarkan foto. Isi nilai, alasan, lalu konfirmasi identitas dan hasil.
+            Input manual berdasarkan foto. Isi nilai, lalu konfirmasi identitas dan hasil.
           </p>
         )}
         <p className="muted">
@@ -84,24 +81,18 @@ export function ConfirmPage() {
                 onChange={(e) => {
                   setValue(e.target.value);
                   setVerified(false);
+                  engine.setReviewDraft({ value: e.target.value, identity, verified: false });
                 }}
               />
             </Field>
-            {manual && (
-              <Field label="Alasan pembacaan manual / koreksi">
-                <textarea
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  disabled={saving || !!state.pending}
-                  required
-                />
-              </Field>
-            )}
             <label className="check-label">
               <input
                 type="checkbox"
                 checked={identity}
-                onChange={(e) => setIdentity(e.target.checked)}
+                onChange={(e) => {
+                  setIdentity(e.target.checked);
+                  engine.setReviewDraft({ value, identity: e.target.checked, verified });
+                }}
               />
               Identitas alat dan pemeriksaan sudah benar
             </label>
@@ -109,7 +100,10 @@ export function ConfirmPage() {
               <input
                 type="checkbox"
                 checked={verified}
-                onChange={(e) => setVerified(e.target.checked)}
+                onChange={(e) => {
+                  setVerified(e.target.checked);
+                  engine.setReviewDraft({ value, identity, verified: e.target.checked });
+                }}
               />
               Nilai sesuai foto dan sudah saya periksa
             </label>
@@ -122,10 +116,7 @@ export function ConfirmPage() {
               <Link className="button button-secondary" to="/pemeriksaan/hasil">
                 Kembali
               </Link>
-              <Button
-                onClick={confirm}
-                disabled={!identity || !verified || !value || (manual && !reason.trim()) || saving}
-              >
+              <Button onClick={confirm} disabled={!identity || !verified || !value || saving}>
                 {saving
                   ? 'Menyimpan bacaan…'
                   : state.pending

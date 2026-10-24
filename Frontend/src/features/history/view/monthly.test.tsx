@@ -11,6 +11,10 @@ chartLayout();
 const scope = { production_date_from: '2026-10-01', production_date_to: '2026-10-31' };
 function setup() {
   server.use(
+    http.get('/api/v1/capabilities', () => HttpResponse.json(envelope({ demo_reports: true }))),
+    http.get('/api/v1/auth/me', () =>
+      HttpResponse.json(envelope({ id: 'admin', username: 'Admin', role: 'Admin' })),
+    ),
     http.get('/api/v1/maintenance/schedule', () => HttpResponse.json(envelope(schedule))),
     http.get('/api/v1/maintenance/due', () =>
       HttpResponse.json(
@@ -95,6 +99,10 @@ it('monthly history is table-only, preserves blank cells and opens both occurren
     }),
   );
   renderApp(<HistoryPage />);
+  expect(await screen.findByRole('columnheader', { name: 'No. Pemeriksaan' })).toBeVisible();
+  expect(screen.queryByText('2 catatan')).not.toBeInTheDocument();
+  expect(screen.queryByText('Alat tidak tercatat')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: '2 pemeriksaan' })).toHaveTextContent(/OK.*OK/);
   fireEvent.click(await screen.findByRole('button', { name: '2 pemeriksaan' }));
   expect(screen.getAllByText(/day-0745/)).toHaveLength(2);
   expect(screen.queryByRole('img', { name: /grafik/i })).not.toBeInTheDocument();

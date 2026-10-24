@@ -1,4 +1,8 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useStore } from 'zustand';
+import { captureStore } from '../../capture/model/captureStore';
+import { captureResumePath } from '../../capture/controller/captureWorkspace';
 import { Camera, Upload, ArrowRight, ClipboardCheck } from 'lucide-react';
 import { useSession } from '../../auth/controller/useSession';
 import { useSettings } from '../../settings/controller/useSettings';
@@ -19,7 +23,12 @@ export function InspectionHub() {
   const state = useInspection(),
     { user } = useSession(),
     settings = useSettings(),
-    [selection, setSelection] = useState<ContextSelection>({ line: '', sampler: '' }),
+    capture = useStore(captureStore),
+    [selection, setSelection] = useState<ContextSelection>(
+      state.draft?.context ?? { line: '', sampler: '' },
+    ),
+    [replaceDraft, setReplaceDraft] = useState<null | (() => void)>(null),
+    [target, setTarget] = useState(''),
     [q, setQ] = useState(''),
     [kind, setKind] = useState(''),
     [requirement, setRequirement] = useState(''),
@@ -54,15 +63,42 @@ export function InspectionHub() {
       !due.isError &&
       (!q || d.name.toLowerCase().includes(q.toLowerCase())) &&
       (!kind || d.input_method === kind) &&
+      (!target || (d.inspection_target ?? 'unclassified') === target) &&
       (!requirement || d.requirement_tags.includes(requirement)) &&
       (!group || d.group === group),
   );
+  const start = (...args: Parameters<typeof state.start>) => {
+    const run = () => state.start(...args);
+    if (state.draft) setReplaceDraft(() => run);
+    else run();
+  };
   return (
     <>
       <PageHeader
         title="Pemeriksaan"
         description="Pilih konteks kerja, lalu mulai pemeriksaan atau ambil foto alat."
       />
+      {state.draft && (
+        <Card className="resume-banner">
+          <div>
+            <strong>Pemeriksaan belum selesai</strong>
+            <p>
+              {state.draft.definition?.name ?? 'Input foto alat'} · Line {state.draft.context.line}{' '}
+              · {state.draft.observations.length} sampel terisi
+            </p>
+          </div>
+          <Link
+            className="button"
+            to={
+              state.draft.definition?.input_method === 'ok_ng'
+                ? '/pemeriksaan/visual'
+                : captureResumePath(capture)
+            }
+          >
+            Lanjutkan pemeriksaan
+          </Link>
+        </Card>
+      )}
       <Card>
         <h2 className="section-title">Konteks pemeriksaan</h2>
         {settings.settings.data && (
@@ -84,7 +120,7 @@ export function InspectionHub() {
         <div className="actions">
           <Button
             disabled={!canWrite || !selection.line || !selection.sampler}
-            onClick={() => state.start(null, selection, 'camera')}
+            onClick={() => start(null, selection, 'camera')}
           >
             <Camera size={20} />
             Buka kamera
@@ -92,7 +128,7 @@ export function InspectionHub() {
           <Button
             variant="secondary"
             disabled={!canWrite || !selection.line || !selection.sampler}
-            onClick={() => state.start(null, selection, 'upload')}
+            onClick={() => start(null, selection, 'upload')}
           >
             <Upload size={19} />
             Upload gambar
@@ -110,6 +146,14 @@ export function InspectionHub() {
           </p>
         )}
         <div className="filters">
+          <Field label="Sasaran pemeriksaan">
+            <select value={target} onChange={(e) => setTarget(e.target.value)}>
+              <option value="">Semua pemeriksaan</option>
+              <option value="machine">Mesin / line</option>
+              <option value="product">Sampling produk sparkplug</option>
+              <option value="unclassified">Belum diklasifikasikan</option>
+            </select>
+          </Field>
           <Field label="Cari pemeriksaan">
             <input
               value={q}
@@ -181,6 +225,13 @@ export function InspectionHub() {
                   <div className="row wrap">
                     <h3>{d.name}</h3>
                     <Badge>
+                      {d.inspection_target === 'product'
+                        ? 'Sampling sparkplug'
+                        : d.inspection_target === 'machine'
+                          ? 'Mesin / line'
+                          : 'Sasaran belum diatur'}
+                    </Badge>
+                    <Badge>
                       {d.input_method === 'ok_ng'
                         ? 'OK / NG'
                         : d.input_method === 'photo_difference'
@@ -189,6 +240,12 @@ export function InspectionHub() {
                     </Badge>
                   </div>
                   <p>{d.standard_text}</p>
+                  {d.inspection_target === 'product' && (
+                    <small className="info-note">
+                      Satu rangkaian {d.sample_count} sampel untuk satu Type. Mulai rangkaian baru
+                      untuk Type berbeda.
+                    </small>
+                  )}
                   <small className="muted">
                     {d.tool} · {d.interval_guide.description} · {d.sample_count} sampel
                   </small>
@@ -210,7 +267,7 @@ export function InspectionHub() {
                   variant="secondary"
                   aria-label={'Mulai ' + d.name}
                   disabled={!canWrite || !selection.line || !selection.sampler}
-                  onClick={() => state.start(d, selection)}
+                  onClick={() => start(d, selection)}
                 >
                   Mulai
                   <ArrowRight size={16} />
@@ -221,6 +278,35 @@ export function InspectionHub() {
         )}
       </Card>
       <ErrorDialog error={state.error} onClose={state.clearError} />
+      {replaceDraft && (
+        <div className="modal-backdrop">
+          <section
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mulai pemeriksaan baru"
+          >
+            <h2>Mulai pemeriksaan baru?</h2>
+            <p>
+              Progres yang belum disimpan akan diganti. Pilih Lanjutkan pemeriksaan untuk meneruskan
+              isian sebelumnya.
+            </p>
+            <div className="actions">
+              <Button variant="secondary" onClick={() => setReplaceDraft(null)}>
+                Batal
+              </Button>
+              <Button
+                onClick={() => {
+                  replaceDraft();
+                  setReplaceDraft(null);
+                }}
+              >
+                Mulai baru
+              </Button>
+            </div>
+          </section>
+        </div>
+      )}
     </>
   );
 }

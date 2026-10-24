@@ -16,6 +16,7 @@ export const settingsSchema = z.object({
     .optional(),
 });
 export const definitionFormSchema = z.object({
+  inspection_target: z.enum(['machine', 'product'], { error: 'Pilih sasaran pemeriksaan.' }),
   name: z.string().trim().min(1),
   standard_text: z.string().trim().min(1),
   method_text: z.string().trim().min(1),

@@ -14,5 +14,5 @@ export const reviewSchema = z.object({
     .regex(/^-?\d{1,9}(?:\.\d{1,6})?$/, 'Isi angka yang valid.'),
   identity_verified: z.literal(true, { error: 'Konfirmasi identitas alat.' }),
   verified: z.literal(true, { error: 'Konfirmasi hasil ukur.' }),
-  reason: z.string().trim().max(500),
+  reason: z.string().trim().max(500).default(''),
 });

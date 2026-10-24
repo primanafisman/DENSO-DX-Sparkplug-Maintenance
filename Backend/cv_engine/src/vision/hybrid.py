@@ -4,11 +4,12 @@ from datetime import datetime, timezone
 
 from .hybrid_analog import read_calibrated_analog
 from .hybrid_auto_analog import read_auto_analog
+from .hybrid_scale_ocr import recover_scale_direction
 from .hybrid_digital import read_local_digital,_OfflineReader
 from .images import assess_quality
 from .models import Candidate
 
-VERSION='hybrid-cv-v0.2.4'
+VERSION='hybrid-cv-v0.2.5'
 
 
 class OfflineOCR(_OfflineReader):
@@ -60,6 +61,8 @@ def analyze_hybrid(crop,profile,calibration_record=None,text_ocr=None,label_crop
             else:
                 dial_ocr=text_ocr.read(crop) if text_ocr and label_crop else ocr
                 geometry=read_auto_analog(crop,dial_ocr)
+            if not geometry.get('scale_direction',{}).get('confirmed',True):
+                geometry=recover_scale_direction(crop,geometry,dial_ocr,text_ocr)
             reason=geometry['reason']; value=geometry.get('value')
             if value is not None:
                 candidate=Candidate(readable=True,kind='analog',value=value,unit=profile.unit,raw_text=f'{value:.3f}',reason=reason)

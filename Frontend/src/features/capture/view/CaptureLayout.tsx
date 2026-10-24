@@ -1,11 +1,8 @@
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
-import { CaptureContext } from '../controller/captureContext';
-import { useCaptureFlow } from '../controller/useCaptureFlow';
 import { useInspectionStore } from '../../maintenance/model/inspectionStore';
 import { InspectionGuidance } from '../../maintenance/view/InspectionGuidance';
 export function CaptureLayout() {
-  const flow = useCaptureFlow(),
-    draft = useInspectionStore((s) => s.draft),
+  const draft = useInspectionStore((s) => s.draft),
     location = useLocation();
   if (!draft) return <Navigate to="/pemeriksaan" replace />;
   const step = location.pathname.endsWith('foto')
@@ -14,7 +11,7 @@ export function CaptureLayout() {
       ? 3
       : 2;
   return (
-    <CaptureContext.Provider value={flow}>
+    <>
       <div className="capture-steps no-print">
         {['Foto', 'Hasil baca', 'Konfirmasi'].map((s, i) => (
           <span className={step === i + 1 ? 'current' : ''} key={s}>
@@ -26,6 +23,6 @@ export function CaptureLayout() {
       <InspectionGuidance>
         <Outlet />
       </InspectionGuidance>
-    </CaptureContext.Provider>
+    </>
   );
 }

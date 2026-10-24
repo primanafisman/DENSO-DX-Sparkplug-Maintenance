@@ -6,6 +6,12 @@ export type DefinitionUpdate = Pick<
   Partial<
     Pick<
       MaintenanceDefinition,
-      'kind' | 'input_method' | 'samples' | 'shifts' | 'interval_guide' | 'occurrence_rule'
+      | 'inspection_target'
+      | 'kind'
+      | 'input_method'
+      | 'samples'
+      | 'shifts'
+      | 'interval_guide'
+      | 'occurrence_rule'
     >
   > & { review_reason: string; instrument_ids?: string[] };

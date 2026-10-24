@@ -15,12 +15,13 @@ export function createReportService({repositories,clock}){
     return repositories.transaction(async tx=>{
       const records=[];let next;
       do{const part=await tx.maintenance.listRecordsRange({scope:sqlScope,as_of,limit:500,cursor:next});records.push(...part.items);next=part.next_cursor;if(records.length>100000)throw new AppError(422,'REPORT_TOO_LARGE','Narrow the date range; report exceeds 100000 records.');}while(next);
-      const ids=[...new Set(records.flatMap(r=>(r.outcomes??[]).flatMap(o=>[o.reading_id,o.before_reading_id,o.after_reading_id].filter(Boolean))))];
+      const activeRecords=records.filter(record=>!record.deleted_at);
+      const ids=[...new Set(activeRecords.flatMap(r=>(r.outcomes??[]).flatMap(o=>[o.reading_id,o.before_reading_id,o.after_reading_id].filter(Boolean))))];
       if(ids.length>200000)throw new AppError(422,'REPORT_TOO_LARGE','Narrow the range; too many evidence references.');
       const readings=new Map((await tx.readings.getMany(ids)).map(r=>[r.id,r]));
-      const entries=records.map(record=>hydrateRecord(record,readings)).filter(e=>(!product_type_id||e.occurrence.context?.product_type_id===product_type_id)&&(!instrument_id||e.occurrence.instruments.some(a=>a.id===instrument_id)));
+      const entries=activeRecords.map(record=>hydrateRecord(record,readings)).filter(e=>(!product_type_id||e.occurrence.context?.product_type_id===product_type_id)&&(!instrument_id||e.occurrence.instruments.some(a=>a.id===instrument_id)));
       entries.sort((a,b)=>a.occurrence.checked_at.localeCompare(b.occurrence.checked_at)||a.occurrence.id.localeCompare(b.occurrence.id));
-      return {entries,normalized,meta:{report_version:'1',as_of,scope,scanned_records:records.length,count_unit:'maintenance_record',warnings:[]}};
+      return {entries,normalized,meta:{report_version:'1',as_of,scope,scanned_records:activeRecords.length,count_unit:'maintenance_record',warnings:[]}};
     });
   }
   async function spc(input,{method='paper_stdev_s'}={}){

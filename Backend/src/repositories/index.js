@@ -34,7 +34,7 @@ export async function createRepositories(config){
     readings.getByAnalysis=async analysis_id=>dto(await models.readings.findOne({attributes:Object.keys(models.readings.getAttributes()),where:{analysis_id},transaction}));
     readings.getByEvidence=async evidence_key=>dto(await models.readings.findOne({attributes:Object.keys(models.readings.getAttributes()),where:{evidence_key},transaction}));
     const defs=store('maintenanceDefinitions'),records=store('maintenanceRecords');
-    const maintenance={getDefinition:defs.get,listDefinitions:defs.list,createDefinition:defs.create,updateDefinition:defs.update,createRecord:records.create,getRecord:records.get,listRecords:records.list};
+    const maintenance={getDefinition:defs.get,listDefinitions:defs.list,createDefinition:defs.create,updateDefinition:defs.update,createRecord:records.create,getRecord:records.get,updateRecord:records.update,listRecords:records.list};
     const settings=store('settings');const originalUpdate=settings.update;settings.update=async(id,input)=>await settings.get(id)?originalUpdate(id,input):settings.create({id,...input});
     const reporting=reportPorts(models,transaction,settings);maintenance.listRecordsRange=reporting.listRecordsRange;readings.getMany=reporting.getMany;
     const auditStore=store('audit');const audit={append:auditStore.create};

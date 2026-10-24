@@ -1,7 +1,15 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {database} from './support-db.js';import {createMaintenanceService} from '../src/services/maintenanceService.js';
-import {maintenanceOccurrence} from '../src/services/maintenanceDueService.js';
+import {maintenanceOccurrence,createMaintenanceDueService} from '../src/services/maintenanceDueService.js';
 const at=s=>Date.parse(s+'+07:00'),actor={id:'u'};
+test('machine checks are due by line while product sample checks are due separately for each Type',async()=>{
+ const now=at('2026-10-21T08:00:00'),base={definition_version:1,intervals:['per_shift'],shifts:['day','night'],samples:[{id:'check'}],input_method:'ok_ng'};
+ const defs=[{...base,id:'machine',inspection_target:'machine'},{...base,id:'product',inspection_target:'product'}];
+ const records=defs.map(d=>({definition_id:d.id,definition_version:1,context:{product_type_id:'u'},checked_at:new Date(now).toISOString(),saved_at:new Date(now).toISOString(),overall_status:'OK',outcomes:[{sample_id:'check',status:'OK'}]}));
+ const due=createMaintenanceDueService({repositories:{maintenance:{listRecordsRange:async()=>({items:records,next_cursor:null})}},clock:()=>now},{all:async()=>defs},async()=>({lines:['1'],night_rollover_hour:7,product_types:[{id:'u',active:true},{id:'v',active:true}]}));
+ assert.deepEqual((await due({line:'1',product_type_id:'v'})).items.map(d=>d.state),['completed','pending']);
+ assert.deepEqual((await due({line:'1',product_type_id:'u'})).items.map(d=>d.state),['completed','completed']);
+});
 test('completed per-shift checks hide by line, include NG, survive midday/midnight and return next shift',async()=>{
  const {repo,close}=await database();let now=at('2026-10-21T08:00:00');const service=createMaintenanceService({repositories:repo,clock:()=>now});
  const state=async(line='1')=>(await service.due({line})).items.find(i=>i.definition_id==='packing_depth_tool');

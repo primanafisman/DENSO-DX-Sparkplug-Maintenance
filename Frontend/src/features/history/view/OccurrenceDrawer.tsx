@@ -1,10 +1,24 @@
 import { useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import type { Occurrence, EvidenceRef } from '../../../shared/lib/contracts';
 import { dateTime, number } from '../../../shared/lib/format';
-import { Button, Status } from '../../../shared/components/ui';
+import { Button, Status, ErrorMessage } from '../../../shared/components/ui';
 import { EvidenceDialog } from './EvidenceDialog';
-export function OccurrenceDrawer({ items, onClose }: { items: Occurrence[]; onClose: () => void }) {
-  const [evidence, setEvidence] = useState<EvidenceRef | null>(null);
+import { useDeleteRecord } from '../controller/useDeleteRecord';
+import { useSession } from '../../auth/controller/useSession';
+export function OccurrenceDrawer({
+  items,
+  onClose,
+  demo = false,
+}: {
+  items: Occurrence[];
+  onClose: () => void;
+  demo?: boolean;
+}) {
+  const [evidence, setEvidence] = useState<EvidenceRef | null>(null),
+    [confirming, setConfirming] = useState<string | null>(null),
+    deletion = useDeleteRecord(),
+    { user } = useSession();
   return (
     <>
       <div className="modal-backdrop">
@@ -16,7 +30,7 @@ export function OccurrenceDrawer({ items, onClose }: { items: Occurrence[]; onCl
         >
           <div className="row between">
             <h2>Rincian pemeriksaan</h2>
-            <Button variant="secondary" onClick={onClose}>
+            <Button variant="secondary" onClick={onClose} disabled={deletion.isPending}>
               Tutup rincian
             </Button>
           </div>
@@ -46,21 +60,70 @@ export function OccurrenceDrawer({ items, onClose }: { items: Occurrence[]; onCl
                 Standar saat diperiksa: {o.definition_snapshot?.standard_text ?? 'Tidak tercatat'}
               </p>
               <div className="actions">
-                {o.evidence.map((e, i) => (
-                  <Button
-                    variant="secondary"
-                    key={e.reading_id + e.variant}
-                    onClick={() => setEvidence(e)}
+                {!demo &&
+                  o.evidence.map((e, i) => (
+                    <Button
+                      variant="secondary"
+                      key={e.reading_id + e.variant}
+                      onClick={() => setEvidence(e)}
+                    >
+                      Foto {i + 1} · {e.variant}
+                    </Button>
+                  ))}
+              </div>
+              {!demo &&
+                user?.role === 'Admin' &&
+                (confirming === o.id ? (
+                  <section
+                    className="availability-confirm"
+                    role="group"
+                    aria-label="Konfirmasi hapus catatan"
                   >
-                    Foto {i + 1} · {e.variant}
+                    <h3>Hapus catatan pemeriksaan ini?</h3>
+                    <p>
+                      Catatan tidak lagi ditampilkan; pemeriksaan pada jadwal yang sama dapat diisi
+                      kembali.
+                    </p>
+                    <ErrorMessage error={deletion.error} />
+                    <div className="actions">
+                      <Button
+                        variant="secondary"
+                        disabled={deletion.isPending}
+                        onClick={() => {
+                          setConfirming(null);
+                          deletion.reset();
+                        }}
+                      >
+                        Batal hapus
+                      </Button>
+                      <Button
+                        variant="danger"
+                        disabled={deletion.isPending}
+                        onClick={() => deletion.mutate(o.id, { onSuccess: onClose })}
+                      >
+                        <Trash2 size={18} aria-hidden="true" />
+                        {deletion.isPending ? 'Menghapus catatan…' : 'Ya, hapus catatan'}
+                      </Button>
+                    </div>
+                  </section>
+                ) : (
+                  <Button
+                    variant="danger"
+                    aria-label="Hapus catatan pemeriksaan"
+                    disabled={deletion.isPending}
+                    onClick={() => {
+                      deletion.reset();
+                      setConfirming(o.id);
+                    }}
+                  >
+                    <Trash2 size={18} aria-hidden="true" /> Hapus catatan
                   </Button>
                 ))}
-              </div>
             </article>
           ))}
         </section>
       </div>
-      {evidence && (
+      {!demo && evidence && (
         <EvidenceDialog
           id={evidence.reading_id}
           variant={evidence.variant}

@@ -21,12 +21,13 @@ test('visual equipment has no fake profile and numeric equipment must have one',
   }finally{await close();}
 });
 
-test('condition reason and actor are audited; legacy unknown and enablement stay independent',async()=>{
+test('condition changes do not require a written reason; legacy state and audit actor remain intact',async()=>{
   const {repo,close}=await database(),service=createInstrumentService({repositories:repo,clock});
   try{
     await repo.instruments.create({id:'legacy',name:'Original',profile,active:true,revision:1});
     assert.equal((await service.get('legacy')).condition,'unknown');
-    await assert.rejects(service.update('legacy',{name:'Original',profile,condition:'not_working',active:true},actor),/reason/i);
+    const withoutReason=await service.update('legacy',{name:'Original',profile,condition:'working',active:true},actor);
+    assert.equal(withoutReason.condition,'working');assert.equal(withoutReason.condition_changed_by,'admin');
     const changed=await service.update('legacy',{name:'Original',profile,condition:'not_working',condition_reason:'Sensor rusak',active:true},actor);
     assert.equal(changed.active,true);assert.equal(changed.condition,'not_working');assert.equal(changed.condition_changed_by,'admin');
     assert.equal((await repo.instruments.get('legacy')).condition_reason,'Sensor rusak');

@@ -15,7 +15,7 @@ JSON berhasil: {success:true,message,data,request_id}. Gagal: {success:false,mes
 3. POST photos/{image_id}/discovery dengan {area}. Hasil menawarkan beberapa ROI, label_roi, instrument dan suggested_profile. Masing-masing perlu ditinjau.
 4. POST analysis-jobs dengan {image_id,items:[{client_id,roi,label_roi?,instrument_id?,calibration_id?,profile}],area}. Jalankan otomatis setelah foto/identitas/profil tersedia. Poll GET analysis-jobs/{job_id} hingga terminal, batas waktu atau pembatalan.
 5. Hasil utama: validated_prediction (angka atau null), candidate, confidence.valid/level/reasons, ROI dan label. Confidence bukan probabilitas akurasi yang telah dikalibrasi. candidate yang ditolak tidak boleh ditampilkan sebagai prediksi valid.
-6. POST readings/confirm dengan {analysis_id,instrument_id,final_value,verified:true,identity_verified:true,context,check_id,sample_key,reason,confirmation_id}. final_value memakai titik desimal; reason wajib untuk nilai manual/koreksi/tidak tervalidasi. Retry memakai confirmation_id dan body yang sama.
+6. POST readings/confirm dengan {analysis_id,instrument_id,final_value,verified:true,identity_verified:true,context,check_id,sample_key,reason,confirmation_id}. final_value memakai titik desimal; reason opsional (aplikasi mengirim string kosong); verifikasi angka/identitas tetap wajib. Retry memakai confirmation_id dan body yang sama.
 7. Kumpulkan reading_id untuk tiap sampel. Sample_key biasa n1; difference memakai n1:before dan n1:after. Setiap sampel/tahap membutuhkan foto baru.
 8. POST maintenance/records dengan {definition_id,definition_version,context,interval,trigger,checked_at,observations:[{sample_id,reading_id}]}. Difference mengganti reading_id dengan before_reading_id/after_reading_id. Backend menghitung OK/NG terhadap snapshot standar.
 
@@ -29,7 +29,7 @@ Jika mengganti identitas alat dengan profil fisik yang sama, konfirmasi mengirim
 
 Jika CV/discovery tidak berhasil, pertahankan foto yang telah berhasil diunggah dan daftar alat. Setelah alat serta pemeriksaan dipilih, kirim `POST /analysis-jobs/manual` dengan `{image_id,instrument_id,roi,label_roi?}`. Endpoint ini tidak memanggil OCR/analisis CV dan mengembalikan AnalysisResult dengan `analysis_id`, `validated_prediction:null` dan `confidence.valid:false`.
 
-Gunakan ID tersebut pada endpoint konfirmasi bacaan yang sama. Isi `final_value`, alasan manual yang tidak kosong, verifikasi identitas dan verifikasi angka. Nilai manual tetap diperiksa terhadap rentang/desimal alat dan disimpan bersama foto/crop; angka tersebut tidak diberi confidence CV. Foto yang gagal diunggah harus diunggah kembali sebelum dapat dikonfirmasi. Bukti yang sama tetap tidak boleh dipakai ulang untuk sampel baru.
+Gunakan ID tersebut pada endpoint konfirmasi bacaan yang sama. Isi `final_value`, verifikasi identitas dan verifikasi angka. Tidak ada kolom alasan yang wajib diisi. Nilai manual tetap diperiksa terhadap rentang/desimal alat dan disimpan bersama foto/crop; angka tersebut tidak diberi confidence CV. Foto yang gagal diunggah harus diunggah kembali sebelum dapat dikonfirmasi. Bukti yang sama tetap tidak boleh dipakai ulang untuk sampel baru.
 
 ## Pemeriksaan visual
 
@@ -135,3 +135,16 @@ PUT /instruments/:id/status menerima hanya {"active":false} untuk mengeluarkan a
 Daftar pemeriksaan tetap memakai PUT /maintenance/definitions/:id/status dengan active dan review_reason otomatis. Konfirmasi UI berada dalam editor dan terpisah dari submit formulir. Gagal/batal mempertahankan draft; sukses menutup editor dan memperbarui daftar. Status ini tidak menghapus riwayat.
 
 Pengaturan memuat tab standards (Daftar Pemeriksaan), equipment (Peralatan) dan general (Line Produksi). /peralatan merupakan tautan kompatibilitas yang redirect replace ke /pengaturan?tab=equipment. Gunakan URL Pengaturan ini untuk integrasi navigasi baru; sidebar tidak lagi memiliki menu Peralatan terpisah.
+
+
+## Operator simplification (2026-10-24)
+
+`MaintenanceDefinition.inspection_target` is `machine`, `product`, or null for an unclassified legacy custom check. Admin create/update accepts `inspection_target`; this is separate from `kind` and `input_method`. Built-in defaults follow the inspected object; numeric kN machine loads remain machine inspections. Product subgroups keep one Type snapshot per complete set of samples. Changing Type must start a separate inspection, not append mixed n1–n4.
+
+Configured `lines` are trimmed nonempty names (max64 characters), unique ignoring case, max200. Initial defaults remain1–17. Equipment create/update must submit `condition: working | not_working`; legacy stored unknown can be read but must be reviewed before resubmission.
+
+`DELETE /maintenance/records/:id` is Admin-only and needs CSRF for cookie authentication. It returns `{id, deleted:true}`. This is an idempotent soft deletion with actor/time audit; normal list, reports, due and SPC exclude the record. Evidence and historical snapshots stay available to the backend audit process. The UI asks confirmation before issuing DELETE.
+
+`GET /capabilities` exposes `demo_reports`. In development only, authenticated read-only `/maintenance/demo/report`, `/maintenance/demo/spc`, and `/maintenance/demo/spc/subgroups` accept the corresponding real report query fields. Their warnings include DEMO_DATA. They use isolated synthetic records, never operational storage; no baseline saving, evidence, deletion or CSV export is offered. The frontend-only `demo` flag is removed before sending API query parameters.
+
+Capture state remains in browser memory while authenticated routes change. Resume uses the same photo/ROI/result/review and completed samples; logout, expired session, completion, reload or an explicitly confirmed new run clears it. A background CV result never redirects an operator away from another menu.

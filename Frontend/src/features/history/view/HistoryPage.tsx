@@ -15,9 +15,12 @@ import { useChecksheet } from '../controller/useChecksheet';
 import { downloadReport } from '../controller/useEvidence';
 import { MonthlyTable } from './MonthlyTable';
 import { dateTime } from '../../../shared/lib/format';
+import { useCapabilities } from '../../../shared/controller/useCapabilities';
 export function HistoryPage() {
   const f = useReportFilters(),
-    q = useChecksheet(f.scope),
+    capabilities = useCapabilities(),
+    demoAvailable = capabilities.data?.demo_reports === true,
+    q = useChecksheet(f.demo && !demoAvailable ? null : f.scope),
     [mode, setMode] = useState<'status' | 'value'>('status'),
     [error, setError] = useState<unknown>(null);
   const rows = q.data?.pages.flatMap((p) => p.rows) ?? [],
@@ -28,19 +31,43 @@ export function HistoryPage() {
         title="Riwayat pemeriksaan"
         description="Pilih bulan, lalu buka pemeriksaan untuk rincian dan grafik."
         actions={
-          <Button
-            variant="secondary"
-            disabled={!meta}
-            onClick={() =>
-              meta &&
-              downloadReport({ ...meta.scope, as_of: meta.as_of }, 'checksheet').catch(setError)
-            }
-          >
-            Unduh CSV
-          </Button>
+          <>
+            {(demoAvailable || f.demo) && (
+              <Button variant="secondary" onClick={() => f.change('demo', f.demo ? '' : '1')}>
+                {f.demo ? 'Kembali ke data produksi' : 'Lihat data contoh'}
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              disabled={!meta || f.demo}
+              onClick={() =>
+                meta &&
+                downloadReport({ ...meta.scope, as_of: meta.as_of }, 'checksheet').catch(setError)
+              }
+            >
+              Unduh CSV
+            </Button>
+          </>
         }
       />
+      {f.demo && (
+        <div className="demo-banner" role="status">
+          <strong>Data contoh — bukan catatan produksi.</strong> Nilai ilustrasi mengikuti struktur
+          lembar maintenance. Buka EE Cutting atau pemeriksaan angka lain untuk melihat grafik X̄ /
+          R.
+        </div>
+      )}
       <ReportFilters filters={f} />
+      {f.demo &&
+        !demoAvailable &&
+        (capabilities.isPending ? (
+          <Loading />
+        ) : (
+          <Empty
+            title="Data contoh tidak tersedia pada server ini"
+            description="Kembali ke data produksi untuk melihat catatan pemeriksaan."
+          />
+        ))}
       <Field label="Isi sel tabel">
         <select value={mode} onChange={(e) => setMode(e.target.value as typeof mode)}>
           <option value="status">Hasil OK / NG</option>
@@ -57,6 +84,7 @@ export function HistoryPage() {
               rows={rows}
               scope={meta.scope}
               mode={mode}
+              demo={f.demo}
             />
           ) : (
             <Empty title="Belum ada catatan bulan ini" />

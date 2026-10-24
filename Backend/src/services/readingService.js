@@ -30,7 +30,6 @@ export function createReadingService({config,repositories,clock},analyses,photos
       const result=snapshot.result;
       const storedAnalysis=input.equipment_reassigned?{...result,equipment_selection:{original_instrument_id:snapshot.submitted.instrument_id??null,original_profile:snapshot.submitted.profile,original_revision:snapshot.instrument_snapshot?.revision??null,selected_instrument_id:asset.id,selected_revision:asset.revision,operator_verified:true}}:result;
       const corrected=!result.confidence?.valid||result.validated_prediction===null||Math.abs(Number(result.candidate?.value)-value)>1e-8;
-      if(corrected&&!input.reason)throw new AppError(422,'REASON_REQUIRED','Provide a correction/review reason.');
       const readingId=randomUUID(),source=snapshot.photo;const hash=createHash('sha256').update(source.bytes).digest('hex');if(hash!==source.source_hash)throw new AppError(409,'EVIDENCE_CHANGED','Photo evidence hash differs. Upload again.');
       // A recrop of one capture is still the same equipment sample.
       const evidenceKey=createHash('sha256').update(JSON.stringify({source_hash:hash,instrument_id:asset.id})).digest('hex');

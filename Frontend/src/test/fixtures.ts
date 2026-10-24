@@ -22,6 +22,7 @@ export function fixtureDefinition(
     group: 'ee_cutting',
     process: 'Spark Plug Final Assy',
     kind: 'numeric',
+    inspection_target: 'product',
     input_method: 'photo',
     standard_text: '4.40–4.60 mm',
     method_text: 'Unggah foto setiap sampel',

@@ -39,7 +39,10 @@ export function InspectionContextForm({
             ))}
           </select>
         </Field>
-        <Field label="Type produk">
+        <Field
+          label="Type produk"
+          hint="Sampling: isi seluruh sampel dalam satu Type; ulangi pemeriksaan untuk Type berbeda."
+        >
           <select
             value={value.product_type_id ?? ''}
             onChange={(e) => onChange({ ...value, product_type_id: e.target.value })}

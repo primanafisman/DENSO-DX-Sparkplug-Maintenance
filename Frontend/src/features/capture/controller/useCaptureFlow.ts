@@ -3,7 +3,7 @@ import { sameProfile } from '../model/profileCompatibility';
 import { matchRegisteredLabel } from '../model/registeredLabel';
 import { useEffect, useRef } from 'react';
 import { useStore } from 'zustand';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { captureStore, createCaptureStore } from '../model/captureStore';
 import { captureApi } from '../model/api';
 import { reviewSchema } from '../model/schemas';
@@ -28,7 +28,7 @@ type Review = {
   final_value: string;
   identity_verified: boolean;
   verified: boolean;
-  reason: string;
+  reason?: string;
 };
 type Dependencies = {
   api?: typeof captureApi;
@@ -81,6 +81,7 @@ export function createCaptureFlow({
       error: null,
       generation,
       manualPreparing: false,
+      reviewDraft: null,
     });
     return generation;
   }
@@ -137,6 +138,7 @@ export function createCaptureFlow({
         label = blobs[1].status === 'fulfilled' ? blobs[1].value : null;
       store.setState({
         result: job.results[0],
+        reviewDraft: null,
         analysisProfile: profile,
         analysisInstrumentId: item.instrument_id ?? null,
         requiresReanalysis: false,
@@ -250,6 +252,7 @@ export function createCaptureFlow({
       generation,
       error: null,
       stage: state.result ? 'ready' : 'idle',
+      reviewDraft: null,
       requiresReanalysis:
         !!asset &&
         !!state.result &&
@@ -325,13 +328,6 @@ export function createCaptureFlow({
       throw new Error('Pilih alat dan pemeriksaan, lalu analisis foto.');
     if (state.requiresReanalysis)
       throw new Error('Profil alat berbeda. Baca ulang dengan profil alat sebelum konfirmasi.');
-    if (
-      (!state.result.confidence.valid ||
-        state.result.validated_prediction === null ||
-        Number(parsed.data.final_value) !== state.result.validated_prediction) &&
-      !parsed.data.reason
-    )
-      throw new Error('Isi alasan pembacaan manual atau koreksi.');
     const data: Confirmation = {
       analysis_id: state.result.analysis_id,
       instrument_id: state.instrument.id,
@@ -375,6 +371,17 @@ export function createCaptureFlow({
     regions,
     proposal,
     confirm,
+    setReviewDraft: (review: { value: string; identity: boolean; verified: boolean }) => {
+      const state = store.getState();
+      if (!state.result || !state.instrument) return;
+      store.setState({
+        reviewDraft: {
+          ...review,
+          analysis_id: state.result.analysis_id,
+          instrument_id: state.instrument.id,
+        },
+      });
+    },
     reanalyse: () => analyze(invalidate()),
     dispose: () => {
       invalidate();
@@ -385,7 +392,10 @@ export function createCaptureFlow({
 }
 export function useCaptureFlow() {
   const navigate = useNavigate(),
+    location = useLocation(),
     state = useStore(captureStore);
+  const pathname = useRef(location.pathname);
+  pathname.current = location.pathname;
   const ref = useRef<ReturnType<typeof createCaptureFlow> | null>(null);
   if (!ref.current)
     ref.current = createCaptureFlow({
@@ -401,8 +411,30 @@ export function useCaptureFlow() {
           }
         );
       },
-      onResult: () => navigate('/pemeriksaan/hasil'),
+      onResult: () => {
+        if (/^\/pemeriksaan\/(foto|hasil|crop|konfirmasi)(?:\/|$)/.test(pathname.current))
+          navigate('/pemeriksaan/hasil');
+      },
     });
-  useEffect(() => () => ref.current?.dispose(), []);
+  useEffect(() => {
+    const engine = ref.current!;
+    let session = useInspectionStore.getState().draft?.session_id ?? null;
+    const unsubscribe = useInspectionStore.subscribe(({ draft }) => {
+      const nextSession = draft?.session_id ?? null;
+      if (nextSession !== session) {
+        session = nextSession;
+        engine.dispose();
+      }
+    });
+    const clear = () => engine.dispose();
+    window.addEventListener('spm:logout', clear);
+    window.addEventListener('spm:session-expired', clear);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('spm:logout', clear);
+      window.removeEventListener('spm:session-expired', clear);
+      engine.dispose();
+    };
+  }, []);
   return { state, engine: ref.current };
 }

@@ -23,7 +23,28 @@ import {
   ErrorDialog,
 } from '../../../shared/components/ui';
 import { dateTime, monthRange } from '../../../shared/lib/format';
+import { StatusReportPage } from './StatusReportPage';
+import { useCapabilities } from '../../../shared/controller/useCapabilities';
 export function SpcReportPage() {
+  const { definitionId } = useParams(),
+    catalog = useCatalog(true),
+    [params] = useSearchParams(),
+    capabilities = useCapabilities();
+  const definition = catalog.data?.items.find((d) => d.id === definitionId);
+  if (params.get('demo') === '1' && capabilities.isPending) return <Loading />;
+  if (params.get('demo') === '1' && !capabilities.data?.demo_reports)
+    return (
+      <Card>
+        <Empty title="Data contoh tidak tersedia pada server ini" />
+        <Link to="/riwayat">Kembali ke data produksi</Link>
+      </Card>
+    );
+  if (catalog.isPending) return <Loading />;
+  if (catalog.error) return <ErrorMessage error={catalog.error} />;
+  if (definition?.input_method === 'ok_ng') return <StatusReportPage definition={definition} />;
+  return <NumericReportPage />;
+}
+function NumericReportPage() {
   const { definitionId } = useParams(),
     f = useReportFilters(),
     navigate = useNavigate(),
@@ -57,7 +78,7 @@ export function SpcReportPage() {
             production_date_to: end,
           }
         : null,
-    baseline = params.get('baseline') ?? undefined,
+    baseline = f.demo ? undefined : (params.get('baseline') ?? undefined),
     q = useSpcReport(scope, chosen, baseline),
     c = q.cohort,
     report = q.report.data;
@@ -130,13 +151,24 @@ export function SpcReportPage() {
               className="button button-secondary"
               to={
                 '/riwayat?' +
-                new URLSearchParams({ month: f.month, ...(f.line ? { line: f.line } : {}) })
+                new URLSearchParams({
+                  month: f.month,
+                  ...(f.line ? { line: f.line } : {}),
+                  ...(f.shift ? { shift: f.shift } : {}),
+                  ...(f.demo ? { demo: '1' } : {}),
+                })
               }
             >
               Kembali ke tabel
             </Link>
           }
         />
+        {f.demo && (
+          <div className="demo-banner" role="status">
+            <strong>Data contoh — bukan catatan produksi.</strong> Angka simulasi mengikuti struktur
+            sampel lembar maintenance. Grafik dan statistik dihitung dengan rumus laporan yang sama.
+          </div>
+        )}
         <ReportFilters filters={f} />
         {baseline && (
           <Button variant="secondary" onClick={() => change({ baseline: '' })}>
@@ -250,22 +282,24 @@ export function SpcReportPage() {
                         : 'estimasi periode terpilih'}
                     </p>
                     <div className="no-print">
-                      <Field label="Sumber batas kontrol">
-                        <select
-                          disabled={report.cohorts.length > 1}
-                          value={baseline ?? ''}
-                          onChange={(e) => change({ baseline: e.target.value })}
-                        >
-                          <option value="">Hitung dari periode terpilih</option>
-                          {baselines.data
-                            ?.filter((b) => b.cohort_key === c.cohort_key)
-                            .map((b) => (
-                              <option key={b.id} value={b.id}>
-                                {dateTime(b.created_at)} · {b.review_reason}
-                              </option>
-                            ))}
-                        </select>
-                      </Field>
+                      {!f.demo && (
+                        <Field label="Sumber batas kontrol">
+                          <select
+                            disabled={report.cohorts.length > 1}
+                            value={baseline ?? ''}
+                            onChange={(e) => change({ baseline: e.target.value })}
+                          >
+                            <option value="">Hitung dari periode terpilih</option>
+                            {baselines.data
+                              ?.filter((b) => b.cohort_key === c.cohort_key)
+                              .map((b) => (
+                                <option key={b.id} value={b.id}>
+                                  {dateTime(b.created_at)} · {b.review_reason}
+                                </option>
+                              ))}
+                          </select>
+                        </Field>
+                      )}
                       {report.cohorts.length > 1 && (
                         <p className="info-note">
                           Beberapa kelompok ditemukan. Pemakaian baseline tersimpan memerlukan
@@ -279,6 +313,7 @@ export function SpcReportPage() {
                         </Button>
                         <Button
                           variant="secondary"
+                          disabled={f.demo}
                           onClick={() =>
                             downloadReport(
                               { ...report.meta.scope, as_of: report.meta.as_of },
@@ -289,15 +324,17 @@ export function SpcReportPage() {
                         >
                           Unduh CSV
                         </Button>
-                        {session.user?.role === 'Admin' && report.cohorts.length === 1 && (
-                          <Button
-                            variant="secondary"
-                            disabled={c.control_limits.ucl_x === null}
-                            onClick={() => setSaveBaseline(true)}
-                          >
-                            Simpan batas kontrol
-                          </Button>
-                        )}
+                        {!f.demo &&
+                          session.user?.role === 'Admin' &&
+                          report.cohorts.length === 1 && (
+                            <Button
+                              variant="secondary"
+                              disabled={c.control_limits.ucl_x === null}
+                              onClick={() => setSaveBaseline(true)}
+                            >
+                              Simpan batas kontrol
+                            </Button>
+                          )}
                       </div>
                     </div>
                   </Card>
@@ -381,7 +418,9 @@ export function SpcReportPage() {
         </>
       )}
       <ErrorDialog error={error} onClose={() => setError(null)} />
-      {occurrence && <OccurrenceDrawer items={[occurrence]} onClose={() => setOccurrence(null)} />}
+      {occurrence && (
+        <OccurrenceDrawer demo={f.demo} items={[occurrence]} onClose={() => setOccurrence(null)} />
+      )}
     </>
   );
 }

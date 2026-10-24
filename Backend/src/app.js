@@ -105,6 +105,7 @@ export function createApp({
     res.set("Cache-Control", "no-store");
     return success(res, {
       mode: "LOCAL_CV",
+      demo_reports: config.environment === "development",
       max_upload_bytes: 15 * 1024 * 1024,
       max_image_pixels: 20000000,
       max_items: 12,

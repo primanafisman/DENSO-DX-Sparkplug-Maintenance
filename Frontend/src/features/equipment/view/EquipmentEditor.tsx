@@ -4,8 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type { Instrument, MaintenanceDefinition } from '../../../shared/lib/contracts';
 import { equipmentSchema } from '../model/schemas';
 import type { EquipmentForm } from '../model/schemas';
-import { Button, Field, ErrorMessage, Badge } from '../../../shared/components/ui';
-import { useCalibrationHistory } from '../controller/useEquipment';
+import { Button, Field, ErrorMessage } from '../../../shared/components/ui';
 import { AvailabilityAction } from '../../../shared/components/ui/AvailabilityAction';
 export function EquipmentEditor({
   equipment,
@@ -51,8 +50,7 @@ export function EquipmentEditor({
       check_ids: equipment?.maintenance_check_ids ?? [],
     },
   });
-  const mode = form.watch('measurement_mode'),
-    calibrations = useCalibrationHistory(equipment?.id);
+  const mode = form.watch('measurement_mode');
   const automatic = useRef({
     code: !equipment?.code || equipment.code === equipment.name,
     aliases:
@@ -168,8 +166,10 @@ export function EquipmentEditor({
             <h3 className="section-title">Kondisi dan penggunaan</h3>
             <div className="field-row">
               <Field label="Kondisi alat">
-                <select {...form.register('condition')}>
-                  <option value="unknown">Kondisi belum tercatat</option>
+                <select {...form.register('condition')} required>
+                  <option value="unknown" disabled>
+                    Pilih kondisi alat
+                  </option>
                   <option value="working">Berfungsi</option>
                   <option value="not_working">Tidak berfungsi</option>
                 </select>
@@ -251,20 +251,6 @@ export function EquipmentEditor({
                 </label>
               ))}
             </div>
-            {equipment && mode === 'numeric' && (
-              <details className="info-note">
-                <summary>Versi kalibrasi ({calibrations.data?.items.length ?? 0})</summary>
-                {calibrations.data?.items.map((c) => (
-                  <p key={c.id}>
-                    <Badge>Versi {c.version}</Badge> {c.created_at}
-                  </p>
-                ))}
-                <p>
-                  Kalibrasi terdahulu dipertahankan. API kalibrasi tersedia bagi integrator;
-                  perubahan profil memerlukan verifikasi ulang.
-                </p>
-              </details>
-            )}
             {Object.values(form.formState.errors).some(Boolean) && (
               <p className="source-note">
                 Periksa parameter:{' '}

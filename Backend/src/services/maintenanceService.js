@@ -29,7 +29,32 @@ export function createMaintenanceService({repositories,clock}){
         product_snapshot??=resolveProduct(input.context.product_type_id,options);const record=await tx.maintenance.createRecord({...input,product_snapshot,instrument_snapshot,schedule_snapshot:snapshotOccurrence(input.checked_at,options),actor_id:actor.id,definition_snapshot:def,settings_snapshot:options,outcomes,overall_status:outcomes.every(o=>o.status==='OK')?'OK':'NG',saved_at:new Date(clock()).toISOString(),created_at:new Date(clock()).toISOString()});await tx.audit.append({actor_id:actor.id,action:'maintenance_record_created',entity_id:record.id,overall_status:record.overall_status});return record;
       });
     },
-    async list(input){const {limit,cursor,sort,...filters}=input;return repositories.maintenance.listRecords({limit,cursor,sort,filters});},
+    async deleteRecord(id,actor){return repositories.transaction(async tx=>{
+      const record=await tx.maintenance.getRecord(id);
+      if(!record)throw new AppError(404,'MAINTENANCE_NOT_FOUND','Maintenance record not found.');
+      if(!record.deleted_at){
+        const deleted_at=new Date(clock()).toISOString();
+        await tx.maintenance.updateRecord(id,{deleted_at,deleted_by:actor.id});
+        await tx.audit.append({actor_id:actor.id,action:'maintenance_record_deleted',entity_id:id,deleted_at});
+      }
+      return {id,deleted:true};
+    });},
+    async list(input={}){
+      const {limit=25,cursor,sort,...filters}=input;
+      if(!Number.isInteger(limit)||limit<1||limit>100)throw new AppError(422,'INVALID_PAGE','Limit must be 1–100.');
+      const items=[];let next=cursor,scanned=0;
+      do{
+        const part=await repositories.maintenance.listRecords({limit:100,cursor:next,sort,filters});
+        scanned+=part.items.length;
+        for(const record of part.items)if(!record.deleted_at){
+          if(items.length===limit){const last=items.at(-1);return {items,next_cursor:Buffer.from(JSON.stringify({id:last.id,created_at:last.created_at})).toString('base64url')};}
+          items.push(record);
+        }
+        next=part.next_cursor;
+        if(next&&scanned>100000)throw new AppError(422,'HISTORY_TOO_LARGE','Narrow history filters.');
+      }while(next);
+      return {items,next_cursor:null};
+    },
   };
 }
 

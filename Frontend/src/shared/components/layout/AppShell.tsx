@@ -31,7 +31,7 @@ export function AppShell() {
             title="DENSO · Sparkplug Maintenance"
             aria-label="DENSO Sparkplug Maintenance"
           >
-            D<span aria-hidden="true">.</span>
+            DENSO
           </div>
         </div>
         <nav aria-label="Navigasi utama">

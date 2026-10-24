@@ -12,6 +12,7 @@ import { CaptureContext } from '../controller/captureContext';
 import { CapturePage } from './CapturePage';
 import { useInspectionStore } from '../../maintenance/model/inspectionStore';
 import { CaptureLayout } from './CaptureLayout';
+import { CaptureWorkspaceProvider } from '../controller/captureWorkspace';
 afterEach(() => useInspectionStore.getState().reset());
 it('a known inspection shows its briefing before automatically requesting the camera', async () => {
   useInspectionStore.getState().start({
@@ -22,11 +23,13 @@ it('a known inspection shows its briefing before automatically requesting the ca
     trigger: 'routine',
   });
   renderApp(
-    <Routes>
-      <Route element={<CaptureLayout />}>
-        <Route path="/pemeriksaan/foto" element={<CapturePage />} />
-      </Route>
-    </Routes>,
+    <CaptureWorkspaceProvider>
+      <Routes>
+        <Route element={<CaptureLayout />}>
+          <Route path="/pemeriksaan/foto" element={<CapturePage />} />
+        </Route>
+      </Routes>
+    </CaptureWorkspaceProvider>,
     '/pemeriksaan/foto?source=camera',
   );
   expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();

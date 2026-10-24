@@ -9,5 +9,6 @@ export function maintenanceController(service){return {
   updateDefinition:async(req,res)=>success(res,await service.updateDefinition(req.params.id,req.validated.body,req.actor)),
   definitionRevisions:async(req,res)=>success(res,await service.definitionRevisions(req.params.id,req.validated.query)),
   createRecord:async(req,res)=>success(res,await service.createRecord(req.validated.body,req.actor),'Maintenance saved.',201),
+  deleteRecord:async(req,res)=>success(res,await service.deleteRecord(req.params.id,req.actor),'Maintenance record removed.'),
   list:async(req,res)=>success(res,await service.list(req.validated.query)),
 };}

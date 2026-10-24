@@ -38,8 +38,14 @@ export function useSpcReport(scope: ReportInput | null, chosen: string, baseline
     }),
     cohort =
       report.data?.cohorts.find((c) => c.cohort_id === chosen) ??
-      (report.data?.cohorts.length === 1 ? report.data.cohorts[0] : undefined),
-    frozen = report.data ? { ...report.data.meta.scope, as_of: report.data.meta.as_of } : null;
+      (report.data?.cohorts.length === 1 || scope?.demo ? report.data?.cohorts[0] : undefined),
+    frozen = report.data
+      ? {
+          ...report.data.meta.scope,
+          ...(scope?.demo ? { demo: true } : {}),
+          as_of: report.data.meta.as_of,
+        }
+      : null;
   const raw = useInfiniteQuery({
     queryKey: ['history', 'subgroups', frozen, cohort?.cohort_id, baseline],
     initialPageParam: undefined as string | undefined,
