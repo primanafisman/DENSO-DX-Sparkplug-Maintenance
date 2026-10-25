@@ -1,0 +1,321 @@
+/* Monitoring data stays in normal flow: no nested scrolling or clipped rows. */
+.summary-page .line-progress-grid,
+.summary-page .summary-results {
+  max-height: none;
+  overflow: visible;
+  scrollbar-gutter: auto;
+}
+.summary-results table {
+  width: 100%;
+}
+.summary-results tbody th {
+  white-space: normal;
+}
+.summary-results a {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+@media screen and (min-width: 1101px) {
+  /* Shared header/content origin prevents a jump when changing menus. */
+  .topbar,
+  .app-shell:has(.summary-page) .topbar {
+    height: 64px;
+  }
+  .brand-logo {
+    width: 150px;
+    height: 60px;
+  }
+  .page-content,
+  .page-content:has(> .summary-page) {
+    padding-top: 12px;
+    padding-bottom: 16px;
+  }
+  .summary-page {
+    display: grid;
+    grid-template-columns: minmax(350px, 0.9fr) minmax(420px, 1.1fr);
+    grid-template-rows: 40px auto 56px minmax(0, 1fr);
+    gap: 8px 14px;
+    height: calc(100dvh - 92px);
+    min-height: 0;
+    align-content: start;
+  }
+  .summary-page > :not(.page-heading):not(.filter-bar) {
+    grid-column: 1 / -1;
+  }
+  .summary-page .page-heading {
+    grid-column: 1;
+    margin: 0;
+    min-height: 0;
+    gap: 8px;
+    align-items: center;
+  }
+  .summary-page .page-heading h1 {
+    font-size: 1.3rem;
+    line-height: 1.15;
+  }
+  .summary-page .page-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+  .summary-page .page-heading .button {
+    min-height: 34px;
+    padding: 5px 10px;
+    font-size: 0.74rem;
+    gap: 6px;
+  }
+  .summary-page .filter-bar {
+    grid-column: 2;
+    display: grid;
+    grid-template-columns: 1.25fr 1fr 1fr;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+    background: none;
+    gap: 8px;
+    align-items: center;
+  }
+  .summary-page .filter-bar .field {
+    min-width: 0;
+    width: auto;
+    gap: 1px;
+    font-size: 0.65rem;
+    line-height: 1.1;
+  }
+  .summary-page .filter-bar select {
+    min-height: 25px;
+    height: 25px;
+    padding: 2px 8px;
+    font-size: 0.73rem;
+    line-height: 1.15;
+    border-radius: 7px;
+  }
+  .summary-page .current-workload {
+    margin: 0;
+    padding: 8px 12px;
+    gap: 6px 16px;
+    border-radius: 12px;
+  }
+  .summary-page .current-shift {
+    min-width: 190px;
+    min-height: 40px;
+    padding-left: 46px;
+    gap: 1px;
+  }
+  .summary-page .current-shift small,
+  .summary-page .current-shift > span:not(.shift-orbit) {
+    font-size: 0.64rem;
+    line-height: 1.15;
+  }
+  .summary-page .current-shift strong {
+    font-size: 0.88rem;
+    line-height: 1.2;
+  }
+  .summary-page .shift-orbit {
+    top: 2px;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+  .summary-page .shift-orbit svg {
+    width: 23px;
+    height: 23px;
+  }
+  .summary-page .progress-ring {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+  .summary-page .progress-ring > strong {
+    font-size: 0.72rem;
+  }
+  .summary-page .current-workload .workload-count {
+    min-width: 88px;
+    padding-left: 14px;
+    gap: 0;
+  }
+  .summary-page .current-workload .workload-count strong {
+    font-size: 1.4rem;
+    line-height: 1.1;
+  }
+  .summary-page .current-workload .workload-count span {
+    font-size: 0.68rem;
+    line-height: 1.2;
+  }
+  .summary-page .workload-count span svg {
+    width: 13px;
+    height: 13px;
+  }
+  .summary-page .current-workload .workload-lines {
+    min-width: 175px;
+  }
+  .summary-page .current-workload > .line-workload {
+    padding-top: 6px;
+  }
+  .summary-page .line-progress-grid {
+    grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    gap: 6px;
+  }
+  .summary-page .line-progress-grid button {
+    min-height: 40px;
+    padding: 4px 6px;
+    border-radius: 8px;
+    gap: 0 7px;
+    line-height: 1.15;
+  }
+  .summary-page .line-progress-grid .progress-ring {
+    width: 28px;
+    height: 28px;
+    flex-basis: 28px;
+  }
+  .summary-page .line-progress-grid .progress-ring > strong {
+    font-size: 0.56rem;
+  }
+  .summary-page .line-progress-grid button > strong {
+    font-size: 0.72rem;
+  }
+  .summary-page .line-progress-grid small {
+    font-size: 0.63rem;
+  }
+  .summary-page .kpi-grid {
+    margin: 0;
+    gap: 10px;
+  }
+  .summary-page .kpi-grid .kpi-card {
+    min-height: 0;
+    margin: 0;
+    padding: 5px 55px 5px 14px !important;
+    border-radius: 11px;
+    border-top-width: 2px;
+  }
+  .summary-page .kpi-card p {
+    margin: 0;
+    font-size: 0.67rem;
+    line-height: 1.15;
+  }
+  .summary-page .kpi-card p svg {
+    width: 12px;
+    height: 12px;
+  }
+  .summary-page .kpi-card strong {
+    margin-top: 2px;
+    font-size: 1.5rem;
+    line-height: 1.1;
+  }
+  .summary-page .metric-symbol {
+    width: 28px;
+    height: 28px;
+    top: 10px;
+    right: 15px;
+    border-radius: 9px;
+  }
+  .summary-page .metric-symbol svg {
+    width: 19px;
+    height: 19px;
+  }
+  .summary-page .summary-detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    gap: 12px;
+    min-height: 0;
+  }
+  .summary-page .summary-detail-grid > .card {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    min-height: 0;
+    padding: 9px 10px;
+    border-radius: 12px;
+    overflow: visible;
+  }
+  .summary-page .summary-detail-grid h2 {
+    margin: 0 0 6px;
+    font-size: 0.8rem;
+    line-height: 1.25;
+  }
+  .summary-page .section-icon-title svg {
+    width: 16px;
+    height: 16px;
+  }
+  .summary-page .summary-legend {
+    font-size: 0.64rem;
+    gap: 4px;
+  }
+  .summary-page .chart-box {
+    flex: 1 1 0;
+    height: auto;
+    min-height: 80px;
+    margin-top: 4px;
+  }
+  .summary-page .chart-box .recharts-cartesian-axis-tick-value {
+    font-size: 10px;
+  }
+  .summary-results {
+    flex: 0 0 auto;
+  }
+  .summary-results table {
+    table-layout: fixed;
+    border-collapse: collapse;
+  }
+  .summary-results th,
+  .summary-results td {
+    padding: 2px 6px;
+    font-size: 0.7rem;
+    line-height: 1.25;
+    vertical-align: middle;
+  }
+  .summary-results th:first-child {
+    width: 62%;
+    text-align: left;
+  }
+  .summary-results th:nth-child(2) {
+    width: 9%;
+  }
+  .summary-results th:nth-child(3),
+  .summary-results th:nth-child(4) {
+    width: 7%;
+  }
+  .summary-results th:last-child {
+    width: 15%;
+  }
+  .summary-results a {
+    min-height: 16px;
+    padding: 0;
+    font-size: 0.66rem;
+  }
+  .summary-results a svg {
+    width: 11px;
+    height: 11px;
+  }
+  .summary-page .data-details {
+    margin: 0;
+    font-size: 0.67rem;
+  }
+  .summary-page .data-details > summary {
+    min-height: 18px;
+    padding: 0;
+  }
+  /* Errors and expanded guidance must remain readable, never clipped to fit. */
+  .summary-page:has(.error-message),
+  .summary-page:has(> .data-details[open]) {
+    height: auto;
+    grid-template-rows: 40px;
+    grid-auto-rows: auto;
+  }
+}
+
+@media print {
+  .summary-page {
+    display: block;
+    height: auto;
+  }
+  .summary-page .summary-detail-grid {
+    display: block;
+  }
+  .summary-page .chart-box {
+    height: 200px;
+  }
+}

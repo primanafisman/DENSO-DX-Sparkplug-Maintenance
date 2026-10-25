@@ -28,7 +28,7 @@ Saat foto diunggah, gauge/label dicari, atau angka dibaca, popup **Analisis foto
 
 Pada Ringkasan, pilihan **Semua line** menampilkan persentase gabungan dan pie kecil untuk setiap line aktif di Pengaturan. Persentase gabungan dihitung dari jumlah pemeriksaan selesai ÷ jumlah seluruh pemeriksaan pada jadwal server yang sama. Indikator **Line belum selesai inspeksi** menampilkan jumlah line yang masih mempunyai pekerjaan, di samping Selesai dan Tersisa. Klik pie line untuk memfilter. Menambah/menghapus line di Pengaturan memperbarui pilihan dan pie tanpa batas tetap17 line. Bila sebagian data gagal atau jadwal berganti, persentase gabungan menunggu data lengkap; gunakan Coba lagi bila diperlukan.
 
-Pada monitor desktop, filter, progres, KPI, grafik hasil per hari dan tabel bulanan ditempatkan dalam satu viewport. Tabel panjang dan daftar pie dapat digulir di dalam panelnya. Tablet/HP serta layar yang sangat pendek memakai alur gulir biasa. Bulan ditampilkan dalam bahasa Indonesia; **Pilih bulan lain…** membuka pilihan nama bulan dan tahun untuk periode lama.
+Pada monitor desktop, filter, progres, KPI, grafik hasil per hari dan tabel bulanan disusun rapat dalam satu viewport. Semua baris dan pie line tetap ditampilkan tanpa panel gulir; susunan enam line dan sembilan pemeriksaan telah diuji sampai viewport 1280×600. Tablet/HP memakai alur halaman biasa. Pesan kesalahan dan detail bantuan yang dibuka tetap dapat dibaca meskipun menambah tinggi halaman. Bulan ditampilkan dalam bahasa Indonesia; **Pilih bulan lain…** membuka pilihan nama bulan dan tahun untuk periode lama.
 
 ## Waktu mulai shift
 

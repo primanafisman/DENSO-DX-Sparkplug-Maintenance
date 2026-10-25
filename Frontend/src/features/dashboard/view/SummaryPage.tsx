@@ -175,7 +175,7 @@ export function SummaryPage() {
             </Card>
           </div>
           <div className="summary-detail-grid">
-            <Card>
+            <Card className="summary-chart-card">
               <div className="row between">
                 <h2 className="section-icon-title">
                   <BarChart3 size={20} /> Hasil per hari
@@ -203,10 +203,10 @@ export function SummaryPage() {
                 <Empty title="Belum ada catatan bulan ini" />
               )}
             </Card>
-            <Card>
+            <Card className="summary-table-card">
               <h2>Ringkasan pemeriksaan</h2>
-              <div className="table-scroll summary-group-scroll">
-                <table>
+              <div className="summary-results">
+                <table aria-label="Ringkasan pemeriksaan bulanan">
                   <thead>
                     <tr>
                       <th>Pemeriksaan</th>
