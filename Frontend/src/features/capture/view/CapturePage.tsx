@@ -6,16 +6,8 @@ import { useCamera } from '../controller/useCamera';
 import { CameraGuide } from './CameraGuide';
 import { useInspectionGuidance } from '../../maintenance/controller/useInspectionGuidance';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
-import { Card, Button, Loading, ErrorDialog } from '../../../shared/components/ui';
-const stages = {
-  idle: 'Siap mengambil foto',
-  uploading: 'Mengunggah foto…',
-  locating: 'Mencari gauge dan label…',
-  queued: 'Menunggu reader lokal…',
-  reading: 'Membaca angka / jarum…',
-  ready: 'Hasil siap ditinjau',
-  error: 'Perlu diperiksa',
-};
+import { Card, Button, ErrorDialog } from '../../../shared/components/ui';
+import { isAnalyzing } from '../model/analysisStage';
 export function CapturePage() {
   const { state, engine } = useCapture(),
     guidance = useInspectionGuidance(),
@@ -26,7 +18,7 @@ export function CapturePage() {
     [dims, setDims] = useState({ width: 1080, height: 1920 }),
     [params] = useSearchParams(),
     auto = useRef(false);
-  const busy = ['uploading', 'locating', 'queued', 'reading'].includes(state.stage);
+  const busy = isAnalyzing(state.stage);
   useEffect(() => {
     if (guidance.understood && params.get('source') === 'camera' && !auto.current) {
       auto.current = true;
@@ -43,7 +35,7 @@ export function CapturePage() {
   return (
     <>
       <PageHeader title="Foto alat ukur" />
-      <Card>
+      <Card className="capture-card">
         <input
           ref={upload}
           type="file"
@@ -130,15 +122,6 @@ export function CapturePage() {
             </div>
             <Button variant="ghost" disabled={busy} onClick={() => native.current?.click()}>
               Kamera bawaan HP
-            </Button>
-          </div>
-        )}
-        {busy && (
-          <div className="analysis-progress">
-            <Loading label={stages[state.stage]} />
-
-            <Button variant="secondary" onClick={() => engine.invalidate()}>
-              Batalkan analisis
             </Button>
           </div>
         )}

@@ -115,8 +115,10 @@ body {
   max-width: 1720px;
   padding: 20px 26px 28px;
 }
-.page-heading {
-  margin-bottom: 16px;
+.page-heading,
+.summary-page .page-heading {
+  min-height: 48px;
+  margin: 0 0 16px;
 }
 .page-title {
   display: flex;
@@ -608,14 +610,6 @@ tbody tr:hover {
   }
 }
 @media (min-width: 1101px) and (max-height: 850px) {
-  .page-content:has(> .summary-page) {
-    padding-top: 14px;
-    padding-bottom: 14px;
-  }
-  .summary-page .page-heading {
-    min-height: 42px;
-    margin-bottom: 10px;
-  }
   .summary-page .filter-bar {
     padding: 8px 12px;
     margin-bottom: 10px;

@@ -147,7 +147,7 @@ Configured `lines` are trimmed nonempty names (max64 characters), unique ignorin
 
 The frontend always calls ordinary `/maintenance/report`, `/maintenance/spc`, and `/maintenance/spc/subgroups` routes. Old `demo` URL flags are ignored and stripped from requests. Illustrative local records use `origin.kind=illustrative_local_import`, explicit Data uji X/R labels, distinct Type/cohort identities, no fabricated photo actions, and cannot become production baselines. CSV includes `data_origin`. The development-only private import/rollback tool is documented in the Backend integration guide.
 
-Capture state remains in browser memory while authenticated routes change. Resume uses the same photo/ROI/result/review and completed samples; logout, expired session, completion, reload or an explicitly confirmed new run clears it. A background CV result never redirects an operator away from another menu.
+Capture state remains in browser memory while authenticated routes change after analysis. Resume uses the same photo/ROI/result/review and completed samples; logout, expired session, completion, reload or an explicitly confirmed new run clears it. During uploading/locating/queued/reading, CaptureWorkspaceProvider presents one blocking modal and makes the shell inert. CaptureNavigationGuard uses the live capture store to reject router transitions while busy; the ready-to-result transition is allowed synchronously. Cancel aborts the generation and releases the modal/focus/scroll lock. This blocks app navigation, not operating-system or other browser tabs.
 
 ## Acceptance criteria and monthly display (2026-10-25)
 

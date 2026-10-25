@@ -22,6 +22,7 @@ import { useSession } from '../features/auth/controller/useSession';
 import { LoginPage } from '../features/auth/view/LoginPage';
 import { AppShell } from '../shared/components/layout/AppShell';
 import { CaptureWorkspaceProvider } from '../features/capture/controller/captureWorkspace';
+import { CaptureNavigationGuard } from '../features/capture/controller/CaptureNavigationGuard';
 
 import { Loading, Empty } from '../shared/components/ui';
 export function RequireRole({ roles }: { roles?: Role[] }) {
@@ -45,6 +46,7 @@ export const router = createBrowserRouter([
       {
         element: (
           <CaptureWorkspaceProvider>
+            <CaptureNavigationGuard />
             <AppShell serverClock={<ServerClock />} />
           </CaptureWorkspaceProvider>
         ),

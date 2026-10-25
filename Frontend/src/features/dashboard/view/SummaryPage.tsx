@@ -49,9 +49,7 @@ export function SummaryPage() {
           <strong>{schedule?.slot_label ?? 'Memuat shift…'}</strong>
           <span>{current.activeLine ? 'Line ' + current.activeLine : 'Semua line'}</span>
         </div>
-        {!current.activeLine ? (
-          <p className="muted">Pilih line</p>
-        ) : (
+        {
           <>
             <ProgressRing
               completed={current.data?.completed_count ?? 0}
@@ -88,6 +86,52 @@ export function SummaryPage() {
               </div>
             )}
           </>
+        }
+        {!current.activeLine && current.perLine.length > 0 && (
+          <div className="line-workload">
+            <ul className="line-progress-grid" aria-label="Progres per line">
+              {current.perLine.map((item) => (
+                <li key={item.line}>
+                  <button
+                    aria-label={'Lihat Line ' + item.line}
+                    onClick={() => filters.change('line', item.line)}
+                  >
+                    <ProgressRing
+                      completed={item.completed}
+                      pending={item.pending}
+                      ready={item.ready}
+                      label={'Progres Line ' + item.line}
+                    />
+                    <strong>Line {item.line}</strong>
+                    <small>
+                      {item.unavailable
+                        ? 'Tidak tersedia'
+                        : item.ready
+                          ? item.pending
+                            ? item.pending + ' tersisa'
+                            : item.completed
+                              ? 'Selesai'
+                              : 'Tidak ada jadwal'
+                          : 'Memuat…'}
+                    </small>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {current.countsReady && (
+              <p className="pending-lines">
+                {current.perLine.some((item) => item.pending > 0)
+                  ? 'Belum selesai: Line ' +
+                    current.perLine
+                      .filter((item) => item.pending > 0)
+                      .map((item) => item.line)
+                      .join(', ')
+                  : current.data!.completed_count
+                    ? 'Semua line selesai'
+                    : 'Tidak ada jadwal aktif'}
+              </p>
+            )}
+          </div>
         )}
       </section>
       <ErrorMessage error={filters.error ?? query.error} />

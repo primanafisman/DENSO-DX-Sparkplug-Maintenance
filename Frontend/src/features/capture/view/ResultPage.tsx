@@ -31,15 +31,9 @@ export function ResultPage() {
     <>
       <PageHeader title="Hasil pembacaan" />
       <Card>
-        {busy ? (
-          <Loading
-            label={
-              state.manualPreparing
-                ? 'Menyiapkan input manual…'
-                : 'Menganalisis ulang crop / profil…'
-            }
-          />
-        ) : (
+        {state.manualPreparing ? (
+          <Loading label="Menyiapkan input manual…" />
+        ) : busy ? null : (
           <>
             <div className={'reading-value ' + (!valid ? 'unread' : '')}>
               {valid

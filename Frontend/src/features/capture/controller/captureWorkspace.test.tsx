@@ -1,6 +1,14 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react';
-import { Link, Route, Routes, useLocation } from 'react-router-dom';
+import { act, fireEvent, screen, waitFor, render } from '@testing-library/react';
+import {
+  Link,
+  Route,
+  Routes,
+  useLocation,
+  createMemoryRouter,
+  RouterProvider,
+} from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderApp } from '../../../test/render';
 import { fixtureDefinition, fixtureInstrument } from '../../../test/fixtures';
 import { useInspectionStore } from '../../maintenance/model/inspectionStore';
@@ -8,6 +16,7 @@ import { captureStore } from '../model/captureStore';
 import { captureApi } from '../model/api';
 import { CaptureWorkspaceProvider, captureResumePath } from './captureWorkspace';
 import { useCapture } from './captureContext';
+import { CaptureNavigationGuard } from './CaptureNavigationGuard';
 import { ConfirmPage } from '../view/ConfirmPage';
 import type { ConfirmedReading, Job, MaintenanceRecord } from '../../../shared/lib/contracts';
 
@@ -50,10 +59,17 @@ function Probe() {
     </>
   );
 }
-function Workspace({ confirmation = false }: { confirmation?: boolean }) {
+function Workspace({
+  confirmation = false,
+  guard = false,
+}: {
+  confirmation?: boolean;
+  guard?: boolean;
+}) {
   const location = useLocation();
   return (
     <CaptureWorkspaceProvider>
+      {guard && <CaptureNavigationGuard />}
       <Link to="/riwayat">History</Link>
       <Link to={confirmation ? '/pemeriksaan/konfirmasi' : '/pemeriksaan/hasil'}>Resume</Link>
       <output data-testid="location">{location.pathname}</output>
@@ -181,7 +197,7 @@ it('retains the photo, ROI, analysis, confirmed samples and typed value while sw
   expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:photo');
 });
 
-it('finishes background analysis without taking the operator away from another menu', async () => {
+it('blocks app menus during analysis and automatically advances after the result is ready', async () => {
   let finish!: (value: Job) => void;
   vi.mocked(captureApi.submit).mockImplementationOnce(
     () =>
@@ -192,13 +208,119 @@ it('finishes background analysis without taking the operator away from another m
   renderApp(<Workspace />, '/pemeriksaan/foto');
   fireEvent.click(screen.getByRole('button', { name: 'Upload' }));
   await waitFor(() => expect(captureApi.submit).toHaveBeenCalledOnce());
-  fireEvent.click(screen.getByRole('link', { name: 'History' }));
+  const popup = screen.getByRole('dialog', { name: 'Analisis foto' });
+  expect(popup).toHaveTextContent('Menunggu reader lokal…');
+  const history = screen.getByRole('link', { name: 'History', hidden: true });
+  expect(history.closest('[inert]')).not.toBeNull();
+  fireEvent.click(history);
+  expect(screen.getByTestId('location')).toHaveTextContent('/pemeriksaan/foto');
   await act(async () => {
     finish(job);
   });
   await waitFor(() => expect(captureStore.getState().result?.analysis_id).toBe('a'));
-  expect(screen.getByTestId('location')).toHaveTextContent('/riwayat');
+  expect(screen.getByTestId('location')).toHaveTextContent('/pemeriksaan/hasil');
+  expect(screen.queryByRole('dialog', { name: 'Analisis foto' })).not.toBeInTheDocument();
   expect(captureResumePath(captureStore.getState())).toBe('/pemeriksaan/hasil');
+});
+
+it('cancel releases the modal lock, focus and scroll, and ignores late analysis responses', async () => {
+  let finish!: (value: Job) => void;
+  vi.mocked(captureApi.submit).mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  renderApp(<Workspace />, '/pemeriksaan/foto');
+  const upload = screen.getByRole('button', { name: 'Upload' });
+  upload.focus();
+  fireEvent.click(upload);
+  await waitFor(() => expect(captureApi.submit).toHaveBeenCalledOnce());
+  const cancel = screen.getByRole('button', { name: 'Batalkan analisis' });
+  expect(cancel).toHaveFocus();
+  expect(document.body.style.overflow).toBe('hidden');
+  fireEvent.keyDown(cancel, { key: 'Tab', shiftKey: true });
+  expect(cancel).toHaveFocus();
+  fireEvent.keyDown(cancel, { key: 'Escape' });
+  expect(screen.getByRole('dialog', { name: 'Analisis foto' })).toBeVisible();
+  fireEvent.click(cancel);
+  expect(screen.queryByRole('dialog', { name: 'Analisis foto' })).not.toBeInTheDocument();
+  expect(upload).toHaveFocus();
+  expect(document.body.style.overflow).toBe('');
+  fireEvent.click(screen.getByRole('link', { name: 'History' }));
+  expect(screen.getByTestId('location')).toHaveTextContent('/riwayat');
+  await act(async () => {
+    finish(job);
+  });
+  expect(captureStore.getState().result).toBeNull();
+  expect(screen.getByTestId('location')).toHaveTextContent('/riwayat');
+});
+
+it('router back navigation is blocked during work but ready auto-navigation and menu changes are allowed', async () => {
+  let finish!: (value: Job) => void;
+  vi.mocked(captureApi.submit).mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const router = createMemoryRouter([{ path: '*', element: <Workspace guard /> }], {
+    initialEntries: ['/riwayat', '/pemeriksaan/foto'],
+    initialIndex: 1,
+  });
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const view = render(
+    <QueryClientProvider client={client}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Upload' }));
+  await waitFor(() => expect(captureApi.submit).toHaveBeenCalledOnce());
+  await act(async () => {
+    await router.navigate(-1);
+  });
+  expect(router.state.location.pathname).toBe('/pemeriksaan/foto');
+  expect(screen.getByRole('dialog', { name: 'Analisis foto' })).toBeVisible();
+  await act(async () => {
+    finish(job);
+  });
+  await waitFor(() => expect(router.state.location.pathname).toBe('/pemeriksaan/hasil'));
+  fireEvent.click(screen.getByRole('link', { name: 'History' }));
+  expect(router.state.location.pathname).toBe('/riwayat');
+  expect(captureStore.getState().result?.analysis_id).toBe('a');
+  view.unmount();
+  router.dispose();
+});
+
+it('unmounting a busy workspace releases the modal scroll lock and aborts stale work', async () => {
+  let finish!: (value: Job) => void;
+  vi.mocked(captureApi.submit).mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const view = renderApp(<Workspace />, '/pemeriksaan/foto');
+  fireEvent.click(screen.getByRole('button', { name: 'Upload' }));
+  await waitFor(() => expect(captureApi.submit).toHaveBeenCalledOnce());
+  expect(document.body.style.overflow).toBe('hidden');
+  view.unmount();
+  expect(document.body.style.overflow).toBe('');
+  await act(async () => {
+    finish(job);
+  });
+  expect(captureStore.getState().result).toBeNull();
+});
+
+it('a failed analysis releases the global modal and allows menu navigation', async () => {
+  vi.mocked(captureApi.submit).mockRejectedValueOnce(new Error('Reader tidak tersedia'));
+  renderApp(<Workspace />, '/pemeriksaan/foto');
+  fireEvent.click(screen.getByRole('button', { name: 'Upload' }));
+  await waitFor(() => expect(captureStore.getState().stage).toBe('error'));
+  expect(screen.queryByRole('dialog', { name: 'Analisis foto' })).not.toBeInTheDocument();
+  expect(document.body.style.overflow).toBe('');
+  fireEvent.click(screen.getByRole('link', { name: 'History' }));
+  expect(screen.getByTestId('location')).toHaveTextContent('/riwayat');
 });
 
 it('new sessions cancel old work synchronously and late responses cannot restore old evidence', async () => {

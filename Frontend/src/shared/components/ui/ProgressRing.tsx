@@ -2,10 +2,12 @@ export function ProgressRing({
   completed,
   pending,
   ready,
+  label = 'Progres pemeriksaan',
 }: {
   completed: number;
   pending: number;
   ready: boolean;
+  label?: string;
 }) {
   const valid =
     ready &&
@@ -19,11 +21,7 @@ export function ProgressRing({
     <div
       className="progress-ring"
       role="img"
-      aria-label={
-        percentage === null
-          ? 'Progres pemeriksaan belum tersedia'
-          : `Progres pemeriksaan ${percentage}%`
-      }
+      aria-label={percentage === null ? `${label} belum tersedia` : `${label} ${percentage}%`}
     >
       <svg viewBox="0 0 60 60" aria-hidden="true">
         <circle className="progress-ring-track" cx="30" cy="30" r="25" />

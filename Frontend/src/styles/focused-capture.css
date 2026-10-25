@@ -1,0 +1,153 @@
+/* Keep the content origin stable between short dashboards, long tables and modal states. */
+html {
+  scrollbar-gutter: stable;
+}
+.current-workload > .line-workload {
+  flex: 1 0 100%;
+  min-width: 0;
+  border-top: 1px solid #ffffff20;
+  padding-top: 12px;
+}
+.line-progress-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 170px;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+.line-progress-grid button {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 3px 9px;
+  width: 100%;
+  min-height: 74px;
+  padding: 9px;
+  border: 1px solid #ffffff20;
+  border-radius: 12px;
+  color: #fff;
+  background: #ffffff08;
+  text-align: left;
+  cursor: pointer;
+}
+.line-progress-grid button:hover,
+.line-progress-grid button:focus-visible {
+  border-color: #ff8590;
+  background: #ffffff13;
+}
+.line-progress-grid .progress-ring {
+  grid-row: span 2;
+  margin: 0;
+  width: 46px;
+  height: 46px;
+  flex-basis: 46px;
+}
+.line-progress-grid .progress-ring > strong {
+  font-size: 0.7rem;
+}
+.line-progress-grid button > strong {
+  font-size: 0.83rem;
+}
+.line-progress-grid small {
+  font-size: 0.68rem;
+  color: #d4d6e1;
+}
+.pending-lines {
+  margin: 10px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  max-height: 4.5em;
+  overflow: auto;
+  color: #f7cdd2;
+}
+.capture-card {
+  width: 100%;
+}
+.capture-intro {
+  max-width: 560px;
+  margin: 8px auto;
+  padding: clamp(12px, 3dvh, 28px) 12px;
+  gap: 12px;
+}
+.capture-intro > svg {
+  width: 36px;
+  height: 36px;
+  color: var(--primary);
+}
+.capture-intro > p {
+  margin: 0 auto 4px;
+}
+.capture-intro h2 {
+  font-size: 1.15rem;
+}
+.camera-preview {
+  width: min(100%, 640px);
+  height: clamp(180px, calc(100dvh - 350px), 500px);
+  max-height: 58dvh;
+  aspect-ratio: auto;
+}
+.camera-preview video {
+  display: block;
+  object-fit: contain;
+}
+.capture-card .camera-message {
+  margin: 9px 0;
+  font-size: 0.82rem;
+}
+.capture-card .workflow-actions {
+  position: static;
+  flex-wrap: wrap;
+  box-shadow: none;
+  border: 0;
+  padding: 10px 0;
+  margin-bottom: 0;
+}
+.analysis-backdrop {
+  z-index: 200;
+  background: #171b32a8;
+  backdrop-filter: blur(5px);
+}
+.analysis-dialog {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  width: min(420px, 100%);
+  text-align: center;
+  border: 1px solid #fff;
+  border-radius: 22px;
+  box-shadow: 0 22px 70px #11152c45;
+}
+.analysis-dialog h2,
+.analysis-dialog .loading {
+  margin: 0;
+}
+.analysis-dialog .loading {
+  padding: 12px 0;
+}
+.analysis-symbol {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+  color: var(--primary);
+  background: linear-gradient(135deg, #fff4f5, #ffe0e4);
+  box-shadow: 0 5px 0 #e7bbc1;
+}
+@media (max-width: 760px) {
+  .line-progress-grid {
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  }
+  .camera-preview {
+    height: clamp(180px, calc(100dvh - 320px), 480px);
+  }
+}
+@media print {
+  .analysis-backdrop {
+    display: none;
+  }
+}

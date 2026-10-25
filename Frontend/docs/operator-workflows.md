@@ -22,6 +22,14 @@ Pilih line/sampler dan Type produk sebelum mulai. Pahami popup standar/metode, k
 
 Saat berpindah ke Ringkasan, Riwayat atau Pengaturan, progres pemeriksaan tetap berada dalam memori. Kembali ke Pemeriksaan dan pilih Lanjutkan pemeriksaan. Foto, ROI, hasil, angka yang sedang ditinjau dan sampel terkonfirmasi diteruskan. Memulai pemeriksaan baru meminta konfirmasi penggantian progres. Muat ulang browser, keluar/login habis, atau penyelesaian pemeriksaan menghapus draft dari memori; draft belum menjadi catatan produksi sebelum disimpan.
 
+Saat foto diunggah, gauge/label dicari, atau angka dibaca, popup **Analisis foto** mengunci menu dan tombol kembali aplikasi. Tekan **Batalkan analisis** untuk menghentikan dan membuka kembali menu. Hasil siap langsung membuka langkah Hasil baca; respons terlambat dari analisis yang dibatalkan diabaikan.
+
+## Progres semua line
+
+Pada Ringkasan, pilihan **Semua line** menampilkan persentase gabungan dan pie kecil untuk setiap line aktif di Pengaturan. Persentase gabungan dihitung dari jumlah pemeriksaan selesai ÷ jumlah seluruh pemeriksaan pada jadwal server yang sama. Daftar **Belum selesai** ada di bawah pie. Klik pie line untuk memfilter. Menambah/menghapus line di Pengaturan memperbarui pilihan dan pie tanpa batas tetap17 line. Bila sebagian data gagal atau jadwal berganti, persentase gabungan menunggu data lengkap; gunakan Coba lagi bila diperlukan.
+
+Pratinjau kamera dibatasi tinggi layar. Border gauge dan label tetap mengikuti bagian video yang terlihat tanpa memotong foto sumber. Kamera bawaan HP mengikuti tampilan sistem HP.
+
 ## Riwayat dan grafik
 
 Tabel bulanan memakai satu baris per nomor pemeriksaan dan judul saja. Hasil dari beberapa shift/alat tetap tersimpan di dalam sel tanggal yang sama. Klik sel untuk melihat setiap kejadian beserta waktu, shift, nilai dan satuannya.
