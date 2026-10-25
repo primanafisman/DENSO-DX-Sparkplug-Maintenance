@@ -62,7 +62,7 @@ it('Admin confirms deletion without a reason, uses CSRF, closes and invalidates 
     expect(invalidate).toHaveBeenCalledWith({ queryKey: [key] });
 });
 
-it('failed deletion preserves open details and inline confirmation for retry', async () => {
+it('failed deletion preserves details behind a confirmation popup for retry', async () => {
   session();
   server.use(
     http.delete('/api/v1/maintenance/records/record-one', () =>
@@ -83,7 +83,10 @@ it('failed deletion preserves open details and inline confirmation for retry', a
   fireEvent.click(screen.getByRole('button', { name: 'Ya, hapus catatan' }));
   expect(await screen.findByText('Server belum dapat memproses permintaan.')).toBeVisible();
   expect(close).not.toHaveBeenCalled();
-  expect(screen.getByRole('dialog', { name: 'Rincian pemeriksaan' })).toBeVisible();
+  expect(
+    screen.getByRole('dialog', { name: 'Rincian pemeriksaan', hidden: true }),
+  ).toBeInTheDocument();
+  expect(screen.getByRole('alertdialog', { name: 'Hapus catatan pemeriksaan ini?' })).toBeVisible();
   expect(screen.getByRole('button', { name: 'Ya, hapus catatan' })).toBeEnabled();
 });
 

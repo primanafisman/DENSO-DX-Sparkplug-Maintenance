@@ -3,6 +3,9 @@ export const settingsSchema = z.object({
   lines: z.array(z.string()),
   allowed_samplers: z.array(z.string()),
   night_rollover_hour: z.number().int(),
+  shift_schedule: z
+    .object({ day: z.tuple([z.string(), z.string()]), night: z.tuple([z.string(), z.string()]) })
+    .optional(),
   product_types: z
     .array(
       z.object({

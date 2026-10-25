@@ -8,7 +8,7 @@ Visual/functional menerima OK/NG saja. Numeric membutuhkan confirmed reading den
 
 Satu analysis dan satu foto sumber per alat hanya dapat mengisi satu pengukuran. Mengganti sample_key/confirmation_id atau mengubah crop tidak membuat sampel baru. Ambil foto baru untuk n2, n3, n4 dan setiap tahap before/after; retry pengiriman yang sama tetap idempotent.
 
-Tanggal produksi dihitung WIB (Asia/Jakarta). Default night rollover12:00 adalah pengaturan lokal yang harus disesuaikan prosedur lapangan; pengecekan actual time menyilang tengah malam memakai production date malam sebelumnya. Settings menyimpan daftar line/sampler dan rollover hour; tidak mengubah context foto yang telah dianalisis.
+Tanggal produksi dihitung WIB (Asia/Jakarta). Jika shift_schedule dikonfigurasi, awal produksi mengikuti sesi pertama Shift1 sampai ketelitian menit. Klien lama tanpa shift_schedule tetap memakai night_rollover_hour (default12). Context dan jadwal foto tidak diubah setelah upload. Lihat [jadwal shift yang dapat diatur](custom-shift-schedule.md) untuk bentuk payload, identitas slot tetap dan snapshot kejadian.
 
 Importer konfigurasi hanya membaca ekspor JSON yang dipilih operator, dengan dry-run default. Tidak membaca/memindahkan database PanelReader lama secara otomatis. Data pribadi/historical migration merupakan operasi terpisah.
 

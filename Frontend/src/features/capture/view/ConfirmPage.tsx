@@ -7,6 +7,7 @@ import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { Card, Field, Button, ErrorDialog, Badge } from '../../../shared/components/ui';
 import { number } from '../../../shared/lib/format';
 import { formatAcceptance } from '../../../shared/lib/acceptance';
+import { ConfirmationDialog } from '../../../shared/components/ui/ConfirmationDialog';
 export function ConfirmPage() {
   const { state, engine } = useCapture(),
     inspection = useInspection({ scheduleEnabled: false }),
@@ -25,6 +26,7 @@ export function ConfirmPage() {
     [identity, setIdentity] = useState(state.reviewDraft?.identity ?? false),
     [verified, setVerified] = useState(state.reviewDraft?.verified ?? false),
     [saving, setSaving] = useState(false),
+    [prompt, setPrompt] = useState<'reading' | 'record' | null>(null),
     [error, setError] = useState<unknown>(null);
   const d = inspection.draft;
   if (!state.result || !d?.definition || !state.instrument)
@@ -124,7 +126,10 @@ export function ConfirmPage() {
               <Link className="button button-secondary" to="/pemeriksaan/hasil">
                 Kembali
               </Link>
-              <Button onClick={confirm} disabled={!identity || !verified || !value || saving}>
+              <Button
+                onClick={() => setPrompt('reading')}
+                disabled={!identity || !verified || !value || saving}
+              >
                 {saving
                   ? 'Menyimpan bacaan…'
                   : state.pending
@@ -154,7 +159,7 @@ export function ConfirmPage() {
               ) : (
                 <Button
                   disabled={inspection.save.isPending || inspection.uncertain}
-                  onClick={() => inspection.save.mutate()}
+                  onClick={() => setPrompt('record')}
                 >
                   {inspection.save.isPending ? 'Menyimpan…' : 'Simpan pemeriksaan'}
                 </Button>
@@ -177,6 +182,23 @@ export function ConfirmPage() {
           )}
         </div>
       </Card>
+      {prompt && (
+        <ConfirmationDialog
+          title={prompt === 'reading' ? 'Konfirmasi hasil?' : 'Simpan pemeriksaan?'}
+          description={
+            prompt === 'reading'
+              ? `${state.instrument.name} · ${value} ${state.profile?.unit ?? ''}`
+              : d.definition.name
+          }
+          confirmLabel={prompt === 'reading' ? 'Ya, konfirmasi' : 'Ya, simpan'}
+          onCancel={() => setPrompt(null)}
+          onConfirm={() => {
+            if (prompt === 'reading') void confirm();
+            else inspection.save.mutate();
+            setPrompt(null);
+          }}
+        />
+      )}
       <ErrorDialog
         error={error ?? inspection.error}
         onClose={() => {

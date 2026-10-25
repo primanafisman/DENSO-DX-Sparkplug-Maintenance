@@ -94,6 +94,9 @@ it('visual samples must all be chosen and explicit save uses the frozen server c
   fireEvent.click(screen.getByRole('button', { name: 'Sampel 2 NG' }));
   fireEvent.click(screen.getByLabelText('Saya telah memeriksa seluruh hasil'));
   fireEvent.click(screen.getByRole('button', { name: 'Simpan pemeriksaan' }));
+  expect(saved).not.toHaveBeenCalled();
+  expect(screen.getByRole('alertdialog', { name: 'Simpan hasil pemeriksaan?' })).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: 'Ya, simpan' }));
   await waitFor(() => expect(saved).toHaveBeenCalled());
   expect(saved.mock.calls[0][0].context).toEqual(context);
   expect(saved.mock.calls[0][0].checked_at).toBe(schedule.server_time);

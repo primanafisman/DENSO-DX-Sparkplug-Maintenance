@@ -7,6 +7,8 @@ import { useCatalog } from '../../settings/controller/useSettings';
 import { equipmentFrequency } from '../model/equipmentOrder';
 import type { EquipmentSort, EquipmentSortKey } from '../model/equipmentOrder';
 import { EquipmentEditor } from './EquipmentEditor';
+import { ConfirmationDialog } from '../../../shared/components/ui/ConfirmationDialog';
+import type { EquipmentForm } from '../model/schemas';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import {
   Card,
@@ -20,11 +22,15 @@ import {
 export function EquipmentPage({ embedded = false }: { embedded?: boolean }) {
   const [q, setQ] = useState(''),
     [condition, setCondition] = useState(''),
-    [selected, setSelected] = useState<Instrument | null | undefined>(undefined);
+    [selected, setSelected] = useState<Instrument | null | undefined>(undefined),
+    [savePrompt, setSavePrompt] = useState<{ id?: string; values: EquipmentForm } | null>(null);
   const { user } = useSession(),
     catalog = useCatalog(true),
     definitions = catalog.data?.items ?? [],
-    equipment = useEquipment({ q, ...(condition ? { condition } : {}) }, definitions);
+    equipment = useEquipment(
+      { q, active: 'true', ...(condition ? { condition } : {}) },
+      definitions,
+    );
   const addAction = user?.role === 'Admin' && (
     <Button
       onClick={() => {
@@ -192,12 +198,17 @@ export function EquipmentPage({ embedded = false }: { embedded?: boolean }) {
               : undefined
           }
           onClose={() => setSelected(undefined)}
-          onSave={(values) =>
-            equipment.save.mutate(
-              { id: selected?.id, values },
-              { onSuccess: () => setSelected(undefined) },
-            )
-          }
+          onSave={(values) => setSavePrompt({ id: selected?.id, values })}
+        />
+      )}
+      {savePrompt && (
+        <ConfirmationDialog
+          title="Simpan peralatan?"
+          onCancel={() => setSavePrompt(null)}
+          onConfirm={() => {
+            equipment.save.mutate(savePrompt, { onSuccess: () => setSelected(undefined) });
+            setSavePrompt(null);
+          }}
         />
       )}
     </>

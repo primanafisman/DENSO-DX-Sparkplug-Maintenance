@@ -5372,6 +5372,34 @@
             "minimum": 1,
             "maximum": 23
           },
+          "shift_schedule": {
+            "type": "object",
+            "properties": {
+              "day": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                },
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "night": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            },
+            "required": [
+              "day",
+              "night"
+            ],
+            "additionalProperties": false
+          },
           "product_types": {
             "type": "array",
             "items": {
@@ -7086,6 +7114,34 @@
             "minimum": 1,
             "maximum": 23
           },
+          "shift_schedule": {
+            "type": "object",
+            "properties": {
+              "day": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                },
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "night": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
+                },
+                "minItems": 2,
+                "maxItems": 2
+              }
+            },
+            "required": [
+              "day",
+              "night"
+            ],
+            "additionalProperties": false
+          },
           "product_types": {
             "type": "array",
             "items": {
@@ -7516,6 +7572,9 @@
               "timezone"
             ]
           },
+          "occurrence_snapshot": {
+            "$ref": "#/components/schemas/MaintenanceOccurrence"
+          },
           "origin": {
             "$ref": "#/components/schemas/RecordOrigin"
           }
@@ -7694,6 +7753,29 @@
           "batch_id",
           "version",
           "source"
+        ]
+      },
+      "MaintenanceOccurrence": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "starts_at": {
+            "type": "string"
+          },
+          "next_starts_at": {
+            "type": "string"
+          },
+          "basis": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "starts_at",
+          "next_starts_at",
+          "basis"
         ]
       },
       "ReportScope": {

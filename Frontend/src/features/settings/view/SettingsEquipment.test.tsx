@@ -24,7 +24,7 @@ function setup(role = 'Admin') {
     ),
   );
 }
-it('equipment tab archives only persisted availability, keeps failed drafts and supports reactivation', async () => {
+it('equipment removal uses a popup, keeps failed drafts and removes the row after success', async () => {
   setup();
   let asset = fixtureInstrument(),
     fail = true;
@@ -54,22 +54,21 @@ it('equipment tab archives only persisted availability, keeps failed drafts and 
   });
   fireEvent.click(edit.getByRole('button', { name: 'Hapus dari pilihan' }));
   expect(writes).toEqual([]);
-  fireEvent.click(edit.getByRole('button', { name: 'Batal hapus' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Batal hapus' }));
   expect(edit.getByLabelText('Nama alat')).toHaveValue('Draft yang belum disimpan');
   fireEvent.click(edit.getByRole('button', { name: 'Hapus dari pilihan' }));
-  fireEvent.click(edit.getByRole('button', { name: 'Ya, hapus dari pilihan' }));
-  expect(await edit.findByText('Server belum dapat memproses permintaan.')).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: 'Ya, hapus dari pilihan' }));
+  expect(await screen.findByText('Server belum dapat memproses permintaan.')).toBeVisible();
   expect(edit.getByLabelText('Nama alat')).toHaveValue('Draft yang belum disimpan');
   fail = false;
-  fireEvent.click(edit.getByRole('button', { name: 'Ya, hapus dari pilihan' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Ya, hapus dari pilihan' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   expect(writes).toEqual([{ active: false }, { active: false }]);
-  expect(await screen.findByText('Nonaktif')).toBeVisible();
-  fireEvent.click(screen.getByRole('button', { name: 'Edit Kaliper' }));
-  const archived = within(screen.getByRole('dialog'));
-  fireEvent.click(archived.getByRole('button', { name: 'Aktifkan kembali' }));
-  fireEvent.click(archived.getByRole('button', { name: 'Ya, aktifkan kembali' }));
-  await waitFor(() => expect(writes.at(-1)).toEqual({ active: true }));
+  await waitFor(() =>
+    expect(screen.queryByRole('button', { name: 'Edit Kaliper' })).not.toBeInTheDocument(),
+  );
+  expect(screen.queryByText('Nonaktif')).not.toBeInTheDocument();
+  expect(asset.active).toBe(false);
   expect(asset.name).toBe('Kaliper');
 }, 10000);
 it('read-only users can view the merged equipment list without editing or archive controls', async () => {

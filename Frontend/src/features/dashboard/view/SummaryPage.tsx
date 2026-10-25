@@ -10,6 +10,7 @@ import {
   Gauge,
   TrendingUp,
   ScanLine,
+  Factory,
   Layers3,
   BarChart3,
 } from 'lucide-react';
@@ -72,6 +73,20 @@ export function SummaryPage() {
                 <Clock3 size={17} /> Tersisa
               </span>
             </div>
+            <div
+              className="workload-count workload-lines"
+              role="group"
+              aria-label="Line belum selesai inspeksi"
+            >
+              <strong>
+                {current.countsReady
+                  ? current.perLine.filter((item) => item.pending > 0).length
+                  : '—'}
+              </strong>
+              <span>
+                <Factory size={17} /> Line belum selesai inspeksi
+              </span>
+            </div>
             {(current.isFetching || current.staleOccurrence) && (
               <span className="muted" role="status">
                 Memperbarui jadwal…
@@ -118,19 +133,6 @@ export function SummaryPage() {
                 </li>
               ))}
             </ul>
-            {current.countsReady && (
-              <p className="pending-lines">
-                {current.perLine.some((item) => item.pending > 0)
-                  ? 'Belum selesai: Line ' +
-                    current.perLine
-                      .filter((item) => item.pending > 0)
-                      .map((item) => item.line)
-                      .join(', ')
-                  : current.data!.completed_count
-                    ? 'Semua line selesai'
-                    : 'Tidak ada jadwal aktif'}
-              </p>
-            )}
           </div>
         )}
       </section>

@@ -5,6 +5,31 @@ import { server } from '../../../test/server';
 import { renderApp } from '../../../test/render';
 import { envelope, fixtureInstrument, fixtureDefinition } from '../../../test/fixtures';
 import { EquipmentPage } from './EquipmentPage';
+it('removed equipment is absent from the current table even when a legacy response includes it', async () => {
+  server.use(
+    http.get('/api/v1/auth/me', () =>
+      HttpResponse.json(envelope({ id: 'a', username: 'Admin', role: 'Admin' })),
+    ),
+    http.get('/api/v1/maintenance/catalog', () =>
+      HttpResponse.json(envelope({ items: [], count: 0 })),
+    ),
+    http.get('/api/v1/instruments', () =>
+      HttpResponse.json(
+        envelope({
+          items: [
+            fixtureInstrument(),
+            fixtureInstrument({ id: 'old', name: 'Removed gauge', active: false }),
+          ],
+          next_cursor: null,
+        }),
+      ),
+    ),
+  );
+  renderApp(<EquipmentPage />);
+  expect(await screen.findByText('Kaliper')).toBeVisible();
+  expect(screen.queryByText('Removed gauge')).not.toBeInTheDocument();
+  expect(screen.queryByText('Nonaktif')).not.toBeInTheDocument();
+});
 it('shows names alone and naturally sorts the complete registry without exposing private codes', async () => {
   server.use(
     http.get('/api/v1/auth/me', () =>
@@ -103,6 +128,7 @@ it('a denied update preserves the draft equipment name and condition fields', as
   fireEvent.click(await screen.findByRole('button', { name: 'Edit Kaliper' }));
   fireEvent.change(screen.getByLabelText('Nama alat'), { target: { value: 'Draft alat' } });
   fireEvent.click(screen.getByRole('button', { name: 'Simpan peralatan' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Ya, simpan' }));
   expect(await screen.findByRole('alert')).toHaveTextContent(
     'Akun Anda tidak memiliki izin untuk tindakan ini.',
   );

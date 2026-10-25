@@ -164,6 +164,39 @@ it('confirmed results display the frozen equipment bounds after the master chang
   expect(screen.getByText('4,400–4,600 mm')).toBeVisible();
   expect(screen.queryByText('4,700–4,900 mm')).not.toBeInTheDocument();
 });
+
+it('requires a popup confirmation before writing a reviewed photo measurement', async () => {
+  captureStore.setState({
+    photo: {
+      image_id: 'p',
+      source_hash: 'hash',
+      source_width: 800,
+      source_height: 1200,
+      preview_width: 800,
+      preview_height: 1200,
+      expires_at: 99999999999,
+      context: input.context,
+    },
+    instrument,
+    profile: instrument.profile,
+    result: job.results[0],
+    stage: 'ready',
+  });
+  const confirm = vi
+    .spyOn(captureApi, 'confirm')
+    .mockResolvedValue({ id: 'r', final_value: '4.500' } as ConfirmedReading);
+  renderApp(<Workspace confirmation />, '/pemeriksaan/konfirmasi');
+  fireEvent.click(screen.getByLabelText('Identitas alat dan pemeriksaan sudah benar'));
+  fireEvent.click(screen.getByLabelText('Nilai sesuai foto dan sudah saya periksa'));
+  fireEvent.click(screen.getByRole('button', { name: 'Konfirmasi hasil' }));
+  expect(confirm).not.toHaveBeenCalled();
+  expect(screen.getByRole('alertdialog', { name: 'Konfirmasi hasil?' })).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: 'Batal' }));
+  expect(confirm).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Konfirmasi hasil' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Ya, konfirmasi' }));
+  await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
+});
 afterEach(() => {
   useInspectionStore.getState().reset();
   captureStore.setState(captureStore.getInitialState(), true);

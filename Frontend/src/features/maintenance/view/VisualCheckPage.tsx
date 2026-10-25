@@ -4,9 +4,11 @@ import { useInspection } from '../controller/useInspection';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { Card, Button, Badge, ErrorDialog } from '../../../shared/components/ui';
 import { InspectionGuidance } from './InspectionGuidance';
+import { ConfirmationDialog } from '../../../shared/components/ui/ConfirmationDialog';
 export function VisualCheckPage() {
   const state = useInspection({ scheduleEnabled: false }),
-    [verified, setVerified] = useState(false);
+    [verified, setVerified] = useState(false),
+    [savePrompt, setSavePrompt] = useState(false);
   const d = state.draft;
   if (!d?.definition) return <Navigate to="/pemeriksaan" replace />;
   if (d.definition.input_method !== 'ok_ng') return <Navigate to="/pemeriksaan/foto" replace />;
@@ -71,13 +73,24 @@ export function VisualCheckPage() {
             </Link>
             <Button
               disabled={!complete || !verified || state.save.isPending || state.uncertain}
-              onClick={() => state.save.mutate()}
+              onClick={() => setSavePrompt(true)}
             >
               {state.save.isPending ? 'Menyimpan…' : 'Simpan pemeriksaan'}
             </Button>
           </div>
         </Card>
       </InspectionGuidance>
+      {savePrompt && (
+        <ConfirmationDialog
+          title="Simpan hasil pemeriksaan?"
+          description={d.definition.name}
+          onCancel={() => setSavePrompt(false)}
+          onConfirm={() => {
+            state.save.mutate();
+            setSavePrompt(false);
+          }}
+        />
+      )}
       <ErrorDialog error={state.error} onClose={state.clearError} />
     </>
   );

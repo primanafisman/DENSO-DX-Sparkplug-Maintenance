@@ -38,7 +38,7 @@ Backend menilai hasil dari `instrument_snapshot.acceptance_limits` pada foto yan
 
 Panggil `GET /api/v1/maintenance/schedule` setelah login, sebelum foto diunggah, dan saat kembali memulai pemeriksaan. Gunakan `server_time`, `production_date`, `shift` dan `slot_id` dari respons. Jam HP tidak menentukan shift. Batas awal WIB berlaku inklusif: Shift 1 07:45, Shift 1 12:45, Shift 2 21:15, Shift 2 01:15. Pilih batas terakhir yang sudah dilalui; contoh 00:30 masih slot Shift 2 21:15 hari sebelumnya, sedangkan 01:15 menjadi slot Shift 2 01:15.
 
-Tanggal produksi mengikuti konfigurasi `night_rollover_hour` yang sudah ada (default 12). Pada shift malam dini hari, tanggal produksi adalah hari produksi sebelumnya. UI menyegarkan jadwal setiap 30 detik ketika layar capture diam, lalu mengambil waktu server baru sebelum upload. Context dan waktu pemeriksaan foto kemudian dibekukan sampai konfirmasi agar pergantian shift saat analisis tidak mengubah bukti. Untuk pemeriksaan visual, ambil waktu server lagi sebelum penyimpanan. Jangan gunakan cache respons jadwal.
+Jika shift_schedule tersedia, tanggal produksi mengikuti sesi pertama Shift1 dalam WIB, termasuk menit; konfigurasi lama tetap memakai night_rollover_hour (default12). Waktu mulai di atas adalah nilai awal yang dapat diganti di Pengaturan. Gunakan label/start_time dari respons, bukan jam yang dikodekan dalam slot_id. UI React mengambil jadwal baru saat memulai pemeriksaan dan memperbarui cache setelah pengaturan berubah. Context foto dibekukan sampai konfirmasi agar perubahan sesi tidak memindahkan bukti. Lihat [kontrak jadwal](custom-shift-schedule.md).
 
 ## Touch crop dan capture kamera
 

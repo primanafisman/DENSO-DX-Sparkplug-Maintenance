@@ -8,12 +8,7 @@ import type { DefinitionForm } from '../model/schemas';
 import { useDefinitionEquipment } from '../controller/useSettings';
 import { Button, Field, ErrorMessage } from '../../../shared/components/ui';
 import { AvailabilityAction } from '../../../shared/components/ui/AvailabilityAction';
-const slots = [
-  ['day-0745', 'Shift 1 · 07:45'],
-  ['day-1245', 'Shift 1 · 12:45'],
-  ['night-2115', 'Shift 2 · 21:15'],
-  ['night-0115', 'Shift 2 · 01:15'],
-];
+import { shiftSlots } from '../model/shiftSchedule';
 const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 export function DefinitionEditor({
   definition: d,
@@ -26,6 +21,7 @@ export function DefinitionEditor({
   onSetActive,
   statusPending = false,
   statusError,
+  slots = shiftSlots(),
 }: {
   definition: MaintenanceDefinition;
   onClose: () => void;
@@ -37,6 +33,7 @@ export function DefinitionEditor({
   onSetActive?: (active: boolean) => void;
   statusPending?: boolean;
   statusError?: unknown;
+  slots?: string[][];
 }) {
   const form = useForm<DefinitionForm>({
     resolver: zodResolver(definitionFormSchema),

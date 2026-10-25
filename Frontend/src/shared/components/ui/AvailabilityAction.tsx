@@ -1,5 +1,6 @@
 import { Trash2, RotateCcw } from 'lucide-react';
-import { Button, ErrorMessage } from './index';
+import { Button } from './index';
+import { ConfirmationDialog } from './ConfirmationDialog';
 export function AvailabilityAction({
   name,
   active,
@@ -31,36 +32,17 @@ export function AvailabilityAction({
           {active ? 'Hapus dari pilihan' : 'Aktifkan kembali'}
         </Button>
       ) : (
-        <div className="availability-confirm" role="group" aria-label="Konfirmasi status pilihan">
-          <h3>
-            {active ? 'Hapus dari pilihan' : 'Aktifkan kembali'} · {name}
-          </h3>
-          <p>Data dan riwayat tetap tersimpan. Draf tidak ikut disimpan.</p>
-          <ErrorMessage error={error} />
-          <div className="actions">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => onPrompt(false)}
-              disabled={pending}
-            >
-              {active ? 'Batal hapus' : 'Batal aktivasi'}
-            </Button>
-            <Button
-              type="button"
-              variant={active ? 'danger' : 'primary'}
-              onClick={() => onConfirm(!active)}
-              disabled={pending}
-            >
-              <Icon size={18} />
-              {pending
-                ? 'Menyimpan status…'
-                : active
-                  ? 'Ya, hapus dari pilihan'
-                  : 'Ya, aktifkan kembali'}
-            </Button>
-          </div>
-        </div>
+        <ConfirmationDialog
+          title={(active ? 'Hapus dari pilihan' : 'Aktifkan kembali') + ' · ' + name}
+          description="Data dan riwayat tetap tersimpan. Draf tidak ikut disimpan."
+          confirmLabel={active ? 'Ya, hapus dari pilihan' : 'Ya, aktifkan kembali'}
+          cancelLabel={active ? 'Batal hapus' : 'Batal aktivasi'}
+          danger={active}
+          pending={pending}
+          error={error}
+          onCancel={() => onPrompt(false)}
+          onConfirm={() => onConfirm(!active)}
+        />
       )}
     </section>
   );

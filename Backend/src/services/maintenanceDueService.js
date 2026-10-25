@@ -1,25 +1,26 @@
 import {AppError} from '../errors/AppError.js';
-import {CHECK_SCHEDULE} from '../constants/checkSchedule.js';
+import {resolveCheckSchedule,DEFAULT_SHIFT_SCHEDULE} from '../constants/checkSchedule.js';
+import {DEFAULT_MAINTENANCE_SETTINGS} from '../constants/maintenanceSettings.js';
 import {scheduleAt} from './productionContextService.js';
 import {eligibleMachineEquipment,recordEquipmentId,operationalRecord} from './machineEquipmentOccurrence.js';
 const DAY=86400000;
 const dateAt=ms=>new Date(ms).toISOString().slice(0,10);
 const start=(date,time)=>Date.parse(date+'T'+time+':00+07:00');
 export function maintenanceOccurrence(def,timestamp,settings){
-  const now=new Date(timestamp).valueOf(),schedule=scheduleAt(now,settings),interval=def.intervals[0];
+  const now=new Date(timestamp).valueOf(),schedule=scheduleAt(now,settings),interval=def.intervals[0],times=settings?.shift_schedule??DEFAULT_SHIFT_SCHEDULE;
   const version=def.definition_version??1,prefix=def.id+':v'+version+':';
   if(def.occurrence_rule?.slot_ids?.length){
-    const events=[];for(let offset=-8;offset<=8;offset++){const date=dateAt(Date.parse(schedule.calendar_date+'T12:00:00Z')+offset*DAY);for(const slot of CHECK_SCHEDULE){if(!def.occurrence_rule.slot_ids.includes(slot.slot_id)||!def.shifts.includes(slot.shift))continue;const ms=start(date,slot.start_time),s=scheduleAt(ms,settings),weekday=new Date(s.production_date+'T12:00:00Z').getUTCDay()||7;if(interval==='weekly'&&def.occurrence_rule.weekdays?.length&&!def.occurrence_rule.weekdays.includes(weekday))continue;events.push(ms);}}
+    const events=[],slots=resolveCheckSchedule(settings);for(let offset=-8;offset<=8;offset++){const date=dateAt(Date.parse(schedule.calendar_date+'T12:00:00Z')+offset*DAY);for(const slot of slots){if(!def.occurrence_rule.slot_ids.includes(slot.slot_id)||!def.shifts.includes(slot.shift))continue;const ms=start(date,slot.start_time),s=scheduleAt(ms,settings),weekday=new Date(s.production_date+'T12:00:00Z').getUTCDay()||7;if(interval==='weekly'&&def.occurrence_rule.weekdays?.length&&!def.occurrence_rule.weekdays.includes(weekday))continue;events.push(ms);}}
     events.sort((a,b)=>a-b);const begin=events.findLast(ms=>ms<=now),end=events.find(ms=>ms>now);if(begin===undefined||end===undefined)throw new AppError(422,'SCHEDULE_RULE','No valid inspection slot for the selected shift and weekday.');
     return {key:prefix+'slot:'+new Date(begin).toISOString(),starts_at:new Date(begin).toISOString(),next_starts_at:new Date(end).toISOString(),basis:'configured_slots'};
   }
   let begin,end,basis=interval;
   if(interval==='per_shift'){
     // A shift spans both of its inspection slots, including midnight.
-    begin=schedule.shift==='day'?start(schedule.calendar_date,'07:45'):start(schedule.calendar_date,'21:15');if(begin>now)begin-=DAY;
-    end=schedule.shift==='day'?start(schedule.calendar_date,'21:15'):start(dateAt(begin+7*3600000+DAY),'07:45');
+    const boundaries=[-DAY,0,DAY].flatMap(offset=>[start(schedule.calendar_date,times.day[0])+offset,start(schedule.calendar_date,times.night[0])+offset]).sort((a,b)=>a-b);
+    begin=boundaries.findLast(ms=>ms<=now);end=boundaries.find(ms=>ms>now);
   }else if(interval==='daily'||interval==='weekly'){
-    begin=start(schedule.production_date,'07:45');if(interval==='weekly'){const weekday=new Date(schedule.production_date+'T12:00:00Z').getUTCDay()||7;begin-=(weekday-1)*DAY;}end=begin+(interval==='weekly'?7:1)*DAY;
+    begin=start(schedule.production_date,times.day[0]);if(interval==='weekly'){const weekday=new Date(schedule.production_date+'T12:00:00Z').getUTCDay()||7;begin-=(weekday-1)*DAY;}end=begin+(interval==='weekly'?7:1)*DAY;
   }else{
     // Legacy paper times are guidance. Until reviewed slots are configured,
     // repeated checks follow the four server sessions requested for this pilot.
@@ -31,7 +32,8 @@ export function recordCompletesOccurrence(d,record,occurrence,now,settings,produ
   if(!operationalRecord(record)||record.definition_id!==d.id||(record.definition_snapshot?.definition_version??record.definition_version)!==d.definition_version||d.inspection_target!=='machine'&&product_type_id&&record.context?.product_type_id!==product_type_id||!Number.isFinite(Date.parse(record.checked_at))||Date.parse(record.checked_at)>now||Date.parse(record.saved_at)>now||!['OK','NG'].includes(record.overall_status))return false;
   const outcomes=record.outcomes??[],required=d.samples.map(s=>s.id);
   if(outcomes.length!==required.length||new Set(outcomes.map(o=>o.sample_id)).size!==required.length||outcomes.some(o=>!required.includes(o.sample_id)||!['OK','NG'].includes(o.status)||d.input_method!=='ok_ng'&&!Number.isFinite(o.value)))return false;
-  return maintenanceOccurrence(d,record.checked_at,settings).key===occurrence.key;
+  const historical=record.occurrence_snapshot??maintenanceOccurrence(record.definition_snapshot??d,record.checked_at,record.settings_snapshot??DEFAULT_MAINTENANCE_SETTINGS);
+  return historical.key===occurrence.key;
 }
 export function createMaintenanceDueService({repositories,clock},definitions,getSettings){
   return async function due({line,product_type_id}){

@@ -26,7 +26,15 @@ Saat foto diunggah, gauge/label dicari, atau angka dibaca, popup **Analisis foto
 
 ## Progres semua line
 
-Pada Ringkasan, pilihan **Semua line** menampilkan persentase gabungan dan pie kecil untuk setiap line aktif di Pengaturan. Persentase gabungan dihitung dari jumlah pemeriksaan selesai ÷ jumlah seluruh pemeriksaan pada jadwal server yang sama. Daftar **Belum selesai** ada di bawah pie. Klik pie line untuk memfilter. Menambah/menghapus line di Pengaturan memperbarui pilihan dan pie tanpa batas tetap17 line. Bila sebagian data gagal atau jadwal berganti, persentase gabungan menunggu data lengkap; gunakan Coba lagi bila diperlukan.
+Pada Ringkasan, pilihan **Semua line** menampilkan persentase gabungan dan pie kecil untuk setiap line aktif di Pengaturan. Persentase gabungan dihitung dari jumlah pemeriksaan selesai ÷ jumlah seluruh pemeriksaan pada jadwal server yang sama. Indikator **Line belum selesai inspeksi** menampilkan jumlah line yang masih mempunyai pekerjaan, di samping Selesai dan Tersisa. Klik pie line untuk memfilter. Menambah/menghapus line di Pengaturan memperbarui pilihan dan pie tanpa batas tetap17 line. Bila sebagian data gagal atau jadwal berganti, persentase gabungan menunggu data lengkap; gunakan Coba lagi bila diperlukan.
+
+Pada monitor desktop, filter, progres, KPI, grafik hasil per hari dan tabel bulanan ditempatkan dalam satu viewport. Tabel panjang dan daftar pie dapat digulir di dalam panelnya. Tablet/HP serta layar yang sangat pendek memakai alur gulir biasa. Bulan ditampilkan dalam bahasa Indonesia; **Pilih bulan lain…** membuka pilihan nama bulan dan tahun untuk periode lama.
+
+## Waktu mulai shift
+
+Buka **Pengaturan → Line Produksi → Detail jadwal shift**. Isi Sesi1 dan Sesi2 untuk Shift1, lalu Sesi1 dan Sesi2 untuk Shift2, dalam WIB. Urutan waktunya mengikuti satu siklus24 jam; waktu Shift2 sesi2 boleh melewati tengah malam. Empat waktu wajib berbeda. Tekan **Simpan pengaturan** dan setujui popup. Jadwal server dan kewajiban maintenance langsung mengikuti waktu ini sesuai interval masing-masing pemeriksaan. Catatan lama tetap memakai jadwal saat disimpan. Jika jadwal berubah ketika sebuah foto masih terbuka dan kejadian pemeriksaannya berganti, ambil foto baru.
+
+Jumlah line dan sampler berada di sebelah kontrol tambah pada masing-masing judul. Menghapus line/sampler meminta popup persetujuan, kemudian simpan pengaturan. Menghapus peralatan atau pemeriksaan melalui Edit menghilangkan barisnya dari tabel saat berhasil; riwayatnya tetap ada. Persetujuan simpan hasil foto, hasil visual, master dan penghapusan memakai popup yang dapat dibatalkan sebelum penulisan.
 
 Pratinjau kamera dibatasi tinggi layar. Border gauge dan label tetap mengikuti bagian video yang terlihat tanpa memotong foto sumber. Kamera bawaan HP mengikuti tampilan sistem HP.
 

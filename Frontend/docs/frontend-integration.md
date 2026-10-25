@@ -149,6 +149,12 @@ The frontend always calls ordinary `/maintenance/report`, `/maintenance/spc`, an
 
 Capture state remains in browser memory while authenticated routes change after analysis. Resume uses the same photo/ROI/result/review and completed samples; logout, expired session, completion, reload or an explicitly confirmed new run clears it. During uploading/locating/queued/reading, CaptureWorkspaceProvider presents one blocking modal and makes the shell inert. CaptureNavigationGuard uses the live capture store to reject router transitions while busy; the ready-to-result transition is allowed synchronously. Cancel aborts the generation and releases the modal/focus/scroll lock. This blocks app navigation, not operating-system or other browser tabs.
 
+## Configurable operational starts and confirmation dialogs
+
+MaintenanceSettings now optionally includes shift_schedule:{day:[HH:mm,HH:mm],night:[HH:mm,HH:mm]}. GeneralSettings keeps the editor under collapsed Detail jadwal shift. The old night_rollover_hour is round-tripped for compatibility; configured production cycles use day[0] instead. Logical slot IDs stay constant while labels/times change; DefinitionEditor receives labels from current settings. See Backend/docs/integration/custom-shift-schedule.md for validation, recurrence and immutable snapshot behavior.
+
+Current equipment/inspection tables omit inactive rows while the API retains historical entities. Save/remove confirmations use shared ConfirmationDialog, portaled outside editor forms, with inert background, focus/scroll restoration and no write on cancel. Monthly filters use Indonesian labels plus a custom month/year picker so older periods remain accessible. Desktop Summary uses a bounded grid with in-panel scrolling for long tables/pie lists; mobile/tablet flow remains readable.
+
 ## Acceptance criteria and monthly display (2026-10-25)
 
 `Instrument.acceptance_limits` is optional/null or `{minimum: number|null, maximum: number|null}`. At least one bound is required when enabled, inside the physical profile range. Null follows the inspection definition. Numeric outcomes freeze the effective bounds and `acceptance_source: equipment | inspection` from the confirmed reading snapshot. The server judges inclusive boundaries; the frontend submits the reviewed value, not a client-calculated status. Changes to equipment must not rewrite prior criteria. See the Backend integration guide for difference measurements and SPC compatibility.

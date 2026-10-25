@@ -55,6 +55,31 @@ it('current server shift and due checks stay separate from historical monthly re
   expect(screen.getByText('OK', { selector: '.kpi-grid p' })).toBeVisible();
   expect(screen.getByText('NG', { selector: '.kpi-grid p' })).toBeVisible();
 });
+
+it('uses Indonesian month choices and a pending-line metric rather than a long line-name note', async () => {
+  setup(['1', '2', '3']);
+  renderApp(<SummaryPage />, '/?month=2026-10');
+  const month = await screen.findByRole('combobox', { name: 'Bulan' });
+  expect(within(month).getByRole('option', { name: 'Oktober 2026' })).toHaveValue('2026-10');
+  const active = screen.getByRole('region', { name: 'Jadwal aktif' });
+  const lines = await within(active).findByRole('group', { name: 'Line belum selesai inspeksi' });
+  expect(await within(lines).findByText('3')).toBeVisible();
+  expect(within(lines).getByText('Line belum selesai inspeksi')).toBeVisible();
+  expect(within(active).queryByText(/^Belum selesai:/)).not.toBeInTheDocument();
+});
+
+it('retains access to older months using Indonesian month and year choices', async () => {
+  setup();
+  renderApp(<SummaryPage />, '/?month=2026-10');
+  const month = await screen.findByRole('combobox', { name: 'Bulan' });
+  fireEvent.change(month, { target: { value: 'custom' } });
+  const picker = screen.getByRole('alertdialog', { name: 'Pilih bulan' });
+  fireEvent.change(within(picker).getByLabelText('Nama bulan'), { target: { value: '01' } });
+  fireEvent.change(within(picker).getByLabelText('Tahun'), { target: { value: '2024' } });
+  fireEvent.click(within(picker).getByRole('button', { name: 'Terapkan' }));
+  expect(screen.getByRole('combobox', { name: 'Bulan' })).toHaveValue('2024-01');
+  expect(screen.getByRole('option', { name: 'Januari 2024' })).toBeInTheDocument();
+});
 it('all configured lines have adaptive rings and weighted total progress with pending lines', async () => {
   setup(['1', '2', '3', '4', '5']);
   const calls = new Set<string>();
@@ -71,7 +96,11 @@ it('all configured lines have adaptive rings and weighted total progress with pe
   const lines = within(active).getByRole('list', { name: 'Progres per line' });
   expect(within(lines).getAllByRole('listitem')).toHaveLength(5);
   expect(within(lines).getByRole('button', { name: 'Lihat Line 1' })).toHaveTextContent('100%');
-  expect(within(active).getByText('Belum selesai: Line 2, 3, 4, 5')).toBeVisible();
+  expect(
+    within(within(active).getByRole('group', { name: 'Line belum selesai inspeksi' })).getByText(
+      '4',
+    ),
+  ).toBeVisible();
   expect(calls).toEqual(new Set(['1', '2', '3', '4', '5']));
   expect(screen.queryByText(/^Pilih line$/)).not.toBeInTheDocument();
   fireEvent.click(within(lines).getByRole('button', { name: 'Lihat Line 1' }));
@@ -84,11 +113,17 @@ it('all-line progress follows added and removed configured lines without hardcod
   setup(['17', '18']);
   const { client } = renderApp(<SummaryPage />);
   const active = screen.getByRole('region', { name: 'Jadwal aktif' });
-  expect(await within(active).findByText('Belum selesai: Line 17, 18')).toBeVisible();
+  await waitFor(() =>
+    expect(
+      within(within(active).getByRole('group', { name: 'Line belum selesai inspeksi' })).getByText(
+        '2',
+      ),
+    ).toBeVisible(),
+  );
   await act(async () => {
     client.setQueryData(['settings'], { lines: ['18', '20'], allowed_samplers: ['Ldr'] });
   });
-  expect(await within(active).findByText('Belum selesai: Line 18, 20')).toBeVisible();
+  expect(await within(active).findByRole('button', { name: 'Lihat Line 20' })).toBeVisible();
   expect(within(active).queryByRole('button', { name: 'Lihat Line 17' })).not.toBeInTheDocument();
 });
 
@@ -114,7 +149,13 @@ it('an unavailable line cannot produce a misleading partial all-line percentage'
     ),
   );
   fireEvent.click(within(active).getByRole('button', { name: 'Coba lagi' }));
-  expect(await within(active).findByText('Semua line selesai')).toBeVisible();
+  await waitFor(() =>
+    expect(
+      within(within(active).getByRole('group', { name: 'Line belum selesai inspeksi' })).getByText(
+        '0',
+      ),
+    ).toBeVisible(),
+  );
 });
 it('changing line hides old counts while waiting and accepts real zero counts', async () => {
   setup(['17', '18']);
@@ -136,7 +177,7 @@ it('changing line hides old counts while waiting and accepts real zero counts', 
   expect(within(active).queryByText('3')).not.toBeInTheDocument();
   finish(HttpResponse.json(envelope(due('18', 0, 0))));
   expect(await within(active).findByText('Line 18')).toBeVisible();
-  await waitFor(() => expect(within(active).getAllByText('0')).toHaveLength(2));
+  await waitFor(() => expect(within(active).getAllByText('0')).toHaveLength(3));
 });
 it('failed due requests show retry instead of fabricated completion counts', async () => {
   setup();
@@ -219,5 +260,9 @@ it('all-line totals never mix old and new occurrences while lines refresh separa
   expect(within(active).queryByText(/^Belum selesai:/)).not.toBeInTheDocument();
   finishes.get('18')!(HttpResponse.json(envelope({ ...due('18', 0, 5), schedule: next })));
   expect(await within(active).findByRole('img', { name: 'Progres pemeriksaan 50%' })).toBeVisible();
-  expect(within(active).getByText('Belum selesai: Line 18')).toBeVisible();
+  expect(
+    within(within(active).getByRole('group', { name: 'Line belum selesai inspeksi' })).getByText(
+      '1',
+    ),
+  ).toBeVisible();
 });

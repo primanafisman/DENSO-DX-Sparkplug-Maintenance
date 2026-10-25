@@ -139,6 +139,63 @@ test('machine evidence keeps its server capture occurrence while analysis crosse
   }finally{await f.close();}
 });
 
+test('changed shift times start a fresh occurrence without reinterpreting completed records',async()=>{
+  const f=await fixture();try{
+    const captured=await f.confirm(),saved=await f.save(captured.reading);
+    assert.equal(saved.occurrence_snapshot?.key,'machine-pressure:v1:per_shift:2026-10-21T00:45:00.000Z');
+    const changed={...(await f.maintenance.getSettings()),shift_schedule:{day:['07:30','12:30'],night:['21:00','01:00']}};
+    await f.maintenance.updateSettings(changed,actor);
+    const due=(await f.maintenance.due({line:'17'})).items.find(item=>item.definition_id===f.definition.id);
+    assert.equal(due.equipment.find(item=>item.instrument_id==='g1').state,'pending');
+    const historical=await f.repo.maintenance.getRecord(saved.id);
+    assert.equal(historical.occurrence_snapshot.key,'machine-pressure:v1:per_shift:2026-10-21T00:45:00.000Z');
+    assert.equal(historical.settings_snapshot.shift_schedule,undefined);
+    await f.maintenance.updateSettings({lines:['17'],allowed_samplers:['Ldr'],night_rollover_hour:7},actor);
+    assert.deepEqual((await f.maintenance.getSettings()).shift_schedule,changed.shift_schedule);
+  }finally{await f.close();}
+});
+
+test('legacy record settings snapshots preserve their original completion occurrence',async()=>{
+  const f=await fixture();try{
+    const captured=await f.confirm(),saved=await f.save(captured.reading);
+    await f.repo.maintenance.updateRecord(saved.id,{occurrence_snapshot:undefined});
+    await f.repo.settings.update('maintenance-settings',{value:{...(await f.maintenance.getSettings()),shift_schedule:{day:['07:30','12:30'],night:['21:00','01:00']}}});
+    const due=(await f.maintenance.due({line:'17'})).items.find(item=>item.definition_id===f.definition.id);
+    assert.equal(due.equipment.find(item=>item.instrument_id==='g1').state,'pending');
+  }finally{await f.close();}
+});
+
+test('photo confirmation preserves upload settings and a changed save occurrence requires new evidence',async()=>{
+  const f=await fixture();try{
+    const captured=await f.capture();
+    assert.equal(captured.source.settings_snapshot?.night_rollover_hour,7);
+    await f.maintenance.updateSettings({...(await f.maintenance.getSettings()),shift_schedule:{day:['07:30','12:30'],night:['21:00','01:00']}},actor);
+    const reading=await f.readings.confirm(captured.input,actor),stored=await f.repo.readings.get(reading.id);
+    assert.equal(stored.machine_occurrence.key,'machine-pressure:v1:per_shift:2026-10-21T00:45:00.000Z');
+    assert.equal(stored.settings_snapshot.shift_schedule,undefined);
+    await assert.rejects(f.save(reading),error=>error.code==='EVIDENCE_OCCURRENCE');
+    const current=await f.confirm();await f.save(current.reading);
+    assert.equal((await f.repo.maintenance.listRecords({limit:25})).items.length,1);
+  }finally{await f.close();}
+});
+
+test('maintenance saves use the custom minute production-date cutoff before and after Shift 1 starts',async()=>{
+  const {repo,close}=await database();let now=at('2027-01-01T08:09:59');
+  const maintenance=createMaintenanceService({repositories:repo,clock:()=>now});
+  try{
+    await maintenance.updateSettings({lines:['17'],allowed_samplers:['Ldr'],night_rollover_hour:1,shift_schedule:{day:['08:10','13:20'],night:['22:05','02:25']}},actor);
+    async function save(){const schedule=await maintenance.schedule();return maintenance.createRecord({definition_id:'packing_depth_tool',context:{line:'17',sampler:'Ldr',production_date:schedule.production_date,shift:schedule.shift},checked_at:new Date(now).toISOString(),interval:'per_shift',trigger:'start_process',observations:[{sample_id:'check',status:'OK'}]},actor);}
+    const before=await save();
+    assert.equal(before.context.production_date,'2026-12-31');
+    assert.equal(before.schedule_snapshot.slot_id,'night-0115');
+    assert.equal(before.occurrence_snapshot.starts_at,'2026-12-31T15:05:00.000Z');
+    now=at('2027-01-01T08:10:00');const after=await save();
+    assert.equal(after.context.production_date,'2027-01-01');
+    assert.equal(after.schedule_snapshot.slot_id,'day-0745');
+    assert.equal(after.occurrence_snapshot.starts_at,'2027-01-01T01:10:00.000Z');
+  }finally{await close();}
+});
+
 test('illustrative local imports cannot complete or hide operational checks',async()=>{
   const f=await fixture();try{
     await f.repo.maintenance.createRecord({definition_id:f.definition.id,definition_version:1,definition_snapshot:f.definition,instrument_id:'g1',context:{line:'17',production_date:'2026-10-21',shift:'day',sampler:'Ldr'},checked_at:'2026-10-21T08:00:00+07:00',saved_at:new Date(f.now()).toISOString(),created_at:new Date(f.now()).toISOString(),overall_status:'OK',outcomes:[{sample_id:'n1',status:'OK',value:.438}],origin:{kind:'illustrative_local_import'}});

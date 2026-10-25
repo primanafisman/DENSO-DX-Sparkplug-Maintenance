@@ -46,7 +46,12 @@ export function useEquipment(
     },
   });
   const items = useMemo(
-    () => sortEquipment(query.data ?? [], sort, definitions),
+    () =>
+      sortEquipment(
+        (query.data ?? []).filter((asset) => asset.active !== false),
+        sort,
+        definitions,
+      ),
     [query.data, sort, definitions],
   );
   const sortBy = (key: EquipmentSortKey) =>

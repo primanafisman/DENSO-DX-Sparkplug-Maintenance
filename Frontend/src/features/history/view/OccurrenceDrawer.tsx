@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import type { Occurrence, EvidenceRef } from '../../../shared/lib/contracts';
 import { dateTime, number } from '../../../shared/lib/format';
-import { Button, Status, ErrorMessage } from '../../../shared/components/ui';
+import { Button, Status } from '../../../shared/components/ui';
+import { ConfirmationDialog } from '../../../shared/components/ui/ConfirmationDialog';
 import { EvidenceDialog } from './EvidenceDialog';
 import { useDeleteRecord } from '../controller/useDeleteRecord';
 import { useSession } from '../../auth/controller/useSession';
@@ -112,38 +113,20 @@ export function OccurrenceDrawer({
               </div>
               {user?.role === 'Admin' &&
                 (confirming === o.id ? (
-                  <section
-                    className="availability-confirm"
-                    role="group"
-                    aria-label="Konfirmasi hapus catatan"
-                  >
-                    <h3>Hapus catatan pemeriksaan ini?</h3>
-                    <p>
-                      Catatan tidak lagi ditampilkan; pemeriksaan pada jadwal yang sama dapat diisi
-                      kembali.
-                    </p>
-                    <ErrorMessage error={deletion.error} />
-                    <div className="actions">
-                      <Button
-                        variant="secondary"
-                        disabled={deletion.isPending}
-                        onClick={() => {
-                          setConfirming(null);
-                          deletion.reset();
-                        }}
-                      >
-                        Batal hapus
-                      </Button>
-                      <Button
-                        variant="danger"
-                        disabled={deletion.isPending}
-                        onClick={() => deletion.mutate(o.id, { onSuccess: onClose })}
-                      >
-                        <Trash2 size={18} aria-hidden="true" />
-                        {deletion.isPending ? 'Menghapus catatan…' : 'Ya, hapus catatan'}
-                      </Button>
-                    </div>
-                  </section>
+                  <ConfirmationDialog
+                    title="Hapus catatan pemeriksaan ini?"
+                    description="Catatan tidak lagi ditampilkan; pemeriksaan pada jadwal yang sama dapat diisi kembali."
+                    danger
+                    pending={deletion.isPending}
+                    error={deletion.error}
+                    confirmLabel="Ya, hapus catatan"
+                    cancelLabel="Batal hapus"
+                    onCancel={() => {
+                      setConfirming(null);
+                      deletion.reset();
+                    }}
+                    onConfirm={() => deletion.mutate(o.id, { onSuccess: onClose })}
+                  />
                 ) : (
                   <Button
                     variant="danger"

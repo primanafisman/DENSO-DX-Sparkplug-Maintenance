@@ -99,7 +99,7 @@ it('lists source standard clauses, requirements and named master samples without
   expect(within(row).queryByLabelText('Batas penerimaan')).not.toBeInTheDocument();
 });
 
-it('admin adds a linked inspection and removes it from active options while retaining its row', async () => {
+it('admin confirms adding a linked inspection and removes its row without deleting history', async () => {
   let rows = [fixtureDefinition()],
     created: Record<string, unknown> | null = null,
     status: Record<string, unknown> | null = null;
@@ -165,6 +165,7 @@ it('admin adds a linked inspection and removes it from active options while reta
   });
   fireEvent.click(await dialog.findByLabelText('Kaliper'));
   fireEvent.click(dialog.getByRole('button', { name: 'Tambah pemeriksaan' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Ya, simpan' }));
   await waitFor(() =>
     expect(created).toMatchObject({
       name: 'Packing tambahan',
@@ -181,12 +182,15 @@ it('admin adds a linked inspection and removes it from active options while reta
   });
   fireEvent.click(editor.getByRole('button', { name: 'Hapus dari pilihan' }));
   expect(status).toBeNull();
-  fireEvent.click(editor.getByRole('button', { name: 'Batal hapus' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Batal hapus' }));
   expect(editor.getByLabelText('Nama pemeriksaan')).toHaveValue('Unsaved definition');
   fireEvent.click(editor.getByRole('button', { name: 'Hapus dari pilihan' }));
-  fireEvent.click(editor.getByRole('button', { name: 'Ya, hapus dari pilihan' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Ya, hapus dari pilihan' }));
   await waitFor(() => expect(status).toEqual({ active: false, review_reason: expect.any(String) }));
-  expect(await screen.findByText('Nonaktif')).toBeVisible();
+  await waitFor(() =>
+    expect(screen.queryByRole('button', { name: 'Edit Packing tambahan' })).not.toBeInTheDocument(),
+  );
+  expect(rows.find((d) => d.id === 'custom-check')?.active).toBe(false);
 });
 it('weekly edit sends explicit weekdays and retains original paper time guidance', async () => {
   const d = fixtureDefinition({ intervals: ['weekly'] });
@@ -267,10 +271,13 @@ it('settings accept manually named lines beyond17, reject duplicates and remove 
   fireEvent.change(addLine, { target: { value: ' line a ' } });
   expect(screen.getByRole('button', { name: 'Tambah line' })).toBeDisabled();
   fireEvent.click(screen.getByRole('button', { name: 'Hapus line 17' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Ya, hapus' }));
   fireEvent.change(screen.getByLabelText('Tambah sampler'), { target: { value: 'Leader 2' } });
   fireEvent.click(screen.getByRole('button', { name: 'Tambah sampler' }));
   fireEvent.click(screen.getByRole('button', { name: 'Hapus sampler Ldr' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Ya, hapus' }));
   fireEvent.click(screen.getByRole('button', { name: /Simpan pengaturan/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Ya, simpan' }));
   await waitFor(() => expect(saved?.lines).toEqual(['18', 'Line A']));
   expect(saved?.allowed_samplers).toEqual(['Leader 2']);
 });
@@ -312,6 +319,7 @@ it('shows product names alone, mirrors new names internally and preserves distin
   expect(screen.queryByRole('columnheader', { name: 'KODE' })).not.toBeInTheDocument();
   expect(screen.queryByLabelText(/^Kode /)).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Simpan pengaturan' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Ya, simpan' }));
   await waitFor(() =>
     expect(saved?.product_types).toEqual([
       expect.objectContaining({ id: 'legacy', name: 'Sparkplug A revisi', code: 'SP-A' }),
@@ -363,5 +371,6 @@ it('keeps all configured lines up to the supported200-line limit without a fixed
   const addButton = screen.getByText('Tambah line', { selector: 'button' });
   expect(addButton).toBeDisabled();
   fireEvent.click(screen.getByLabelText('Hapus line 200'));
+  fireEvent.click(screen.getByRole('button', { name: 'Ya, hapus' }));
   expect(addButton).toBeEnabled();
 });

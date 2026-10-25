@@ -13,6 +13,8 @@ export function addReportSchemas(s){
   s.MaintenanceRecord.properties.product_snapshot=nullRef('ProductSnapshot');
   s.MaintenanceRecord.properties.instrument_snapshot=nullRef('InstrumentResponse');
   s.MaintenanceRecord.properties.schedule_snapshot=obj({slot_id:str,starts_at:str,schedule_version:int,timezone:{type:'string',enum:['Asia/Jakarta']}});
+  s.MaintenanceOccurrence=obj({key:str,starts_at:str,next_starts_at:str,basis:str});
+  s.MaintenanceRecord.properties.occurrence_snapshot=ref('MaintenanceOccurrence');
   s.MaintenanceRecord.properties.origin=ref('RecordOrigin');
   s.ReportScope=obj({production_date_from:str,production_date_to:str,line:str,shift:{type:'string',enum:['day','night']},definition_id:str,product_type_id:str,instrument_id:str},['production_date_from','production_date_to']);
   s.ReportMeta=obj({report_version:{type:'string',enum:['1']},as_of:str,scope:ref('ReportScope'),scanned_records:int,count_unit:{type:'string',enum:['maintenance_record']},warnings:strings});
