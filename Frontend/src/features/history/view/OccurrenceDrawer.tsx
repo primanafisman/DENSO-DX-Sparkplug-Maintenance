@@ -8,6 +8,8 @@ import { useDeleteRecord } from '../controller/useDeleteRecord';
 import { useSession } from '../../auth/controller/useSession';
 import { statusOnlyReport } from '../model/reportMode';
 import { measurementUnit, occurrenceAcceptance } from '../model/measurementFacts';
+import { illustrativeOrigin } from '../model/reportOrigin';
+import { OriginBadge } from './OriginBadge';
 function Acceptance({ occurrence, unit }: { occurrence: Occurrence; unit?: string | null }) {
   const limits = occurrenceAcceptance(occurrence, unit),
     labels = [...new Set(limits.map((item) => item.label))];
@@ -30,13 +32,11 @@ function Acceptance({ occurrence, unit }: { occurrence: Occurrence; unit?: strin
 export function OccurrenceDrawer({
   items,
   onClose,
-  demo = false,
   units,
   showStatistics = true,
 }: {
   items: Occurrence[];
   onClose: () => void;
-  demo?: boolean;
   units?: Record<string, string | null>;
   showStatistics?: boolean;
 }) {
@@ -63,6 +63,7 @@ export function OccurrenceDrawer({
             <article className="occurrence" key={o.id}>
               <div className="row between">
                 <h3>{dateTime(o.checked_at)}</h3>
+                <OriginBadge origin={o.origin} />
                 <Status value={o.overall_status} />
               </div>
               <p>
@@ -98,7 +99,7 @@ export function OccurrenceDrawer({
                 </details>
               )}
               <div className="actions">
-                {!demo &&
+                {!illustrativeOrigin(o.origin) &&
                   o.evidence.map((e, i) => (
                     <Button
                       variant="secondary"
@@ -109,8 +110,7 @@ export function OccurrenceDrawer({
                     </Button>
                   ))}
               </div>
-              {!demo &&
-                user?.role === 'Admin' &&
+              {user?.role === 'Admin' &&
                 (confirming === o.id ? (
                   <section
                     className="availability-confirm"
@@ -161,13 +161,20 @@ export function OccurrenceDrawer({
           ))}
         </section>
       </div>
-      {!demo && evidence && (
-        <EvidenceDialog
-          id={evidence.reading_id}
-          variant={evidence.variant}
-          onClose={() => setEvidence(null)}
-        />
-      )}
+      {evidence &&
+        items.some(
+          (o) =>
+            !illustrativeOrigin(o.origin) &&
+            o.evidence.some(
+              (e) => e.reading_id === evidence.reading_id && e.variant === evidence.variant,
+            ),
+        ) && (
+          <EvidenceDialog
+            id={evidence.reading_id}
+            variant={evidence.variant}
+            onClose={() => setEvidence(null)}
+          />
+        )}
     </>
   );
 }

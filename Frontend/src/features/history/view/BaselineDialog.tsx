@@ -1,6 +1,7 @@
 import type { SpcCohort, ReportInput } from '../../../shared/lib/contracts';
 import { useSaveBaseline } from '../controller/useSaveBaseline';
 import { Button, ErrorMessage } from '../../../shared/components/ui';
+import { illustrativeOrigin } from '../model/reportOrigin';
 export function BaselineDialog({
   scope,
   cohort,
@@ -10,7 +11,8 @@ export function BaselineDialog({
   cohort: SpcCohort;
   onClose: () => void;
 }) {
-  const save = useSaveBaseline();
+  const save = useSaveBaseline(),
+    imported = illustrativeOrigin(cohort.origin);
   return (
     <div className="modal-backdrop">
       <section className="modal" role="dialog" aria-modal="true" aria-label="Simpan batas kontrol">
@@ -22,8 +24,9 @@ export function BaselineDialog({
             Tutup
           </Button>
           <Button
-            disabled={save.isPending || save.isSuccess}
+            disabled={imported || save.isPending || save.isSuccess}
             onClick={() =>
+              !imported &&
               save.mutate({
                 scope,
                 cohort_id: cohort.cohort_id,

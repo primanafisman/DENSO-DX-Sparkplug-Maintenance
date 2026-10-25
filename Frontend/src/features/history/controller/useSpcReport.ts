@@ -36,13 +36,10 @@ export function useSpcReport(scope: ReportInput | null, chosen: string, baseline
       queryFn: ({ signal }) => historyApi.spc(scope!, baseline, signal),
       enabled: !!scope,
     }),
-    cohort =
-      report.data?.cohorts.find((c) => c.cohort_id === chosen) ??
-      (report.data?.cohorts.length === 1 || scope?.demo ? report.data?.cohorts[0] : undefined),
+    cohort = report.data?.cohorts.find((c) => c.cohort_id === chosen) ?? report.data?.cohorts[0],
     frozen = report.data
       ? {
           ...report.data.meta.scope,
-          ...(scope?.demo ? { demo: true } : {}),
           as_of: report.data.meta.as_of,
         }
       : null;

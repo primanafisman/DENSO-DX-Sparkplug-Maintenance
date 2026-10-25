@@ -1,8 +1,7 @@
 {
   "asset": "denso-logo.png",
-  "source_page": "https://www.denso-am.eu/",
-  "source_asset": "https://www.denso-am.eu/dist/images/logo@3x.png",
-  "retrieved": "2026-10-24",
+  "source": "User supplied DENSO / Crafting the Core transparent logo",
+  "provided": "2026-10-25",
   "owner": "DENSO",
-  "modifications": "None. Original image, displayed at its original aspect ratio."
+  "modifications": "None. Supplied PNG copied verbatim; original aspect ratio and transparency preserved."
 }

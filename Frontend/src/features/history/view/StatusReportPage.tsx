@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Activity } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   BarChart,
@@ -43,6 +44,7 @@ export function StatusReportPage({ definition }: { definition: MaintenanceDefini
     <>
       <PageHeader
         title={definition.name}
+        icon={<Activity />}
         actions={
           <Link
             className="button button-secondary"
@@ -52,7 +54,6 @@ export function StatusReportPage({ definition }: { definition: MaintenanceDefini
                 month: f.month,
                 ...(f.line ? { line: f.line } : {}),
                 ...(f.shift ? { shift: f.shift } : {}),
-                ...(f.demo ? { demo: '1' } : {}),
               })
             }
           >
@@ -60,7 +61,6 @@ export function StatusReportPage({ definition }: { definition: MaintenanceDefini
           </Link>
         }
       />
-      {f.demo && <div className="demo-banner">Data contoh — bukan catatan produksi.</div>}
       <ReportFilters filters={f} />
       <div className="filter-bar">
         <Field label="Tanggal awal">
@@ -133,7 +133,6 @@ export function StatusReportPage({ definition }: { definition: MaintenanceDefini
       )}
       {selected && (
         <OccurrenceDrawer
-          demo={f.demo}
           showStatistics={false}
           items={selected}
           onClose={() => setSelected(null)}

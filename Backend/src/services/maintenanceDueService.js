@@ -1,6 +1,7 @@
 import {AppError} from '../errors/AppError.js';
 import {CHECK_SCHEDULE} from '../constants/checkSchedule.js';
 import {scheduleAt} from './productionContextService.js';
+import {eligibleMachineEquipment,recordEquipmentId,operationalRecord} from './machineEquipmentOccurrence.js';
 const DAY=86400000;
 const dateAt=ms=>new Date(ms).toISOString().slice(0,10);
 const start=(date,time)=>Date.parse(date+'T'+time+':00+07:00');
@@ -26,19 +27,29 @@ export function maintenanceOccurrence(def,timestamp,settings){
   }
   return {key:prefix+basis+':'+new Date(begin).toISOString(),starts_at:new Date(begin).toISOString(),next_starts_at:new Date(end).toISOString(),basis};
 }
+export function recordCompletesOccurrence(d,record,occurrence,now,settings,product_type_id){
+  if(!operationalRecord(record)||record.definition_id!==d.id||(record.definition_snapshot?.definition_version??record.definition_version)!==d.definition_version||d.inspection_target!=='machine'&&product_type_id&&record.context?.product_type_id!==product_type_id||!Number.isFinite(Date.parse(record.checked_at))||Date.parse(record.checked_at)>now||Date.parse(record.saved_at)>now||!['OK','NG'].includes(record.overall_status))return false;
+  const outcomes=record.outcomes??[],required=d.samples.map(s=>s.id);
+  if(outcomes.length!==required.length||new Set(outcomes.map(o=>o.sample_id)).size!==required.length||outcomes.some(o=>!required.includes(o.sample_id)||!['OK','NG'].includes(o.status)||d.input_method!=='ok_ng'&&!Number.isFinite(o.value)))return false;
+  return maintenanceOccurrence(d,record.checked_at,settings).key===occurrence.key;
+}
 export function createMaintenanceDueService({repositories,clock},definitions,getSettings){
   return async function due({line,product_type_id}){
     const now=clock(),settings=await getSettings();if(!settings.lines.includes(line))throw new AppError(422,'LINE_INVALID','Choose a configured line.');if(product_type_id&&!settings.product_types?.some(p=>p.id===product_type_id&&p.active))throw new AppError(422,'PRODUCT_INVALID','Choose an active product Type.');
     const schedule=scheduleAt(now,settings),defs=(await definitions.all()).filter(d=>d.active!==false),records=[];
     const scope={line,production_date_from:dateAt(Date.parse(schedule.calendar_date+'T12:00:00Z')-10*DAY),production_date_to:schedule.calendar_date};let cursor;
     do{const page=await repositories.maintenance.listRecordsRange({scope,limit:500,cursor,as_of:new Date(now).toISOString()});records.push(...page.items);cursor=page.next_cursor;if(cursor&&records.length>=50000)throw new AppError(503,'DUE_CAPACITY','Too many records in the current schedule window.');}while(cursor);
+    const instruments=[];let instrumentCursor;
+    if(repositories.instruments?.list)do{const page=await repositories.instruments.list({limit:100,cursor:instrumentCursor});instruments.push(...page.items);instrumentCursor=page.next_cursor;if(instrumentCursor&&instruments.length>=10000)throw new AppError(503,'REGISTRY_CAPACITY','Equipment registry exceeds supported capacity.');}while(instrumentCursor);
     const items=defs.map(d=>{
-      const occurrence=maintenanceOccurrence(d,now,settings);let completed=null;
-      for(const record of records){if(record.deleted_at||record.definition_id!==d.id||(record.definition_snapshot?.definition_version??record.definition_version)!==d.definition_version||d.inspection_target!=='machine'&&product_type_id&&record.context?.product_type_id!==product_type_id||!Number.isFinite(Date.parse(record.checked_at))||Date.parse(record.checked_at)>now||Date.parse(record.saved_at)>now||!['OK','NG'].includes(record.overall_status))continue;
-        const outcomes=record.outcomes??[],required=d.samples.map(s=>s.id);if(outcomes.length!==required.length||new Set(outcomes.map(o=>o.sample_id)).size!==required.length||outcomes.some(o=>!required.includes(o.sample_id)||!['OK','NG'].includes(o.status)||d.input_method!=='ok_ng'&&!Number.isFinite(o.value)))continue;
-        if(maintenanceOccurrence(d,record.checked_at,settings).key===occurrence.key){completed=record;break;}
-      }
-      return {definition_id:d.id,definition_version:d.definition_version,state:!d.shifts.includes(schedule.shift)?'not_scheduled':completed?'completed':'pending',completed_record_id:completed?.id??null,occurrence_key:occurrence.key,starts_at:occurrence.starts_at,next_starts_at:occurrence.next_starts_at,basis:occurrence.basis};
+      const occurrence=maintenanceOccurrence(d,now,settings),eligible=instruments.filter(asset=>eligibleMachineEquipment(asset,d));
+      const assigned=eligible.filter(asset=>!asset.area||asset.area===line),assets=assigned.length?assigned:eligible;
+      // Machine checks are line scoped even when a legacy definition has not
+      // yet been classified or a product Type happens to be selected.
+      const matches=records.filter(record=>recordCompletesOccurrence(d,record,occurrence,now,settings,assets.length?undefined:product_type_id));
+      const equipment=assets.map(asset=>{const completed=matches.find(record=>recordEquipmentId(record)===asset.id);return {instrument_id:asset.id,state:completed?'completed':'pending',completed_record_id:completed?.id??null};});
+      const completed=equipment.length?(equipment.every(item=>item.state==='completed')?matches[0]:null):matches[0];
+      return {definition_id:d.id,definition_version:d.definition_version,state:!d.shifts.includes(schedule.shift)?'not_scheduled':completed?'completed':'pending',completed_record_id:completed?.id??null,equipment,occurrence_key:occurrence.key,starts_at:occurrence.starts_at,next_starts_at:occurrence.next_starts_at,basis:occurrence.basis};
     });
     return {schedule,line,...(product_type_id?{product_type_id}:{}),items,pending_count:items.filter(i=>i.state==='pending').length,completed_count:items.filter(i=>i.state==='completed').length};
   };

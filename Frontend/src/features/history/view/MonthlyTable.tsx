@@ -10,12 +10,10 @@ export function MonthlyTable({
   rows,
   scope,
   mode,
-  demo = false,
 }: {
   rows: MonthlyRow[];
   scope: ReportScope;
   mode: MonthlyMode;
-  demo?: boolean;
 }) {
   const [selected, setSelected] = useState<MonthlyOccurrence[] | null>(null),
     dates: string[] = [];
@@ -53,13 +51,6 @@ export function MonthlyTable({
                       '?' +
                       new URLSearchParams({
                         month: scope.production_date_from.slice(0, 7),
-                        ...(demo
-                          ? {
-                              demo: '1',
-                              from: scope.production_date_from,
-                              to: scope.production_date_to,
-                            }
-                          : {}),
                         ...(scope.line ? { line: scope.line } : {}),
                         ...(scope.shift ? { shift: scope.shift } : {}),
                       })
@@ -126,7 +117,6 @@ export function MonthlyTable({
       </div>
       {selected && (
         <OccurrenceDrawer
-          demo={demo}
           items={selected.map((item) => item.occurrence)}
           units={Object.fromEntries(selected.map((item) => [item.occurrence.id, item.unit]))}
           onClose={() => setSelected(null)}

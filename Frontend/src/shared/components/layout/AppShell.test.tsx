@@ -14,7 +14,7 @@ it('icon navigation retains accessible names, tooltips and active page status', 
   );
   renderApp(
     <Routes>
-      <Route element={<AppShell />}>
+      <Route element={<AppShell serverClock={<span>07:45:00 WIB</span>} />}>
         <Route path="/riwayat" element={<h1>Riwayat maintenance</h1>} />
       </Route>
     </Routes>,
@@ -31,4 +31,5 @@ it('icon navigation retains accessible names, tooltips and active page status', 
   expect(screen.getAllByRole('img', { name: 'DENSO' })).toHaveLength(1);
   expect(screen.queryByText('DENSO · Sparkplug Maintenance')).not.toBeInTheDocument();
   expect(screen.getByRole('status', { name: 'Mode pembacaan' })).toHaveTextContent('CV lokal');
+  expect(screen.getByText('07:45:00 WIB')).toBeVisible();
 });

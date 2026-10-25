@@ -103,6 +103,8 @@ it('a denied update preserves the draft equipment name and condition fields', as
   fireEvent.click(await screen.findByRole('button', { name: 'Edit Kaliper' }));
   fireEvent.change(screen.getByLabelText('Nama alat'), { target: { value: 'Draft alat' } });
   fireEvent.click(screen.getByRole('button', { name: 'Simpan peralatan' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent('Izin berubah');
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Akun Anda tidak memiliki izin untuk tindakan ini.',
+  );
   expect(screen.getByLabelText('Nama alat')).toHaveValue('Draft alat');
 });

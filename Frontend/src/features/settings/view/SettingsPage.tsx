@@ -297,7 +297,7 @@ export function SettingsPage() {
   };
   return (
     <>
-      <PageHeader title="Pengaturan" />
+      <PageHeader title="Pengaturan" icon={<Wrench size={23} />} />
       <div className="tabs settings-tabs" role="tablist" aria-label="Pengaturan operasional">
         {tabs.map((item, index) => (
           <button

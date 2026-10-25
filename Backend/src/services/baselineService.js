@@ -7,6 +7,7 @@ export function createBaselineService({repositories,clock},reports){
     async create(raw,actor){
       const parsed=baselineInput.safeParse(raw);if(!parsed.success)throw new AppError(422,'BASELINE_FIELDS','Check baseline scope and review reason.');const input=parsed.data;
       const report=await reports.spc(input.scope,{method:input.method}),cohort=report.cohorts.find(c=>c.cohort_id===input.cohort_id);
+      if(cohort?.origin?.kind==='illustrative_local_import')throw new AppError(422,'BASELINE_ILLUSTRATIVE_DATA','Data uji X/R cannot be saved as a production control baseline.');
       if(!cohort?.counts.complete||cohort.control_limits.ucl_x===null)throw new AppError(422,'BASELINE_DATA','Choose a complete supported SPC cohort.');
       return repositories.transaction(async tx=>{
         const saved=await tx.revisions.create({entity_id:'spc-baselines',version:1,scope:report.meta.scope,as_of:report.meta.as_of,cohort_key:cohort.cohort_key,cohort_id:cohort.cohort_id,method:input.method,constants_version:cohort.statistics.constants_version,control_limits:cohort.control_limits,center:{xbar:cohort.control_limits.center_x,rbar:cohort.control_limits.center_r},created_by:actor.id,created_at:new Date(clock()).toISOString(),review_reason:input.review_reason});

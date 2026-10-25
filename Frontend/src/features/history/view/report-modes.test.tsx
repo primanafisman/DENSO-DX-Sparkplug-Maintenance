@@ -22,7 +22,6 @@ const definition = fixtureDefinition({
 });
 function setup() {
   server.use(
-    http.get('/api/v1/capabilities', () => HttpResponse.json(envelope({ demo_reports: true }))),
     http.get('/api/v1/maintenance/schedule', () => HttpResponse.json(envelope(schedule))),
     http.get('/api/v1/maintenance/settings', () =>
       HttpResponse.json(
@@ -94,29 +93,34 @@ it('OK NG detail requests only selected inspection and displays daily status gra
     screen.queryByText('Pemeriksaan OK / NG tidak memiliki grafik X̄ / R'),
   ).not.toBeInTheDocument();
 });
-it('demo toggle loads isolated endpoint and prevents production export', async () => {
+it('a stale example link loads ordinary history without a toggle, capability request or isolated endpoint', async () => {
   setup();
-  let demoRequests = 0;
+  let ordinaryRequests = 0,
+    demoRequests = 0,
+    capabilityRequests = 0;
   server.use(
-    http.get('/api/v1/maintenance/report', () =>
-      HttpResponse.json(envelope({ meta, rows: [], next_cursor: null })),
-    ),
-    http.get('/api/v1/maintenance/demo/report', ({ request }) => {
+    http.get('/api/v1/capabilities', () => {
+      capabilityRequests++;
+      return HttpResponse.json(envelope({ demo_reports: true }));
+    }),
+    http.get('/api/v1/maintenance/report', ({ request }) => {
       expect(new URL(request.url).searchParams.has('demo')).toBe(false);
+      ordinaryRequests++;
+      return HttpResponse.json(envelope({ meta, rows: [], next_cursor: null }));
+    }),
+    http.get('/api/v1/maintenance/demo/report', () => {
       demoRequests++;
-      return HttpResponse.json(
-        envelope({ meta: { ...meta, warnings: ['DEMO_DATA'] }, rows: [], next_cursor: null }),
-      );
+      return HttpResponse.json(envelope({ meta, rows: [], next_cursor: null }));
     }),
   );
-  renderApp(<HistoryPage />, '/riwayat?month=2026-10');
-  fireEvent.click(await screen.findByRole('button', { name: 'Lihat data contoh' }));
-  expect(await screen.findByText('Data contoh — bukan catatan produksi.')).toBeVisible();
-  expect(screen.queryByText(/DEMO_DATA/)).not.toBeInTheDocument();
-  expect(demoRequests).toBe(1);
-  expect(screen.getByRole('button', { name: 'Unduh CSV' })).toBeDisabled();
-  fireEvent.click(screen.getByRole('button', { name: 'Kembali ke data produksi' }));
+  renderApp(<HistoryPage />, '/riwayat?month=2026-10&demo=1');
+  await screen.findByText('Belum ada catatan bulan ini');
+  expect(ordinaryRequests).toBe(1);
+  expect(demoRequests).toBe(0);
+  expect(capabilityRequests).toBe(0);
+  expect(screen.queryByRole('button', { name: 'Lihat data contoh' })).not.toBeInTheDocument();
   expect(screen.queryByText('Data contoh — bukan catatan produksi.')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Unduh CSV' })).toBeEnabled();
 });
 
 it('legacy pressureMPa without target uses only daily OK NG and retains its reading and frozen acceptance limits', async () => {

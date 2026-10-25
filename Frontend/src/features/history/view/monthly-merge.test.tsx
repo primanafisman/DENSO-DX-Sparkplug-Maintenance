@@ -13,7 +13,6 @@ const reportMeta = {
 };
 function setup() {
   server.use(
-    http.get('/api/v1/capabilities', () => HttpResponse.json(envelope({ demo_reports: false }))),
     http.get('/api/v1/auth/me', () =>
       HttpResponse.json(envelope({ id: 'v', username: 'Viewer', role: 'Viewer' })),
     ),
@@ -116,7 +115,7 @@ it('a failed later page shows an error instead of a partial numbered month', asy
     ),
   );
   renderApp(<HistoryPage />, '/riwayat?month=2026-10');
-  expect(await screen.findByText('Halaman lanjutan gagal.')).toBeVisible();
+  expect(await screen.findByText('Server belum dapat memproses permintaan.')).toBeVisible();
   expect(
     screen.queryByRole('table', { name: 'Catatan pemeriksaan bulanan' }),
   ).not.toBeInTheDocument();

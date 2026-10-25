@@ -1,6 +1,6 @@
 export type GaugeKind='auto'|'digital'|'analog';
 export type Role='Viewer'|'Operator'|'Admin';
-import type {ProductType,ProductSnapshot} from './report-types';
+import type {ProductType,ProductSnapshot,RecordOrigin} from './report-types';
 export type Context={line:string;production_date:string;shift:'day'|'night';sampler:string;product_type_id?:string};
 export type CheckSlot={slot_id:string;shift:'day'|'night';shift_label:string;slot_label:string;start_time:string};
 export type ServerSchedule={server_time:string;timezone:'Asia/Jakarta';calendar_date:string;production_date:string;shift:'day'|'night';shift_label:string;slot_id:string;slot_label:string;starts_at:string;next_starts_at:string;schedule:CheckSlot[]};
@@ -28,10 +28,10 @@ export type Schedule={times:{time:string;day_offset:number}[];window:Record<stri
 export type MaintenanceCatalog={items:MaintenanceDefinition[];count:number;source_gaps:{missing_rows:number[];clipped_row:number}};
 export type MaintenanceObservation={sample_id:string;status:'OK'|'NG'}|{sample_id:string;reading_id:string}|{sample_id:string;before_reading_id:string;after_reading_id:string};
 export type SampleOutcome=MaintenanceObservation&{status:'OK'|'NG';value?:number;acceptance_limits?:AcceptanceLimits;acceptance_source?:'equipment'|'inspection'};
-export type MaintenanceRecord={id:string;definition_id:string;definition_version?:number;context:Context;interval:Interval;trigger:string;checked_at:string;observations:MaintenanceObservation[];actor_id:string;definition_snapshot:MaintenanceDefinition;settings_snapshot:MaintenanceSettings;outcomes:SampleOutcome[];overall_status:'OK'|'NG';saved_at:string;created_at:string;product_snapshot?:ProductSnapshot|null;instrument_snapshot?:Instrument|null;schedule_snapshot?:{slot_id:string;starts_at:string;schedule_version:number;timezone:'Asia/Jakarta'}};
+export type MaintenanceRecord={origin?:RecordOrigin;id:string;definition_id:string;definition_version?:number;context:Context;interval:Interval;trigger:string;checked_at:string;observations:MaintenanceObservation[];actor_id:string;definition_snapshot:MaintenanceDefinition;settings_snapshot:MaintenanceSettings;outcomes:SampleOutcome[];overall_status:'OK'|'NG';saved_at:string;created_at:string;product_snapshot?:ProductSnapshot|null;instrument_snapshot?:Instrument|null;schedule_snapshot?:{slot_id:string;starts_at:string;schedule_version:number;timezone:'Asia/Jakarta'}};
 export type * from './report-types';
 
 
 
-export type MaintenanceDueItem={definition_id:string;definition_version:number;state:'pending'|'completed'|'not_scheduled';completed_record_id:string|null;occurrence_key:string;starts_at:string;next_starts_at:string;basis:string};
+export type MaintenanceDueItem={definition_id:string;definition_version:number;state:'pending'|'completed'|'not_scheduled';completed_record_id:string|null;equipment:{instrument_id:string;state:'pending'|'completed';completed_record_id:string|null}[];occurrence_key:string;starts_at:string;next_starts_at:string;basis:string};
 export type MaintenanceDue={schedule:ServerSchedule;line:string;product_type_id?:string;items:MaintenanceDueItem[];pending_count:number;completed_count:number};

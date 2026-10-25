@@ -15,6 +15,7 @@ import { ConfirmPage } from '../features/capture/view/ConfirmPage';
 import { InspectionHub } from '../features/maintenance/view/InspectionHub';
 import { VisualCheckPage } from '../features/maintenance/view/VisualCheckPage';
 import { InspectionSuccess } from '../features/maintenance/view/InspectionSuccess';
+import { ServerClock } from '../features/maintenance/view/ServerClock';
 import { SettingsPage } from '../features/settings/view/SettingsPage';
 import type { Role } from '../shared/lib/contracts';
 import { useSession } from '../features/auth/controller/useSession';
@@ -44,7 +45,7 @@ export const router = createBrowserRouter([
       {
         element: (
           <CaptureWorkspaceProvider>
-            <AppShell />
+            <AppShell serverClock={<ServerClock />} />
           </CaptureWorkspaceProvider>
         ),
         children: [

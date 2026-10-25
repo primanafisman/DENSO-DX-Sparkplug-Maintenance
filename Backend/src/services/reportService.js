@@ -7,6 +7,7 @@ import {buildChecksheet} from './reporting/checksheet.js';
 import {buildSummary} from './reporting/summary.js';
 import {calculateSpc} from './spcService.js';
 import {scheduleAt} from './productionContextService.js';
+import {XR_IMPORT_KIND,isPrivateXrOrigin,xrManifestId} from './illustrativeXrOrigin.js';
 
 export function createReportService({repositories,clock}){
   async function load(input,cursor){
@@ -19,16 +20,20 @@ export function createReportService({repositories,clock}){
       const ids=[...new Set(activeRecords.flatMap(r=>(r.outcomes??[]).flatMap(o=>[o.reading_id,o.before_reading_id,o.after_reading_id].filter(Boolean))))];
       if(ids.length>200000)throw new AppError(422,'REPORT_TOO_LARGE','Narrow the range; too many evidence references.');
       const readings=new Map((await tx.readings.getMany(ids)).map(r=>[r.id,r]));
-      const entries=activeRecords.map(record=>hydrateRecord(record,readings)).filter(e=>(!product_type_id||e.occurrence.context?.product_type_id===product_type_id)&&(!instrument_id||e.occurrence.instruments.some(a=>a.id===instrument_id)));
+      const importManifests=new Map();
+      const batches=[...new Set(activeRecords.filter(r=>isPrivateXrOrigin(r.origin)).map(r=>r.origin.batch_id))];
+      if(batches.length>1000)throw new AppError(422,'REPORT_TOO_LARGE','Narrow the report range; too many import batches.');
+      for(const batch of batches)importManifests.set(batch,await tx.settings.get(xrManifestId(batch)));
+      const entries=activeRecords.map(record=>hydrateRecord(record,readings,importManifests)).filter(e=>(!product_type_id||e.occurrence.context?.product_type_id===product_type_id)&&(!instrument_id||e.occurrence.instruments.some(a=>a.id===instrument_id)));
       entries.sort((a,b)=>a.occurrence.checked_at.localeCompare(b.occurrence.checked_at)||a.occurrence.id.localeCompare(b.occurrence.id));
-      return {entries,normalized,meta:{report_version:'1',as_of,scope,scanned_records:activeRecords.length,count_unit:'maintenance_record',warnings:[]}};
+      return {entries,normalized,meta:{report_version:'1',as_of,scope,scanned_records:activeRecords.length,count_unit:'maintenance_record',warnings:entries.some(e=>e.occurrence.origin?.kind===XR_IMPORT_KIND)?['ILLUSTRATIVE_DATA']:[]}};
     });
   }
   async function spc(input,{method='paper_stdev_s'}={}){
     const {entries,meta}=await load(input),cohorts=new Map();
     if(entries.filter(e=>e.numeric).length>5000)throw new AppError(422,'REPORT_TOO_LARGE','Narrow the date range; report exceeds 5000 subgroups.');
     for(const entry of entries.filter(e=>e.numeric)){
-      if(!cohorts.has(entry.cohort_id))cohorts.set(entry.cohort_id,{cohort_id:entry.cohort_id,cohort_key:entry.cohort_key,definition_snapshot:entry.occurrence.definition_snapshot,product_snapshot:entry.occurrence.product_snapshot,instruments:entry.occurrence.instruments,unit:entry.occurrence.definition_snapshot.unit,n:entry.occurrence.definition_snapshot.sample_count,...entry.acceptance,groups:[],incomplete:[]});
+      if(!cohorts.has(entry.cohort_id))cohorts.set(entry.cohort_id,{cohort_id:entry.cohort_id,cohort_key:entry.cohort_key,definition_snapshot:entry.occurrence.definition_snapshot,product_snapshot:entry.occurrence.product_snapshot,instruments:entry.occurrence.instruments,unit:entry.occurrence.definition_snapshot.unit,n:entry.occurrence.definition_snapshot.sample_count,...entry.acceptance,...(entry.occurrence.origin?{origin:entry.occurrence.origin}:{}),groups:[],incomplete:[]});
       const cohort=cohorts.get(entry.cohort_id);
       if(entry.complete)cohort.groups.push({occurrence:entry.occurrence,values:entry.values,xbar:entry.xbar,r:entry.r});else cohort.incomplete.push({occurrence:entry.occurrence,reasons:entry.reasons});
     }
@@ -36,7 +41,7 @@ export function createReportService({repositories,clock}){
     for(const c of cohorts.values()){
       const statistics=calculateSpc({groups:c.groups.map(g=>g.values),lsl:c.acceptance_limits?.minimum??null,usl:c.acceptance_limits?.maximum??null,method});
       const {groups,...details}=c;
-      result.push({...details,counts:{complete:groups.length,incomplete:c.incomplete.length,excluded:c.incomplete.length,observations:statistics.N},series:groups.map(g=>({occurrence_id:g.occurrence.id,checked_at:g.occurrence.checked_at,xbar:g.xbar,r:g.r})),statistics,control_limits:statistics.control_limits,capability:statistics.capability,baseline:{id:null,source:'selected_period',as_of:meta.as_of,scope:meta.scope},warnings:[...statistics.reasons,...c.definition_snapshot.review_notes],_groups:groups});
+      result.push({...details,counts:{complete:groups.length,incomplete:c.incomplete.length,excluded:c.incomplete.length,observations:statistics.N},series:groups.map(g=>({occurrence_id:g.occurrence.id,checked_at:g.occurrence.checked_at,xbar:g.xbar,r:g.r})),statistics,control_limits:statistics.control_limits,capability:statistics.capability,baseline:{id:null,source:'selected_period',as_of:meta.as_of,scope:meta.scope},warnings:[...statistics.reasons,...c.definition_snapshot.review_notes,...(c.origin?['ILLUSTRATIVE_DATA']:[])],_groups:groups});
     }
     if(entries.some(e=>!e.numeric))meta.warnings.push('ATTRIBUTE_DATA_HAS_NO_SPC');
     return {meta,cohorts:result};

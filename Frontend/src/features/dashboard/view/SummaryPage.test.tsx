@@ -107,7 +107,7 @@ it('failed due requests show retry instead of fabricated completion counts', asy
   );
   renderApp(<SummaryPage />);
   const active = await screen.findByRole('region', { name: 'Jadwal aktif' });
-  expect(await within(active).findByText('Jadwal tidak tersedia')).toBeVisible();
+  expect(await within(active).findByText('Server belum dapat memproses permintaan.')).toBeVisible();
   expect(within(active).queryByText('0')).not.toBeInTheDocument();
   server.use(http.get('/api/v1/maintenance/due', () => HttpResponse.json(envelope(due('17')))));
   fireEvent.click(within(active).getByRole('button', { name: 'Coba lagi' }));

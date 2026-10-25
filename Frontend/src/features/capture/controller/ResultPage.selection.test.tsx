@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useStore } from 'zustand';
 import { http, HttpResponse } from 'msw';
@@ -11,7 +11,7 @@ import { ResultPage } from '../view/ResultPage';
 import { useInspectionStore } from '../../maintenance/model/inspectionStore';
 import { renderApp } from '../../../test/render';
 import { server } from '../../../test/server';
-import { envelope, fixtureDefinition, fixtureInstrument } from '../../../test/fixtures';
+import { envelope, fixtureDefinition, fixtureInstrument, schedule } from '../../../test/fixtures';
 import type { Instrument, MaintenanceDefinition } from '../../../shared/lib/contracts';
 const ee = fixtureDefinition({ id: 'ee', name: 'EE Cutting' });
 const gasket = fixtureDefinition({ id: 'gasket', name: 'Check Gasket' });
@@ -160,4 +160,82 @@ it('inspection appears before equipment in keyboard and page order', async () =>
   const fields = screen.getAllByRole('combobox');
   expect(fields[0]).toHaveAccessibleName('Pemeriksaan');
   expect(fields[1]).toHaveAccessibleName(/Nama alat/);
+});
+
+it('a completed machine tool leaves its pending sibling available without rereading', async () => {
+  const machine = fixtureDefinition({
+    id: 'lowering',
+    name: 'Machine Lowering',
+    unit: 'MPa',
+    inspection_target: 'machine',
+    sample_count: 1,
+    samples: [{ id: 'n1', label: 'n1' }],
+  });
+  const profile = { ...a.profile!, unit: 'MPa' as const, maximum: 1 };
+  const one = fixtureInstrument({
+    id: 'mc1',
+    name: 'MC Lowering 1',
+    profile,
+    maintenance_check_ids: [machine.id],
+  });
+  const two = fixtureInstrument({
+    id: 'mc2',
+    name: 'MC Lowering 2',
+    profile,
+    maintenance_check_ids: [machine.id],
+  });
+  let requested = 0;
+  server.use(
+    http.get('/api/v1/maintenance/due', () => {
+      requested++;
+      return HttpResponse.json(
+        envelope({
+          schedule,
+          line: '17',
+          items: [
+            {
+              definition_id: machine.id,
+              state: 'pending',
+              equipment: [
+                { instrument_id: 'mc1', state: 'completed', completed_record_id: 'r1' },
+                { instrument_id: 'mc2', state: 'pending', completed_record_id: null },
+              ],
+            },
+          ],
+          completed_count: 0,
+          pending_count: 1,
+        }),
+      );
+    }),
+  );
+  const { store, api } = setup([one, two], two, profile, machine, [machine]);
+  await act(async () =>
+    store.setState({
+      photo: {
+        image_id: 'photo',
+        source_hash: 'hash',
+        source_width: 800,
+        source_height: 1000,
+        preview_width: 800,
+        preview_height: 1000,
+        expires_at: 9999999999,
+        context: {
+          line: '17',
+          production_date: schedule.production_date,
+          shift: schedule.shift,
+          sampler: 'Ldr',
+        },
+      },
+    }),
+  );
+  await waitFor(() => expect(requested).toBe(1));
+  await waitFor(() =>
+    expect(screen.queryByRole('option', { name: 'MC Lowering 1' })).not.toBeInTheDocument(),
+  );
+  expect(screen.getByLabelText('Nama alat')).toHaveValue('mc2');
+  expect(screen.getByRole('button', { name: 'Lanjut · konfirmasi' })).toBeEnabled();
+  await act(async () => store.setState({ instrument: one }));
+  expect(screen.getByText('✓ Alat ini sudah diperiksa')).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Lanjut · konfirmasi' })).toBeDisabled();
+  expect(api.submit).not.toHaveBeenCalled();
 });

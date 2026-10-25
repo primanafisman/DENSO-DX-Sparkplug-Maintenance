@@ -58,7 +58,7 @@ it('equipment tab archives only persisted availability, keeps failed drafts and 
   expect(edit.getByLabelText('Nama alat')).toHaveValue('Draft yang belum disimpan');
   fireEvent.click(edit.getByRole('button', { name: 'Hapus dari pilihan' }));
   fireEvent.click(edit.getByRole('button', { name: 'Ya, hapus dari pilihan' }));
-  expect(await edit.findByText('Status gagal disimpan')).toBeVisible();
+  expect(await edit.findByText('Server belum dapat memproses permintaan.')).toBeVisible();
   expect(edit.getByLabelText('Nama alat')).toHaveValue('Draft yang belum disimpan');
   fail = false;
   fireEvent.click(edit.getByRole('button', { name: 'Ya, hapus dari pilihan' }));

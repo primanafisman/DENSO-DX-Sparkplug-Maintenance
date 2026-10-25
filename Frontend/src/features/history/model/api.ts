@@ -10,8 +10,8 @@ import type {
 } from '../../../shared/lib/contracts';
 import { checksheetSchema } from './schemas';
 function reportRequest(scope: ReportInput, suffix: string) {
-  const { demo, ...params } = scope;
-  return { path: '/maintenance/' + (demo ? 'demo/' : '') + suffix, params };
+  const { demo: _legacyDemo, ...params } = scope as ReportInput & { demo?: unknown };
+  return { path: '/maintenance/' + suffix, params };
 }
 export const historyApi = {
   deleteRecord: (id: string) =>
@@ -45,7 +45,9 @@ export const historyApi = {
     });
   },
   export: (scope: ReportInput, report_kind: 'checksheet' | 'spc', baseline_id?: string) =>
-    binary('/maintenance/export.csv', { params: { ...scope, report_kind, baseline_id } }),
+    binary('/maintenance/export.csv', {
+      params: { ...reportRequest(scope, 'export.csv').params, report_kind, baseline_id },
+    }),
   baselines: (cursor?: string) =>
     read<Page<SpcBaseline>>('/maintenance/spc-baselines', { params: { limit: 100, cursor } }),
   saveBaseline: (body: BaselineInput) => write<SpcBaseline>('/maintenance/spc-baselines', body),

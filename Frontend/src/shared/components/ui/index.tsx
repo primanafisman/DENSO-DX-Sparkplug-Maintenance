@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { ReactNode, ButtonHTMLAttributes } from 'react';
 import { AlertCircle, LoaderCircle, Inbox, X } from 'lucide-react';
 import { ApiError } from '../../lib/api';
+import { userError } from '../../lib/userError';
 export function Button({
   variant = 'primary',
   className = '',
@@ -72,16 +73,19 @@ export function Empty({
 }
 export function ErrorMessage({ error }: { error: unknown }) {
   if (!error) return null;
+  const text = userError(error);
   return (
     <div className="error-message" role="alert">
       <AlertCircle size={20} />
       <div>
-        {error instanceof Error ? error.message : 'Permintaan belum berhasil.'}
-        {error instanceof ApiError && error.request_id && (
+        <span>{text.message}</span>
+        {text.action && <p className="error-action">{text.action}</p>}
+        {error instanceof ApiError && (
           <details>
             <summary>Detail bantuan</summary>
             <code>
-              {error.code} · {error.request_id}
+              {error.code}
+              {error.request_id ? ' · ' + error.request_id : ''}
             </code>
           </details>
         )}

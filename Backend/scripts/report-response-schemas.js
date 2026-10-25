@@ -5,6 +5,7 @@ export function addReportSchemas(s){
   const nullable=v=>({...v,nullable:true}),nnum=nullable(num),nstr=nullable(str);
   const nullRef=name=>nullable({...s[name]});
   s.ProductSnapshot=obj({id:str,code:str,name:str,version:int});
+  s.RecordOrigin=obj({kind:{type:'string',enum:['illustrative_local_import']},label:{type:'string',enum:['Data uji X/R']},batch_id:str,version:{type:'integer',enum:[1]},source:{type:'string',enum:['local-xr-formula-v1']}});
   s.ReadingResponse.properties.product_snapshot=nullRef('ProductSnapshot');
   s.ReadingResponse.properties.calibration_snapshot=nullable(obj({id:str,template_hash:nstr}));
   s.MaintenanceDefinition.properties.effective_at=str;
@@ -12,6 +13,7 @@ export function addReportSchemas(s){
   s.MaintenanceRecord.properties.product_snapshot=nullRef('ProductSnapshot');
   s.MaintenanceRecord.properties.instrument_snapshot=nullRef('InstrumentResponse');
   s.MaintenanceRecord.properties.schedule_snapshot=obj({slot_id:str,starts_at:str,schedule_version:int,timezone:{type:'string',enum:['Asia/Jakarta']}});
+  s.MaintenanceRecord.properties.origin=ref('RecordOrigin');
   s.ReportScope=obj({production_date_from:str,production_date_to:str,line:str,shift:{type:'string',enum:['day','night']},definition_id:str,product_type_id:str,instrument_id:str},['production_date_from','production_date_to']);
   s.ReportMeta=obj({report_version:{type:'string',enum:['1']},as_of:str,scope:ref('ReportScope'),scanned_records:int,count_unit:{type:'string',enum:['maintenance_record']},warnings:strings});
   s.MaintenanceSummary=obj({meta:ref('ReportMeta'),total:int,ok:int,ng:int,ok_ratio:nnum,daily:{type:'array',items:obj({date:str,ok:int,ng:int})},groups:{type:'array',items:obj({definition_id:str,name:str,total:int,ok:int,ng:int})}});
@@ -19,6 +21,7 @@ export function addReportSchemas(s){
   s.InstrumentSnapshot={...s.InstrumentResponse,required:['id','name']};
   s.EvidenceRef=obj({reading_id:str,variant:{type:'string',enum:['original','crop']}});
   s.Occurrence=obj({id:str,checked_at:str,context:ref('Context'),slot_id:nstr,overall_status:{type:'string',enum:['OK','NG']},outcomes:arr('SampleOutcome'),definition_snapshot:nullRef('MaintenanceDefinition'),product_snapshot:nullRef('ProductSnapshot'),instruments:arr('InstrumentSnapshot'),evidence:arr('EvidenceRef'),numeric_summary:nullable(obj({complete:bool,xbar:nnum,r:nnum}))});
+  s.Occurrence.properties.origin=ref('RecordOrigin');
   s.ChecksheetRow=obj({check_number:{type:'integer',nullable:true},row_id:str,definition_id:str,definition_version:int,name:str,equipment_id:nstr,equipment_name:nstr,shift:{type:'string',enum:['day','night']},unit:nstr,standard:obj({text:str,minimum:nnum,maximum:nnum}),input_method:{type:'string',enum:['ok_ng','photo','photo_difference']},cells:{type:'array',items:obj({date:str,occurrences:arr('Occurrence'),count:int})}});
   s.ChecksheetPage=obj({meta:ref('ReportMeta'),rows:arr('ChecksheetRow'),next_cursor:nstr});
   s.ControlLimits=obj({center_x:nnum,center_r:nnum,ucl_x:nnum,lcl_x:nnum,ucl_r:nnum,lcl_r:nnum});
@@ -29,6 +32,7 @@ export function addReportSchemas(s){
   s.SpcCohort=obj({cohort_id:str,cohort_key:str,definition_snapshot:ref('MaintenanceDefinition'),product_snapshot:nullRef('ProductSnapshot'),instruments:arr('InstrumentSnapshot'),unit:str,n:int,counts:obj({complete:int,incomplete:int,excluded:int,observations:int}),series:{type:'array',items:obj({occurrence_id:str,checked_at:str,xbar:num,r:nnum})},incomplete:arr('IncompleteGroup'),statistics:ref('SpcCalculation'),control_limits:ref('ControlLimits'),capability:ref('Capability'),baseline:ref('BaselineSource'),warnings:strings});
   s.SpcReport=obj({meta:ref('ReportMeta'),cohorts:arr('SpcCohort')});
   Object.assign(s.SpcCohort.properties,{acceptance_limits:ref('AcceptanceLimits'),acceptance_source:{type:'string',enum:['equipment','inspection']}});
+  s.SpcCohort.properties.origin=ref('RecordOrigin');
   s.Subgroup=obj({occurrence:ref('Occurrence'),values:{type:'array',items:num},xbar:nnum,r:nnum,reasons:strings},['occurrence','values','xbar','r']);
   s.SubgroupPage=obj({meta:ref('ReportMeta'),items:arr('Subgroup'),next_cursor:nstr});
   s.SpcBaseline=obj({id:str,entity_id:str,version:int,scope:ref('ReportScope'),as_of:str,cohort_key:str,cohort_id:str,method:{type:'string',enum:['paper_stdev_s','within_rbar_d2']},constants_version:str,control_limits:ref('ControlLimits'),center:obj({xbar:nnum,rbar:nnum}),created_by:str,created_at:str,review_reason:str});

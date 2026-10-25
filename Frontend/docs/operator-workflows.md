@@ -44,7 +44,15 @@ Nama/alias lengkap yang sama persis dan unik, misalnya **MC Lowering 1**, dapat 
 
 Admin dapat menghapus catatan dari rincian dengan ikon tempat sampah, kemudian Ya, hapus catatan. Batal tidak mengubah data. Catatan yang dihapus keluar dari laporan/jadwal aktif; foto, snapshot dan jejak audit tetap disimpan backend. Catatan NG yang sudah lengkap tetap dianggap telah dikerjakan pada jadwal itu; penanganan NG mengikuti proses perusahaan.
 
-Untuk melihat contoh grafik pada server uji lokal, buka Riwayat → Lihat data contoh → pilih salah satu pemeriksaan angka, misalnya Panjang EE / EE Cutting. Pilih kelompok U-Type/V-Type untuk membandingkan rangkaian. Banner kuning menandai data contoh. Angka simulasi mengikuti struktur dan batas lembar sumber, bukan salinan angka tulisan tangan pada foto. Demo tidak menulis database dan tidak dapat dihapus, diekspor menjadi CSV produksi atau dipakai sebagai baseline. Tombol ini tidak ditampilkan pada server produksi.
+Grafik X/R dibuka langsung dari Riwayat → pilih pemeriksaan angka, misalnya Panjang EE / EE Cutting. Pilih Type/kelompok untuk melihat rangkaian yang terpisah. Tidak ada mode atau tombol Lihat data contoh. Pada instalasi uji lokal ini, rangkaian Type uji U/V diberi penanda Data uji X/R; angka simulasi mengikuti struktur/batas lembar dan bukan hasil ukur lapangan. Data ini berada pada penyimpanan riwayat biasa, dapat dihapus Admin dan diekspor dengan asalnya, tetapi tidak dapat dijadikan baseline produksi. Data uji tidak membuat kewajiban pemeriksaan selesai.
+
+## Jam dan pemeriksaan per alat
+
+Jam header menampilkan WIB hingga detik dari waktu server. Jika koneksi gagal, jam menampilkan tanda kosong; shift tetap ditentukan server saat pemeriksaan dimulai.
+
+Untuk pemeriksaan mesin satu angka, alat terhubung dihitung sendiri-sendiri. Selesainya MC Lowering 1 tidak menutup MC Lowering 2. Pengaturan line/area yang sesuai dan alat bersama diprioritaskan; instalasi lama yang belum memiliki penugasan pada line memakai daftar terhubung sebagai fallback. Nama lengkap unik tetap boleh dikenali lintas area tanpa mengubah line pilihan. Sampel produk dan pengukuran sebelum/sesudah tetap membutuhkan foto berbeda.
+
+Konfirmasi yang sempat selesai sebelum pemeriksaan disimpan dapat dilanjutkan dengan hasil yang sama. Angka berbeda pada foto yang sudah dikonfirmasi memerlukan foto baru atau pemeriksaan riwayat; sistem tidak mengganti bacaan lama diam-diam. Alat yang sudah selesai baru muncul kembali sesuai frekuensi/jadwal berikutnya.
 
 ## CV dan keterbatasan
 

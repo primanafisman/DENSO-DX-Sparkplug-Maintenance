@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { useCapture } from './captureContext';
 import { useCatalog } from '../../settings/controller/useSettings';
 import { useInspectionStore } from '../../maintenance/model/inspectionStore';
+import { useMaintenanceDue } from '../../maintenance/controller/useInspection';
+import { machineDueState, usesMachineTools } from '../model/equipmentDue';
 export function useResultSelection() {
   const { state, engine } = useCapture(),
     catalog = useCatalog(),
@@ -12,8 +14,26 @@ export function useResultSelection() {
       a.active && a.profile && a.measurement_mode !== 'visual' && a.condition !== 'not_working',
   );
   const selectedCheck = store.draft?.definition;
+  const due = useMaintenanceDue(
+    state.photo && usesMachineTools(selectedCheck) ? state.photo.context.line : '',
+  );
+  const isCompleted = (instrumentId: string) =>
+    !!store.draft &&
+    !!selectedCheck &&
+    !!state.photo &&
+    machineDueState(
+      due.data,
+      selectedCheck.id,
+      state.photo.context,
+      store.draft.checked_at,
+      instrumentId,
+    ) === 'completed';
   const candidates = selectedCheck
-    ? equipment.filter((a) => a.maintenance_check_ids.includes(selectedCheck.id))
+    ? equipment.filter(
+        (a) =>
+          a.maintenance_check_ids.includes(selectedCheck.id) &&
+          (!isCompleted(a.id) || a.id === state.instrument?.id),
+      )
     : equipment;
   const locked = !!state.pending || !!state.reading || store.saveState !== 'editing';
   useEffect(() => {
@@ -27,7 +47,7 @@ export function useResultSelection() {
     useInspectionStore.getState().setDefinition(linked.length === 1 ? linked[0] : null);
   }, [state.instrument, catalog.data, locked]);
   async function selectInstrument(id: string) {
-    if (locked) return;
+    if (locked || (id && isCompleted(id))) return;
     const asset = candidates.find((a) => a.id === id) ?? null;
     await engine.selectInstrument(asset);
     if (!asset) return;
@@ -43,5 +63,12 @@ export function useResultSelection() {
     if (!definition || state.instrument?.maintenance_check_ids.includes(definition.id)) return;
     await engine.selectInstrument(null);
   }
-  return { checks, candidates, locked, selectInstrument, selectCheck };
+  return {
+    checks,
+    candidates,
+    locked,
+    completed: !!state.instrument && isCompleted(state.instrument.id),
+    selectInstrument,
+    selectCheck,
+  };
 }

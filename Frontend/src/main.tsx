@@ -4,6 +4,7 @@ import { App } from './app/App';
 import './styles/tokens.css';
 import './styles/app.css';
 import './styles/operator.css';
+import './styles/dimensional.css';
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

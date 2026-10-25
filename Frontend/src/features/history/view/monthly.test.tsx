@@ -11,7 +11,6 @@ chartLayout();
 const scope = { production_date_from: '2026-10-01', production_date_to: '2026-10-31' };
 function setup() {
   server.use(
-    http.get('/api/v1/capabilities', () => HttpResponse.json(envelope({ demo_reports: true }))),
     http.get('/api/v1/auth/me', () =>
       HttpResponse.json(envelope({ id: 'admin', username: 'Admin', role: 'Admin' })),
     ),

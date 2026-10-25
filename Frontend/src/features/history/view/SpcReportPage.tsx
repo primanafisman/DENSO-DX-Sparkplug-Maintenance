@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Activity } from 'lucide-react';
 import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import type { Occurrence, Subgroup } from '../../../shared/lib/contracts';
 import { useCatalog } from '../../settings/controller/useSettings';
@@ -24,23 +25,14 @@ import {
 } from '../../../shared/components/ui';
 import { dateTime, monthRange } from '../../../shared/lib/format';
 import { StatusReportPage } from './StatusReportPage';
-import { useCapabilities } from '../../../shared/controller/useCapabilities';
 import { statusOnlyReport } from '../model/reportMode';
 import { cohortAcceptance } from '../model/measurementFacts';
+import { illustrativeOrigin } from '../model/reportOrigin';
+import { OriginBadge } from './OriginBadge';
 export function SpcReportPage() {
   const { definitionId } = useParams(),
-    catalog = useCatalog(true),
-    [params] = useSearchParams(),
-    capabilities = useCapabilities();
+    catalog = useCatalog(true);
   const definition = catalog.data?.items.find((d) => d.id === definitionId);
-  if (params.get('demo') === '1' && capabilities.isPending) return <Loading />;
-  if (params.get('demo') === '1' && !capabilities.data?.demo_reports)
-    return (
-      <Card>
-        <Empty title="Data contoh tidak tersedia pada server ini" />
-        <Link to="/riwayat">Kembali ke data produksi</Link>
-      </Card>
-    );
   if (catalog.isPending) return <Loading />;
   if (catalog.error) return <ErrorMessage error={catalog.error} />;
   if (definition && statusOnlyReport(definition))
@@ -55,7 +47,6 @@ function NumericReportPage() {
     catalog = useCatalog(true),
     session = useSession(),
     [showSettings, setShowSettings] = useState(false),
-    baselines = useBaselines(showSettings && !f.demo),
     [chosen, setChosen] = useState(''),
     [occurrence, setOccurrence] = useState<Occurrence | null>(null),
     [saveBaseline, setSaveBaseline] = useState(false),
@@ -82,10 +73,12 @@ function NumericReportPage() {
             production_date_to: end,
           }
         : null,
-    baseline = f.demo ? undefined : (params.get('baseline') ?? undefined),
+    baseline = params.get('baseline') ?? undefined,
     q = useSpcReport(scope, chosen, baseline),
     c = q.cohort,
     report = q.report.data;
+  const imported = illustrativeOrigin(c?.origin),
+    baselines = useBaselines(showSettings && !!c && !imported);
   useEffect(() => {
     abort.current?.abort();
     setPrintGroups(null);
@@ -149,6 +142,7 @@ function NumericReportPage() {
       <div className="no-print">
         <PageHeader
           title={definition?.name ?? 'Laporan pemeriksaan'}
+          icon={<Activity />}
           actions={
             <Link
               className="button button-secondary"
@@ -158,7 +152,6 @@ function NumericReportPage() {
                   month: f.month,
                   ...(f.line ? { line: f.line } : {}),
                   ...(f.shift ? { shift: f.shift } : {}),
-                  ...(f.demo ? { demo: '1' } : {}),
                 })
               }
             >
@@ -166,11 +159,6 @@ function NumericReportPage() {
             </Link>
           }
         />
-        {f.demo && (
-          <div className="demo-banner" role="status">
-            <strong>Data contoh — bukan catatan produksi.</strong>
-          </div>
-        )}
         <ReportFilters filters={f} />
         <div className="filter-bar">
           <Field label="Pemeriksaan">
@@ -252,7 +240,6 @@ function NumericReportPage() {
                 <div className="no-print">
                   <Field label="Kelompok pengukuran">
                     <select value={c?.cohort_id ?? ''} onChange={(e) => setChosen(e.target.value)}>
-                      <option value="">Pilih kelompok</option>
                       {report.cohorts.map((cohort, index) => (
                         <option key={cohort.cohort_id} value={cohort.cohort_id}>
                           {index + 1} ·{' '}
@@ -274,6 +261,7 @@ function NumericReportPage() {
                 <>
                   <Card className="report-header">
                     <div className="row wrap">
+                      <OriginBadge origin={c.origin} />
                       {c.product_snapshot?.name && <strong>Type {c.product_snapshot.name}</strong>}
                       <span>{c.unit}</span>
                       <span>n = {c.n}</span>
@@ -286,46 +274,42 @@ function NumericReportPage() {
                     <div className="no-print">
                       <details onToggle={(event) => setShowSettings(event.currentTarget.open)}>
                         <summary>Pengaturan grafik</summary>
-                        {!f.demo && (
-                          <Field label="Batas kontrol">
-                            <select
-                              disabled={report.cohorts.length > 1}
-                              value={baseline ?? ''}
-                              onChange={(e) => change({ baseline: e.target.value })}
-                            >
-                              <option value="">Periode dipilih</option>
-                              {baselines.data
-                                ?.filter((b) => b.cohort_key === c.cohort_key)
-                                .map((b) => (
-                                  <option key={b.id} value={b.id}>
-                                    Tersimpan · {dateTime(b.created_at)}
-                                  </option>
-                                ))}
-                            </select>
-                          </Field>
-                        )}
-                        {report.cohorts.length > 1 && (
-                          <p className="info-note">
-                            Pilih satu kelompok pengukuran untuk memakai batas kontrol tersimpan.
-                          </p>
-                        )}
+                        <Field label="Batas kontrol">
+                          <select
+                            disabled={imported || report.cohorts.length > 1}
+                            value={baseline ?? ''}
+                            onChange={(e) => change({ baseline: e.target.value })}
+                          >
+                            <option value="">Periode dipilih</option>
+                            {baselines.data
+                              ?.filter((b) => b.cohort_key === c.cohort_key)
+                              .map((b) => (
+                                <option key={b.id} value={b.id}>
+                                  Tersimpan · {dateTime(b.created_at)}
+                                </option>
+                              ))}
+                          </select>
+                        </Field>
                         <ErrorMessage error={baselines.error} />
                         {baseline && (
                           <Button variant="secondary" onClick={() => change({ baseline: '' })}>
                             Gunakan periode dipilih
                           </Button>
                         )}
-                        {!f.demo &&
-                          session.user?.role === 'Admin' &&
-                          report.cohorts.length === 1 && (
-                            <Button
-                              variant="secondary"
-                              disabled={c.control_limits.ucl_x === null}
-                              onClick={() => setSaveBaseline(true)}
-                            >
-                              Simpan batas kontrol
-                            </Button>
-                          )}
+                        {session.user?.role === 'Admin' && report.cohorts.length === 1 && (
+                          <Button
+                            variant="secondary"
+                            disabled={imported || c.control_limits.ucl_x === null}
+                            title={
+                              imported
+                                ? 'Data uji tidak digunakan sebagai batas kontrol produksi.'
+                                : undefined
+                            }
+                            onClick={() => setSaveBaseline(true)}
+                          >
+                            Simpan batas kontrol
+                          </Button>
+                        )}
                       </details>
                       <div className="actions">
                         <Button onClick={print} disabled={printing}>
@@ -333,7 +317,6 @@ function NumericReportPage() {
                         </Button>
                         <Button
                           variant="secondary"
-                          disabled={f.demo}
                           onClick={() =>
                             downloadReport(
                               { ...report.meta.scope, as_of: report.meta.as_of },
@@ -401,7 +384,7 @@ function NumericReportPage() {
                       ))}
                     </div>
                   )}
-                  {saveBaseline && (
+                  {saveBaseline && !imported && (
                     <BaselineDialog
                       scope={{ ...report.meta.scope, as_of: report.meta.as_of }}
                       cohort={c}
@@ -416,22 +399,18 @@ function NumericReportPage() {
               )}
             </>
           )}
-          {report.meta.warnings.some((warning) => warning !== 'DEMO_DATA') && (
+          {!!report.meta.warnings.length && (
             <details className="info-note">
               <summary>Detail laporan</summary>
-              {report.meta.warnings
-                .filter((warning) => warning !== 'DEMO_DATA')
-                .map((warning) => (
-                  <p key={warning}>{warning}</p>
-                ))}
+              {report.meta.warnings.map((warning) => (
+                <p key={warning}>{warning}</p>
+              ))}
             </details>
           )}
         </>
       )}
       <ErrorDialog error={error} onClose={() => setError(null)} />
-      {occurrence && (
-        <OccurrenceDrawer demo={f.demo} items={[occurrence]} onClose={() => setOccurrence(null)} />
-      )}
+      {occurrence && <OccurrenceDrawer items={[occurrence]} onClose={() => setOccurrence(null)} />}
     </>
   );
 }

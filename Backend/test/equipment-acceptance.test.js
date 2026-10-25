@@ -28,7 +28,7 @@ async function prepare(patch={}){
 }
 
 test('equipment-specific acceptance is inclusive and overrides the inspection standard',async()=>{
-  const {reading,close}=await prepare();
+  const {reading,close}=await prepare({inspection_target:'product'});
   try{
     for(const [value,status] of [[.349,'NG'],[.350,'OK'],[.450,'OK'],[.451,'NG']]){
       const saved=await reading('reading-'+value,value);
@@ -95,7 +95,7 @@ test('legacy confirmed snapshots fall back to the inspection limits instead of t
 });
 
 test('a one-sided equipment limit preserves the open bound',async()=>{
-  const {instrument,reading,close}=await prepare();
+  const {instrument,reading,close}=await prepare({inspection_target:'product'});
   try{
     const snapshot={...instrument,acceptance_limits:{minimum:null,maximum:.45}};
     assert.equal((await reading('open-low',.2,snapshot)).overall_status,'OK');

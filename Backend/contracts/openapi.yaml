@@ -7515,6 +7515,9 @@
               "schedule_version",
               "timezone"
             ]
+          },
+          "origin": {
+            "$ref": "#/components/schemas/RecordOrigin"
           }
         },
         "required": [
@@ -7652,6 +7655,45 @@
           "code",
           "name",
           "version"
+        ]
+      },
+      "RecordOrigin": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "illustrative_local_import"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "enum": [
+              "Data uji X/R"
+            ]
+          },
+          "batch_id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "enum": [
+              1
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "local-xr-formula-v1"
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "label",
+          "batch_id",
+          "version",
+          "source"
         ]
       },
       "ReportScope": {
@@ -8423,6 +8465,9 @@
               "r"
             ],
             "nullable": true
+          },
+          "origin": {
+            "$ref": "#/components/schemas/RecordOrigin"
           }
         },
         "required": [
@@ -8914,6 +8959,9 @@
               "equipment",
               "inspection"
             ]
+          },
+          "origin": {
+            "$ref": "#/components/schemas/RecordOrigin"
           }
         },
         "required": [
@@ -9650,6 +9698,7 @@
                 "definition_version",
                 "state",
                 "completed_record_id",
+                "equipment",
                 "occurrence_key",
                 "starts_at",
                 "next_starts_at",
@@ -9673,6 +9722,33 @@
                 "completed_record_id": {
                   "type": "string",
                   "nullable": true
+                },
+                "equipment": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "instrument_id",
+                      "state",
+                      "completed_record_id"
+                    ],
+                    "properties": {
+                      "instrument_id": {
+                        "type": "string"
+                      },
+                      "state": {
+                        "type": "string",
+                        "enum": [
+                          "pending",
+                          "completed"
+                        ]
+                      },
+                      "completed_record_id": {
+                        "type": "string",
+                        "nullable": true
+                      }
+                    }
+                  }
                 },
                 "occurrence_key": {
                   "type": "string"

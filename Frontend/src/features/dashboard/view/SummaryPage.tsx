@@ -1,5 +1,18 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Clock3, ArrowRight, Check, X } from 'lucide-react';
+import {
+  CheckCircle2,
+  Clock3,
+  ArrowRight,
+  Check,
+  X,
+  LayoutDashboard,
+  ClipboardList,
+  Gauge,
+  TrendingUp,
+  ScanLine,
+  Layers3,
+  BarChart3,
+} from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { useMonthlySummary } from '../controller/useMonthlySummary';
 import { useCurrentWorkload } from '../controller/useCurrentWorkload';
@@ -8,6 +21,7 @@ import { ReportFilters } from '../../../shared/components/layout/ReportFilters';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { Card, Loading, ErrorMessage, Empty, Button } from '../../../shared/components/ui';
 import { number } from '../../../shared/lib/format';
+import { ProgressRing } from '../../../shared/components/ui/ProgressRing';
 export function SummaryPage() {
   const filters = useReportFilters(),
     query = useMonthlySummary(filters),
@@ -18,15 +32,19 @@ export function SummaryPage() {
     <div className="summary-page">
       <PageHeader
         title="Ringkasan"
+        icon={<LayoutDashboard size={23} />}
         actions={
           <Link className="button button-primary" to="/pemeriksaan">
-            Mulai pemeriksaan
+            <ScanLine size={19} /> Mulai pemeriksaan <ArrowRight size={16} />
           </Link>
         }
       />
       <ReportFilters filters={filters} />
       <section className="current-workload" aria-label="Jadwal aktif">
         <div className="current-shift">
+          <span className="shift-orbit" aria-hidden="true">
+            <Layers3 size={28} />
+          </span>
           <small>Jadwal aktif</small>
           <strong>{schedule?.slot_label ?? 'Memuat shift…'}</strong>
           <span>{current.activeLine ? 'Line ' + current.activeLine : 'Semua line'}</span>
@@ -35,6 +53,11 @@ export function SummaryPage() {
           <p className="muted">Pilih line</p>
         ) : (
           <>
+            <ProgressRing
+              completed={current.data?.completed_count ?? 0}
+              pending={current.data?.pending_count ?? 0}
+              ready={current.countsReady}
+            />
             <div className="workload-count">
               <strong className="text-ok">
                 {current.countsReady ? current.data!.completed_count : '—'}
@@ -72,23 +95,35 @@ export function SummaryPage() {
       {d && (
         <>
           <div className="kpi-grid">
-            <Card>
+            <Card className="kpi-card kpi-total">
+              <span className="metric-symbol" aria-hidden="true">
+                <ClipboardList size={24} />
+              </span>
               <p>Total</p>
               <strong>{d.total}</strong>
             </Card>
-            <Card>
+            <Card className="kpi-card kpi-ok">
+              <span className="metric-symbol" aria-hidden="true">
+                <CheckCircle2 size={24} />
+              </span>
               <p>
                 <Check size={18} /> OK
               </p>
               <strong className="text-ok">{d.ok}</strong>
             </Card>
-            <Card>
+            <Card className="kpi-card kpi-ng">
+              <span className="metric-symbol" aria-hidden="true">
+                <Gauge size={24} />
+              </span>
               <p>
                 <X size={18} /> NG
               </p>
               <strong className="text-ng">{d.ng}</strong>
             </Card>
-            <Card>
+            <Card className="kpi-card kpi-ratio">
+              <span className="metric-symbol" aria-hidden="true">
+                <TrendingUp size={24} />
+              </span>
               <p>OK %</p>
               <strong>{d.ok_ratio === null ? '—' : number(d.ok_ratio * 100, 1) + '%'}</strong>
             </Card>
@@ -96,7 +131,9 @@ export function SummaryPage() {
           <div className="summary-detail-grid">
             <Card>
               <div className="row between">
-                <h2>Hasil per hari</h2>
+                <h2 className="section-icon-title">
+                  <BarChart3 size={20} /> Hasil per hari
+                </h2>
                 <span className="summary-legend">
                   <i className="legend-ok" />
                   OK <i className="legend-ng" />

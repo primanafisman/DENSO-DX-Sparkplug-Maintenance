@@ -11,6 +11,7 @@ import {
   UserCircle,
 } from 'lucide-react';
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { useSession } from '../../../features/auth/controller/useSession';
 const links = [
   { to: '/', label: 'Ringkasan', icon: House },
@@ -18,7 +19,7 @@ const links = [
   { to: '/riwayat', label: 'Riwayat', icon: History },
   { to: '/pengaturan', label: 'Pengaturan', icon: Settings },
 ];
-export function AppShell() {
+export function AppShell({ serverClock }: { serverClock?: ReactNode }) {
   const session = useSession(),
     [menu, setMenu] = useState(false);
   return (
@@ -56,6 +57,7 @@ export function AppShell() {
             <BrandLogo />
           </div>
           <div className="row">
+            {serverClock}
             <span className="environment-tag local-mode" role="status" aria-label="Mode pembacaan">
               <CheckCircle2 size={15} /> CV lokal
             </span>

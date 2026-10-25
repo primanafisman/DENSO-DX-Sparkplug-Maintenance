@@ -20,6 +20,7 @@ export function useReportFilters() {
       params.get('shift') === 'day' ? 'day' : params.get('shift') === 'night' ? 'night' : undefined;
   const change = (key: string, value: string) => {
     const next = new URLSearchParams(params);
+    next.delete('demo');
     if (value) next.set(key, value);
     else next.delete(key);
     if (key === 'month') {
@@ -41,7 +42,6 @@ export function useReportFilters() {
     serverSchedule: schedule.data,
     productionDate: schedule.data?.production_date,
     month,
-    demo: params.get('demo') === '1',
     line,
     shift,
     months,
@@ -50,7 +50,6 @@ export function useReportFilters() {
     scope: month
       ? {
           ...monthRange(month),
-          ...(params.get('demo') === '1' ? { demo: true } : {}),
           ...(line ? { line } : {}),
           ...(shift ? { shift } : {}),
         }

@@ -28,8 +28,8 @@ function session(role = 'Admin') {
     http.get('/api/v1/auth/csrf', () => HttpResponse.json(envelope({ csrf_token: 'csrf-test' }))),
   );
 }
-function renderDrawer(onClose: () => void, demo = false, role = 'Admin') {
-  const result = renderApp(<OccurrenceDrawer items={[occurrence]} demo={demo} onClose={onClose} />);
+function renderDrawer(onClose: () => void, role = 'Admin', items = [occurrence]) {
+  const result = renderApp(<OccurrenceDrawer items={items} onClose={onClose} />);
   // The real drawer opens inside an already authenticated page.
   act(() => result.client.setQueryData(['session'], { id: 'admin', username: 'Admin', role }));
   return result;
@@ -81,15 +81,15 @@ it('failed deletion preserves open details and inline confirmation for retry', a
   renderDrawer(close);
   fireEvent.click(await screen.findByRole('button', { name: 'Hapus catatan pemeriksaan' }));
   fireEvent.click(screen.getByRole('button', { name: 'Ya, hapus catatan' }));
-  expect(await screen.findByText('Catatan belum dapat dihapus.')).toBeVisible();
+  expect(await screen.findByText('Server belum dapat memproses permintaan.')).toBeVisible();
   expect(close).not.toHaveBeenCalled();
   expect(screen.getByRole('dialog', { name: 'Rincian pemeriksaan' })).toBeVisible();
   expect(screen.getByRole('button', { name: 'Ya, hapus catatan' })).toBeEnabled();
 });
 
-it('viewer and demo cannot delete and demo has no operational evidence actions', async () => {
+it('Viewer cannot delete, while imported ordinary records show provenance without fabricated photo actions', async () => {
   session('Viewer');
-  const { unmount } = renderDrawer(() => {}, false, 'Viewer');
+  const { unmount } = renderDrawer(() => {}, 'Viewer');
   expect(await screen.findByRole('button', { name: 'Foto 1 · crop' })).toBeVisible();
   await waitFor(() =>
     expect(
@@ -98,9 +98,19 @@ it('viewer and demo cannot delete and demo has no operational evidence actions',
   );
   unmount();
   session('Admin');
-  renderDrawer(() => {}, true);
+  renderDrawer(() => {}, 'Admin', [
+    {
+      ...occurrence,
+      origin: {
+        kind: 'illustrative_local_import',
+        label: 'Data uji X/R',
+        batch_id: 'test-import',
+        version: 1,
+        source: 'local-xr-formula-v1',
+      },
+    },
+  ]);
+  expect(screen.getByText('Data uji X/R')).toHaveClass('origin-badge');
   expect(screen.queryByRole('button', { name: 'Foto 1 · crop' })).not.toBeInTheDocument();
-  expect(
-    screen.queryByRole('button', { name: 'Hapus catatan pemeriksaan' }),
-  ).not.toBeInTheDocument();
+  expect(await screen.findByRole('button', { name: 'Hapus catatan pemeriksaan' })).toBeEnabled();
 });

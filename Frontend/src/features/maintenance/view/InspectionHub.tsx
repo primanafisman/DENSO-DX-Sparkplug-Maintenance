@@ -89,6 +89,7 @@ export function InspectionHub() {
     <div className="inspection-page">
       <PageHeader
         title="Pemeriksaan"
+        icon={<ClipboardCheck size={23} />}
         actions={
           selection.line && (
             <div className="status-strip" aria-label="Progres pemeriksaan">
@@ -255,6 +256,22 @@ export function InspectionHub() {
                           : 'Foto'}
                     </span>
                     <span>{d.sample_count} sampel</span>
+                    {!!due.data?.items.find((item) => item.definition_id === d.id)?.equipment
+                      ?.length && (
+                      <span className="tool-progress">
+                        {
+                          due.data.items
+                            .find((item) => item.definition_id === d.id)!
+                            .equipment.filter((item) => item.state === 'completed').length
+                        }
+                        /
+                        {
+                          due.data.items.find((item) => item.definition_id === d.id)!.equipment
+                            .length
+                        }{' '}
+                        alat
+                      </span>
+                    )}
                     <span>{d.interval_guide.description}</span>
                   </div>
                   <details className="inspection-guide">

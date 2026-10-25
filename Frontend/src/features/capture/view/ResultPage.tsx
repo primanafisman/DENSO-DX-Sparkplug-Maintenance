@@ -158,6 +158,11 @@ export function ResultPage() {
             {state.instrument?.condition === 'unknown' && (
               <p className="info-note">Kondisi alat belum diisi.</p>
             )}
+            {selection.completed && (
+              <p className="status-chip status-chip-ok" role="status">
+                ✓ Alat ini sudah diperiksa
+              </p>
+            )}
             <details className="info-note">
               <summary>Detail pembacaan</summary>
               <p>Metode: {result?.method ?? 'CV lokal'}</p>
@@ -175,7 +180,11 @@ export function ResultPage() {
               <Button
                 variant="secondary"
                 disabled={
-                  !state.photo || !state.instrument || !store.draft?.definition || selection.locked
+                  !state.photo ||
+                  !state.instrument ||
+                  !store.draft?.definition ||
+                  selection.locked ||
+                  selection.completed
                 }
                 onClick={async () => {
                   const result = await engine.manual();
@@ -189,6 +198,7 @@ export function ResultPage() {
                   !result ||
                   !state.instrument ||
                   !store.draft?.definition ||
+                  selection.completed ||
                   state.requiresReanalysis
                 }
                 onClick={() => navigate('/pemeriksaan/konfirmasi')}

@@ -114,7 +114,6 @@ import { envelope, schedule } from '../../../test/fixtures';
 import { SpcReportPage } from './SpcReportPage';
 function reportHandlers(cohorts: SpcCohort[], visual = false) {
   server.use(
-    http.get('/api/v1/capabilities', () => HttpResponse.json(envelope({ demo_reports: true }))),
     http.get('/api/v1/auth/me', () =>
       HttpResponse.json(envelope({ id: 'v', username: 'Viewer', role: 'Viewer' })),
     ),
@@ -144,21 +143,70 @@ function reportHandlers(cohorts: SpcCohort[], visual = false) {
     ),
   );
 }
-it('multiple cohorts require explicit selection and Viewer cannot save a baseline', async () => {
-  reportHandlers([cohort, { ...cohort, cohort_id: 'different' }]);
+it('multiple cohorts open the first chart immediately and switching Type keeps its own cohort', async () => {
+  reportHandlers([
+    { ...cohort, product_snapshot: { id: 'u', name: 'U-Type', code: 'U', version: 1 } },
+    {
+      ...cohort,
+      cohort_id: 'different',
+      product_snapshot: { id: 'v', name: 'V-Type', code: 'V', version: 1 },
+    },
+  ]);
+  const requested: string[] = [];
+  server.use(
+    http.get('/api/v1/maintenance/spc/subgroups', ({ request }) => {
+      requested.push(new URL(request.url).searchParams.get('cohort_id') ?? '');
+      return HttpResponse.json(envelope({ meta, items: [], next_cursor: null }));
+    }),
+  );
   renderApp(
     <Routes>
       <Route path="/riwayat/:definitionId" element={<SpcReportPage />} />
     </Routes>,
     '/riwayat/chart_ee_length',
   );
-  expect(await screen.findByRole('heading', { name: 'Pilih kelompok pengukuran' })).toBeVisible();
-  expect(screen.queryByText('Cp (lembar)')).not.toBeInTheDocument();
+  expect(await screen.findByRole('img', { name: 'Grafik X bar' })).toBeVisible();
+  expect(screen.getByLabelText('Kelompok pengukuran')).toHaveValue('cohort');
+  expect(screen.getByText('Type U-Type')).toBeVisible();
   fireEvent.change(screen.getByLabelText('Kelompok pengukuran'), {
-    target: { value: 'cohort' },
+    target: { value: 'different' },
   });
+  expect(await screen.findByText('Type V-Type')).toBeVisible();
+  expect(screen.queryByText('Type U-Type')).not.toBeInTheDocument();
   expect(await screen.findByText('Cp (lembar)')).toBeVisible();
+  await waitFor(() => expect(requested.at(-1)).toBe('different'));
   expect(screen.queryByRole('button', { name: 'Simpan batas kontrol' })).not.toBeInTheDocument();
+});
+
+it('ordinary imported X R cohorts show provenance and cannot save a production baseline', async () => {
+  const imported = {
+    ...cohort,
+    origin: {
+      kind: 'illustrative_local_import',
+      label: 'Data uji X/R',
+      batch_id: 'test-import',
+      version: 1,
+      source: 'local-xr-formula-v1',
+    },
+  } as SpcCohort;
+  reportHandlers([imported]);
+  server.use(
+    http.get('/api/v1/auth/me', () =>
+      HttpResponse.json(envelope({ id: 'a', username: 'Admin', role: 'Admin' })),
+    ),
+  );
+  renderApp(
+    <Routes>
+      <Route path="/riwayat/:definitionId" element={<SpcReportPage />} />
+    </Routes>,
+    '/riwayat/chart_ee_length?month=2026-10',
+  );
+  expect(await screen.findByRole('img', { name: 'Grafik X bar' })).toBeVisible();
+  expect(screen.getByText('Data uji X/R')).toHaveClass('origin-badge');
+  expect(screen.queryByText('Data contoh — bukan catatan produksi.')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByText('Pengaturan grafik'));
+  expect(screen.getByRole('button', { name: 'Simpan batas kontrol' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Unduh CSV' })).toBeEnabled();
 });
 it('empty visual check has no fabricated status charts or numeric capability', async () => {
   reportHandlers([], true);
@@ -216,7 +264,7 @@ it('a baseline conflict can be cleared without leaving the page', async () => {
     </Routes>,
     '/riwayat/chart_ee_length?baseline=old',
   );
-  expect(await screen.findByText('Baseline conflict')).toBeVisible();
+  expect(await screen.findByText('Periksa data yang diisi.')).toBeVisible();
   fireEvent.click(screen.getByText('Pengaturan grafik'));
   fireEvent.click(screen.getByRole('button', { name: 'Gunakan periode dipilih' }));
   expect(await screen.findByText('Cp (lembar)')).toBeVisible();
