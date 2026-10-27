@@ -34,7 +34,7 @@ export const settingsApi = {
       { active, review_reason },
     ),
   save: (body: MaintenanceSettings & { review_reason?: string }) =>
-    update('/maintenance/settings', body),
+    update<{ value: MaintenanceSettings; version: number }>('/maintenance/settings', body),
   saveDefinition: ({ id, body }: { id: string; body: DefinitionUpdate }) =>
     update<MaintenanceDefinition>('/maintenance/definitions/' + encodeURIComponent(id), body),
   revisions: (id: string) =>

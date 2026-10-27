@@ -82,7 +82,7 @@ it('read-only users can view the merged equipment list without editing or archiv
   expect(await screen.findByText('Kaliper')).toBeVisible();
   expect(screen.queryByRole('button', { name: 'Edit Kaliper' })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Tambah alat' })).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('tab', { name: 'Line Produksi' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'Line produksi' }));
   expect(await screen.findByText('Line 17')).toBeVisible();
   expect(screen.queryByLabelText('Tambah line')).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Hapus line 17' })).not.toBeInTheDocument();

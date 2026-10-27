@@ -7,6 +7,7 @@ export type DefinitionUpdate = Pick<
     Pick<
       MaintenanceDefinition,
       | 'inspection_target'
+      | 'check_number'
       | 'kind'
       | 'input_method'
       | 'samples'

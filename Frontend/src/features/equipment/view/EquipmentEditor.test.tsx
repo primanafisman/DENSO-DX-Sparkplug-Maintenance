@@ -34,6 +34,30 @@ it('only asks the name and mirrors its code and alias, while sorting linked insp
     area: '',
   });
 });
+it('orders linked inspections by canonical number and includes it in each label', () => {
+  renderApp(
+    <EquipmentEditor
+      definitions={[
+        fixtureDefinition({ id: 'ten', check_number: 10, name: 'Alpha' }),
+        fixtureDefinition({ id: 'three', source_number: 3, name: 'Gamma' }),
+        fixtureDefinition({ id: 'two', check_number: 2, source_number: 99, name: 'Zulu' }),
+      ]}
+      onSave={() => {}}
+      onClose={() => {}}
+      saving={false}
+      error={null}
+    />,
+  );
+  const linked = within(screen.getByTestId('linked-checks'));
+  expect(linked.getAllByRole('checkbox').map((check) => check.getAttribute('value'))).toEqual([
+    'two',
+    'three',
+    'ten',
+  ]);
+  expect(linked.getByRole('checkbox', { name: /2 · Zulu/ })).toBeVisible();
+  expect(linked.getByRole('checkbox', { name: /3 · Gamma/ })).toBeVisible();
+  expect(linked.getByRole('checkbox', { name: /10 · Alpha/ })).toBeVisible();
+});
 it('preserves existing private codes and distinct aliases when the visible name changes', async () => {
   const save = vi.fn();
   renderApp(

@@ -5,6 +5,7 @@ import { useResultSelection } from '../controller/useResultSelection';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { Card, Field, Badge, Loading, ErrorMessage, Button } from '../../../shared/components/ui';
 import { number } from '../../../shared/lib/format';
+import { inspectionLabel } from '../../../shared/lib/inspectionIdentity';
 export function ResultPage() {
   const { state, engine } = useCapture(),
     store = useInspectionStore(),
@@ -111,7 +112,7 @@ export function ResultPage() {
                   <option value="">Pilih pemeriksaan</option>
                   {checks.map((d) => (
                     <option key={d.id} value={d.id}>
-                      {d.name}
+                      {inspectionLabel(d)}
                     </option>
                   ))}
                 </select>

@@ -9,6 +9,7 @@ import { useDefinitionEquipment } from '../controller/useSettings';
 import { Button, Field, ErrorMessage } from '../../../shared/components/ui';
 import { AvailabilityAction } from '../../../shared/components/ui/AvailabilityAction';
 import { shiftSlots } from '../model/shiftSchedule';
+import { inspectionLabel, inspectionNumber } from '../../../shared/lib/inspectionIdentity';
 const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 export function DefinitionEditor({
   definition: d,
@@ -38,6 +39,7 @@ export function DefinitionEditor({
   const form = useForm<DefinitionForm>({
     resolver: zodResolver(definitionFormSchema),
     defaultValues: {
+      check_number: inspectionNumber(d) ?? 1,
       name: d.name,
       standard_text: d.standard_text,
       method_text: d.method_text,
@@ -78,6 +80,7 @@ export function DefinitionEditor({
       return;
     }
     onSave({
+      check_number: v.check_number,
       ...(equipmentIds !== null ? { instrument_ids: equipmentIds } : {}),
       name: v.name,
       standard_text: v.standard_text,
@@ -113,7 +116,9 @@ export function DefinitionEditor({
         aria-labelledby="definition-title"
       >
         <div className="section-heading modal-heading">
-          <h2 id="definition-title">{creating ? 'Tambah pemeriksaan' : 'Standar · ' + d.name}</h2>
+          <h2 id="definition-title">
+            {creating ? 'Tambah pemeriksaan' : 'Standar · ' + inspectionLabel(d)}
+          </h2>
           <div className="header-actions">
             <Button variant="ghost" onClick={onClose} disabled={statusPending}>
               Tutup
@@ -123,6 +128,16 @@ export function DefinitionEditor({
         <form onSubmit={form.handleSubmit(submit)}>
           <fieldset className="editor-fields" disabled={statusPrompt || statusPending}>
             <div className="field-row">
+              <Field label="Nomor pemeriksaan">
+                <input
+                  type="number"
+                  min="1"
+                  max="10000"
+                  step="1"
+                  required
+                  {...form.register('check_number', { valueAsNumber: true })}
+                />
+              </Field>
               <Field label="Nama pemeriksaan">
                 <input {...form.register('name')} required />
               </Field>
@@ -321,6 +336,17 @@ export function DefinitionEditor({
             <ErrorMessage error={error} />
           </fieldset>
           <div className="actions">
+            {!creating && onSetActive && (
+              <AvailabilityAction
+                name={inspectionLabel(d)}
+                active={d.active !== false}
+                confirming={statusPrompt}
+                onPrompt={setStatusPrompt}
+                onConfirm={onSetActive}
+                pending={statusPending || saving}
+                error={statusError}
+              />
+            )}
             <Button variant="secondary" type="button" onClick={onClose} disabled={statusPending}>
               Batal
             </Button>
@@ -329,17 +355,6 @@ export function DefinitionEditor({
             </Button>
           </div>
         </form>
-        {!creating && onSetActive && (
-          <AvailabilityAction
-            name={d.name}
-            active={d.active !== false}
-            confirming={statusPrompt}
-            onPrompt={setStatusPrompt}
-            onConfirm={onSetActive}
-            pending={statusPending || saving}
-            error={statusError}
-          />
-        )}
       </section>
     </div>
   );

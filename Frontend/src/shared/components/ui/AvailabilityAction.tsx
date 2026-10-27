@@ -25,11 +25,12 @@ export function AvailabilityAction({
         <Button
           type="button"
           variant={active ? 'danger' : 'secondary'}
+          aria-label={active ? 'Hapus dari pilihan' : 'Aktifkan kembali'}
+          title={active ? 'Hapus dari pilihan' : 'Aktifkan kembali'}
           onClick={() => onPrompt(true)}
           disabled={pending}
         >
           <Icon size={18} />
-          {active ? 'Hapus dari pilihan' : 'Aktifkan kembali'}
         </Button>
       ) : (
         <ConfirmationDialog

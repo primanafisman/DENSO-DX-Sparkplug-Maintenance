@@ -14,6 +14,43 @@ test('whole-period summary counts all 501 records rather than one repository pag
   }finally{await close();}
 });
 
+test('summary latest inspection times respect month, line, shift, snapshot, deletion and production cutoff',async()=>{
+  const {createReportService}=await import('../src/services/reportService.js');const {repo,close}=await database();
+  try{
+    const definition_snapshot=structuredClone(CATALOG.find(d=>d.id==='packing_depth_tool'));
+    const record={definition_id:definition_snapshot.id,definition_snapshot,overall_status:'OK',outcomes:[],created_at:'2026-10-20T00:00:00.000Z',context:{line:'17',shift:'night',sampler:'Ldr',production_date:'2026-10-20'}};
+    await repo.maintenance.createRecord({...record,id:'included',checked_at:'2026-10-21T01:25:00+07:00'});
+    await repo.maintenance.createRecord({...record,id:'other-line',checked_at:'2026-10-21T02:00:00+07:00',context:{...record.context,line:'18'}});
+    await repo.maintenance.createRecord({...record,id:'other-shift',checked_at:'2026-10-21T03:00:00+07:00',context:{...record.context,shift:'day'}});
+    await repo.maintenance.createRecord({...record,id:'other-month',checked_at:'2026-10-21T04:00:00+07:00',context:{...record.context,production_date:'2026-09-30'}});
+    await repo.maintenance.createRecord({...record,id:'after-snapshot',checked_at:'2026-10-21T05:00:00+07:00',created_at:'2026-10-21T09:00:00.000Z'});
+    await repo.maintenance.createRecord({...record,id:'deleted',checked_at:'2026-10-21T06:00:00+07:00',deleted_at:'2026-10-21T07:00:00.000Z'});
+    await repo.maintenance.createRecord({...record,id:'after-cutoff',checked_at:'2026-10-22T08:00:00+07:00',context:{...record.context,production_date:'2026-10-22'}});
+
+    const service=createReportService({repositories:repo,clock:reportClock});
+    const summary=await service.summary({month:'2026-10',line:'17',shift:'night',as_of:'2026-10-21T08:00:00.000Z'});
+    assert.equal(summary.total,1);
+    assert.equal(summary.groups[0].latest_checked_at,'2026-10-21T01:25:00+07:00');
+    assert.deepEqual(summary.daily,[{date:'2026-10-20',ok:1,ng:0}]);
+    assert.deepEqual(await repo.maintenance.getRecord('included'),{...record,id:'included',checked_at:'2026-10-21T01:25:00+07:00'});
+  }finally{await close();}
+});
+
+test('summary retains legacy records without valid inspection times and reports their time as unknown',async()=>{
+  const {createReportService}=await import('../src/services/reportService.js');const {repo,close}=await database();
+  try{
+    const definition_snapshot=structuredClone(CATALOG.find(d=>d.id==='packing_depth_tool'));
+    const record={definition_id:definition_snapshot.id,definition_snapshot,overall_status:'OK',outcomes:[],created_at:'2026-10-20T00:00:00.000Z',context:{line:'17',shift:'day',sampler:'Ldr',production_date:'2026-10-20'}};
+    await repo.maintenance.createRecord({...record,id:'legacy-missing'});
+    await repo.maintenance.createRecord({...record,id:'legacy-null',checked_at:null});
+    await repo.maintenance.createRecord({...record,id:'legacy-invalid',checked_at:'unknown'});
+
+    const summary=await createReportService({repositories:repo,clock:reportClock}).summary({month:'2026-10'});
+    assert.equal(summary.total,3);
+    assert.equal(summary.groups[0].latest_checked_at,null);
+  }finally{await close();}
+});
+
 test('monthly cells retain multiple occurrences, blanks and immutable standards and equipment',async()=>{
   const {createReportService}=await import('../src/services/reportService.js');const {repo,close}=await database();
   try{

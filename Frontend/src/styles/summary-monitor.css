@@ -1,24 +1,128 @@
-/* Monitoring data stays in normal flow: no nested scrolling or clipped rows. */
-.summary-page .line-progress-grid,
-.summary-page .summary-results {
+/* Reuse shared typography; save space through layout instead of smaller text. */
+.summary-page .page-heading {
+  min-height: 48px;
+  margin: 0 0 16px;
+}
+.summary-page .filter-bar .field {
+  font-size: 0.82rem;
+}
+.summary-page .summary-detail-grid h2 {
+  font-size: 1.08rem;
+  line-height: 1.4;
+}
+.summary-page .current-shift small,
+.summary-page .current-shift > span:not(.shift-orbit),
+.summary-page .workload-count span,
+.summary-page .line-progress-grid button > strong,
+.summary-page .line-progress-grid small,
+.summary-page .kpi-card p,
+.summary-page .summary-legend {
+  font-size: 0.82rem;
+}
+.summary-page .line-progress-grid {
   max-height: none;
   overflow: visible;
   scrollbar-gutter: auto;
 }
+.total-month {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+.summary-results {
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #c9cdd6 transparent;
+}
 .summary-results table {
   width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.summary-results th,
+.summary-results td {
+  padding: 7px;
+  font-size: 0.82rem;
+  vertical-align: middle;
+}
+.summary-results thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  font-size: 0.72rem;
+}
+.summary-results th:first-child {
+  width: 44%;
+}
+.summary-results th:nth-child(2) {
+  width: 13%;
+}
+.summary-results th:nth-child(3),
+.summary-results th:nth-child(4) {
+  width: 10%;
+}
+.summary-results th:last-child {
+  width: 23%;
 }
 .summary-results tbody th {
-  white-space: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
 }
-.summary-results a {
-  display: inline-flex;
+.summary-inspection-link {
+  display: block;
+  color: var(--text);
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.summary-results tbody tr {
+  cursor: pointer;
+}
+.summary-results tbody tr:hover,
+.summary-results tbody tr:focus-within {
+  background: #fff0f2;
+}
+.summary-results time {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.summary-page .kpi-grid .kpi-card {
+  display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 10px;
 }
-
+.summary-page .kpi-card p,
+.summary-page .kpi-card strong {
+  margin: 0;
+  flex-shrink: 0;
+}
+.summary-page .kpi-card p {
+  padding-right: 10px;
+  border-right: 1px solid #cbd2de;
+}
+.summary-page .kpi-total .total-month {
+  margin-left: auto;
+  justify-content: flex-end;
+  text-align: right;
+  padding-left: 10px;
+  border-left: 1px solid #cbd2de;
+}
+.summary-page .kpi-total {
+  flex-wrap: wrap;
+}
+.summary-page .kpi-total .total-month {
+  flex: 1 1 90px;
+}
 @media screen and (min-width: 1101px) {
-  /* Shared header/content origin prevents a jump when changing menus. */
+  /* One shared shell origin for every menu. */
   .topbar,
   .app-shell:has(.summary-page) .topbar {
     height: 64px;
@@ -29,197 +133,110 @@
   }
   .page-content,
   .page-content:has(> .summary-page) {
-    padding-top: 12px;
+    padding-top: 20px;
     padding-bottom: 16px;
   }
   .summary-page {
     display: grid;
-    grid-template-columns: minmax(350px, 0.9fr) minmax(420px, 1.1fr);
-    grid-template-rows: 40px auto 56px minmax(0, 1fr);
-    gap: 8px 14px;
-    height: calc(100dvh - 92px);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 48px auto 62px minmax(200px, 1fr);
+    gap: 10px;
+    height: calc(100dvh - 100px);
     min-height: 0;
-    align-content: start;
-  }
-  .summary-page > :not(.page-heading):not(.filter-bar) {
-    grid-column: 1 / -1;
   }
   .summary-page .page-heading {
-    grid-column: 1;
     margin: 0;
-    min-height: 0;
-    gap: 8px;
-    align-items: center;
   }
-  .summary-page .page-heading h1 {
-    font-size: 1.3rem;
-    line-height: 1.15;
-  }
-  .summary-page .page-icon {
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
+  .summary-page .page-heading .actions {
+    flex-wrap: nowrap;
+    gap: 12px;
   }
   .summary-page .page-heading .button {
-    min-height: 34px;
-    padding: 5px 10px;
-    font-size: 0.74rem;
-    gap: 6px;
+    flex-shrink: 0;
+    white-space: nowrap;
   }
   .summary-page .filter-bar {
-    grid-column: 2;
-    display: grid;
-    grid-template-columns: 1.25fr 1fr 1fr;
+    display: flex;
+    flex-wrap: nowrap;
     padding: 0;
     margin: 0;
     border: 0;
-    box-shadow: none;
     background: none;
-    gap: 8px;
-    align-items: center;
+    box-shadow: none;
+    gap: 12px;
   }
   .summary-page .filter-bar .field {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
     min-width: 0;
-    width: auto;
-    gap: 1px;
-    font-size: 0.65rem;
-    line-height: 1.1;
+    gap: 6px;
   }
   .summary-page .filter-bar select {
-    min-height: 25px;
-    height: 25px;
-    padding: 2px 8px;
-    font-size: 0.73rem;
-    line-height: 1.15;
-    border-radius: 7px;
+    min-width: 105px;
+    max-width: 150px;
+  }
+  .summary-page .filter-bar .field:first-child select {
+    width: 145px;
   }
   .summary-page .current-workload {
     margin: 0;
-    padding: 8px 12px;
+    padding: 8px 14px;
     gap: 6px 16px;
-    border-radius: 12px;
   }
   .summary-page .current-shift {
-    min-width: 190px;
-    min-height: 40px;
-    padding-left: 46px;
-    gap: 1px;
-  }
-  .summary-page .current-shift small,
-  .summary-page .current-shift > span:not(.shift-orbit) {
-    font-size: 0.64rem;
-    line-height: 1.15;
-  }
-  .summary-page .current-shift strong {
-    font-size: 0.88rem;
-    line-height: 1.2;
-  }
-  .summary-page .shift-orbit {
-    top: 2px;
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-  }
-  .summary-page .shift-orbit svg {
-    width: 23px;
-    height: 23px;
-  }
-  .summary-page .progress-ring {
-    width: 40px;
-    height: 40px;
-    flex-basis: 40px;
-  }
-  .summary-page .progress-ring > strong {
-    font-size: 0.72rem;
-  }
-  .summary-page .current-workload .workload-count {
-    min-width: 88px;
-    padding-left: 14px;
+    min-height: 44px;
     gap: 0;
   }
-  .summary-page .current-workload .workload-count strong {
-    font-size: 1.4rem;
-    line-height: 1.1;
+  .summary-page .current-shift strong {
+    font-size: 1.04rem;
   }
-  .summary-page .current-workload .workload-count span {
-    font-size: 0.68rem;
-    line-height: 1.2;
+  .summary-page .progress-ring {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
   }
-  .summary-page .workload-count span svg {
-    width: 13px;
-    height: 13px;
-  }
-  .summary-page .current-workload .workload-lines {
-    min-width: 175px;
+  .summary-page .current-workload .workload-count {
+    min-width: 90px;
+    padding-left: 16px;
   }
   .summary-page .current-workload > .line-workload {
     padding-top: 6px;
   }
   .summary-page .line-progress-grid {
-    grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 6px;
   }
   .summary-page .line-progress-grid button {
-    min-height: 40px;
-    padding: 4px 6px;
-    border-radius: 8px;
-    gap: 0 7px;
-    line-height: 1.15;
+    min-height: 44px;
+    padding: 4px 8px;
+    gap: 0 8px;
   }
   .summary-page .line-progress-grid .progress-ring {
-    width: 28px;
-    height: 28px;
-    flex-basis: 28px;
-  }
-  .summary-page .line-progress-grid .progress-ring > strong {
-    font-size: 0.56rem;
-  }
-  .summary-page .line-progress-grid button > strong {
-    font-size: 0.72rem;
-  }
-  .summary-page .line-progress-grid small {
-    font-size: 0.63rem;
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
   }
   .summary-page .kpi-grid {
     margin: 0;
-    gap: 10px;
+    gap: 12px;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
   }
   .summary-page .kpi-grid .kpi-card {
     min-height: 0;
     margin: 0;
-    padding: 5px 55px 5px 14px !important;
-    border-radius: 11px;
-    border-top-width: 2px;
-  }
-  .summary-page .kpi-card p {
-    margin: 0;
-    font-size: 0.67rem;
-    line-height: 1.15;
-  }
-  .summary-page .kpi-card p svg {
-    width: 12px;
-    height: 12px;
-  }
-  .summary-page .kpi-card strong {
-    margin-top: 2px;
-    font-size: 1.5rem;
-    line-height: 1.1;
+    padding: 8px 60px 8px 14px !important;
   }
   .summary-page .metric-symbol {
-    width: 28px;
-    height: 28px;
-    top: 10px;
-    right: 15px;
-    border-radius: 9px;
-  }
-  .summary-page .metric-symbol svg {
-    width: 19px;
-    height: 19px;
+    width: 32px;
+    height: 32px;
+    top: 12px;
+    right: 14px;
   }
   .summary-page .summary-detail-grid {
     display: grid;
-    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-    gap: 12px;
+    grid-template-columns: minmax(0, 1.6fr) minmax(370px, 1fr);
+    gap: 14px;
     min-height: 0;
   }
   .summary-page .summary-detail-grid > .card {
@@ -227,86 +244,27 @@
     flex-direction: column;
     margin: 0;
     min-height: 0;
-    padding: 9px 10px;
-    border-radius: 12px;
-    overflow: visible;
-  }
-  .summary-page .summary-detail-grid h2 {
-    margin: 0 0 6px;
-    font-size: 0.8rem;
-    line-height: 1.25;
-  }
-  .summary-page .section-icon-title svg {
-    width: 16px;
-    height: 16px;
-  }
-  .summary-page .summary-legend {
-    font-size: 0.64rem;
-    gap: 4px;
+    padding: 12px;
   }
   .summary-page .chart-box {
     flex: 1 1 0;
     height: auto;
-    min-height: 80px;
-    margin-top: 4px;
+    min-height: 60px;
+    margin-top: 6px;
   }
-  .summary-page .chart-box .recharts-cartesian-axis-tick-value {
-    font-size: 10px;
+  .summary-page .summary-results {
+    flex: 1 1 0;
   }
-  .summary-results {
-    flex: 0 0 auto;
-  }
-  .summary-results table {
-    table-layout: fixed;
-    border-collapse: collapse;
-  }
-  .summary-results th,
-  .summary-results td {
-    padding: 2px 6px;
-    font-size: 0.7rem;
-    line-height: 1.25;
-    vertical-align: middle;
-  }
-  .summary-results th:first-child {
-    width: 62%;
-    text-align: left;
-  }
-  .summary-results th:nth-child(2) {
-    width: 9%;
-  }
-  .summary-results th:nth-child(3),
-  .summary-results th:nth-child(4) {
-    width: 7%;
-  }
-  .summary-results th:last-child {
-    width: 15%;
-  }
-  .summary-results a {
-    min-height: 16px;
-    padding: 0;
-    font-size: 0.66rem;
-  }
-  .summary-results a svg {
-    width: 11px;
-    height: 11px;
-  }
-  .summary-page .data-details {
-    margin: 0;
-    font-size: 0.67rem;
-  }
-  .summary-page .data-details > summary {
-    min-height: 18px;
-    padding: 0;
-  }
-  /* Errors and expanded guidance must remain readable, never clipped to fit. */
-  .summary-page:has(.error-message),
-  .summary-page:has(> .data-details[open]) {
+  .summary-page:has(.error-message) {
     height: auto;
-    grid-template-rows: 40px;
+    grid-template-rows: 48px;
     grid-auto-rows: auto;
   }
+  .summary-page:has(.error-message) .summary-results {
+    flex: auto;
+    max-height: 300px;
+  }
 }
-
 @media print {
   .summary-page {
     display: block;
@@ -317,5 +275,8 @@
   }
   .summary-page .chart-box {
     height: 200px;
+  }
+  .summary-results {
+    overflow: visible;
   }
 }

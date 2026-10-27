@@ -44,7 +44,7 @@ it('summary uses server aggregate501 and labels the OK percentage', async () => 
   setup();
   renderApp(<SummaryPage />);
   expect(await screen.findByText('501')).toBeVisible();
-  expect(screen.getByText('OK %')).toBeVisible();
+  expect(screen.getByText('% OK')).toBeVisible();
   expect(screen.queryByText(/persentase selesai/i)).not.toBeInTheDocument();
 });
 it('monthly history is table-only, preserves blank cells and opens both occurrences', async () => {
@@ -67,7 +67,7 @@ it('monthly history is table-only, preserves blank cells and opens both occurren
       const q = new URL(request.url).searchParams;
       return HttpResponse.json(
         envelope({
-          meta: { ...meta, scope },
+          meta: { ...meta, scope, warnings: ['ILLUSTRATIVE_DATA'] },
           next_cursor: null,
           rows:
             q.get('production_date_from') === '2026-09-01'
@@ -99,6 +99,8 @@ it('monthly history is table-only, preserves blank cells and opens both occurren
   );
   renderApp(<HistoryPage />);
   expect(await screen.findByRole('columnheader', { name: 'No. Pemeriksaan' })).toBeVisible();
+  expect(screen.queryByText('Catatan laporan')).not.toBeInTheDocument();
+  expect(screen.queryByText('ILLUSTRATIVE_DATA')).not.toBeInTheDocument();
   expect(screen.queryByText('2 catatan')).not.toBeInTheDocument();
   expect(screen.queryByText('Alat tidak tercatat')).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: '2 pemeriksaan' })).toHaveTextContent(/OK.*OK/);

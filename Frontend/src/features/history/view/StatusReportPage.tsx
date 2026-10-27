@@ -18,6 +18,7 @@ import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { Card, Field, Loading, ErrorMessage, Empty, Status } from '../../../shared/components/ui';
 import { useDailyStatusReport } from '../controller/useDailyStatusReport';
 import { OccurrenceDrawer } from './OccurrenceDrawer';
+import { inspectionLabel } from '../../../shared/lib/inspectionIdentity';
 export function StatusReportPage({ definition }: { definition: MaintenanceDefinition }) {
   const f = useReportFilters(),
     [params, setParams] = useSearchParams(),
@@ -43,7 +44,7 @@ export function StatusReportPage({ definition }: { definition: MaintenanceDefini
   return (
     <>
       <PageHeader
-        title={definition.name}
+        title={inspectionLabel(definition)}
         icon={<Activity />}
         actions={
           <Link
@@ -92,7 +93,7 @@ export function StatusReportPage({ definition }: { definition: MaintenanceDefini
               </section>
               <div className="table-scroll">
                 <table>
-                  <caption className="sr-only">Hasil harian {definition.name}</caption>
+                  <caption className="sr-only">Hasil harian {inspectionLabel(definition)}</caption>
                   <thead>
                     <tr>
                       <th>Tanggal</th>

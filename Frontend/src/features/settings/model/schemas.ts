@@ -2,6 +2,8 @@ import { z } from 'zod';
 export const settingsSchema = z.object({
   lines: z.array(z.string()),
   allowed_samplers: z.array(z.string()),
+  inactive_lines: z.array(z.string()).optional(),
+  inactive_samplers: z.array(z.string()).optional(),
   night_rollover_hour: z.number().int(),
   shift_schedule: z
     .object({ day: z.tuple([z.string(), z.string()]), night: z.tuple([z.string(), z.string()]) })
@@ -19,6 +21,11 @@ export const settingsSchema = z.object({
     .optional(),
 });
 export const definitionFormSchema = z.object({
+  check_number: z
+    .number({ error: 'Isi nomor pemeriksaan.' })
+    .int('Nomor pemeriksaan harus bilangan bulat.')
+    .min(1, 'Nomor pemeriksaan minimal 1.')
+    .max(10000, 'Nomor pemeriksaan maksimal 10000.'),
   inspection_target: z.enum(['machine', 'product'], { error: 'Pilih sasaran pemeriksaan.' }),
   name: z.string().trim().min(1),
   standard_text: z.string().trim().min(1),

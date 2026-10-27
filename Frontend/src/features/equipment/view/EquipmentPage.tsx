@@ -33,6 +33,7 @@ export function EquipmentPage({ embedded = false }: { embedded?: boolean }) {
     );
   const addAction = user?.role === 'Admin' && (
     <Button
+      variant="secondary"
       onClick={() => {
         equipment.save.reset();
         equipment.setStatus.reset();

@@ -82,7 +82,8 @@ it('waits for every page then renders one numbered row with both shifts, units a
   expect(within(table).getAllByRole('link', { name: 'EE Cutting' })).toHaveLength(1);
   const cell = screen.getByRole('button', { name: '2 pemeriksaan' });
   expect(cell).toHaveTextContent(/OK.*NG/);
-  expect(cell.querySelector('.cell-statuses')).toHaveClass('two-rows');
+  expect(within(cell).getByRole('group', { name: 'Shift 1' })).toHaveTextContent(/Line 17:.*OK/);
+  expect(within(cell).getByRole('group', { name: 'Shift 2' })).toHaveTextContent(/Line 17:.*NG/);
   expect(screen.queryByText(/Snapshot|Tampilkan baris berikutnya/)).not.toBeInTheDocument();
   fireEvent.click(cell);
   const drawer = within(screen.getByRole('dialog', { name: 'Rincian pemeriksaan' }));

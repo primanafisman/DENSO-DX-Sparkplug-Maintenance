@@ -7,7 +7,7 @@ import {createReportService} from '../src/services/reportService.js';
 import {archiveRevision,revisionKey} from '../src/utils/revision.js';
 import {context} from './support.js';
 const entry=id=>({occurrence:{id:'r-'+id,definition_snapshot:CATALOG.find(d=>d.id===id),instruments:[],context:{shift:'day',production_date:'2026-10-21'}}});
-test('history numbers are stable1 to44 and are sorted before pagination, independent of name and selected rows',()=>{
+test('unconfigured baseline numbers default to 1 through 44 and sort independently of names and selected rows',()=>{
  const rows=buildChecksheet([entry('chart_ee_length'),entry('master_packing'),entry('packing_depth_tool')]);
  assert.deepEqual(rows.map(r=>[r.definition_id,r.check_number]),[['packing_depth_tool',1],['master_packing',2],['chart_ee_length',44]]);
  assert.equal(buildChecksheet([entry('chart_ee_length')])[0].check_number,44);

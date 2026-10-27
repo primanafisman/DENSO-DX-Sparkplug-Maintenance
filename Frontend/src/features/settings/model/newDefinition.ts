@@ -1,8 +1,9 @@
 import type { MaintenanceDefinition } from '../../../shared/lib/contracts';
-export function newDefinition(): MaintenanceDefinition {
+export function newDefinition(check_number = 45): MaintenanceDefinition {
   return {
     id: 'new',
     definition_version: 0,
+    check_number,
     active: true,
     source_number: null,
     display_order: 10000,

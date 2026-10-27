@@ -19,6 +19,11 @@ import { InspectionContextForm } from './InspectionContextForm';
 import type { ContextSelection } from './InspectionContextForm';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import {
+  compareInspections,
+  inspectionLabel,
+  inspectionNumber,
+} from '../../../shared/lib/inspectionIdentity';
+import {
   Card,
   Field,
   Button,
@@ -42,7 +47,7 @@ export function InspectionHub() {
     [requirement, setRequirement] = useState(''),
     [group, setGroup] = useState('');
   const due = useMaintenanceDue(selection.line, selection.product_type_id);
-  const defs = settings.catalog.data?.items ?? [],
+  const defs = [...(settings.catalog.data?.items ?? [])].sort(compareInspections),
     canWrite =
       (user?.role === 'Admin' || user?.role === 'Operator') &&
       !!settings.settings.data?.lines.includes(selection.line) &&
@@ -69,7 +74,7 @@ export function InspectionHub() {
       !!selection.line &&
       due.data?.items.some((i) => i.definition_id === d.id && i.state === 'pending') === true &&
       !due.isError &&
-      (!q || d.name.toLowerCase().includes(q.toLowerCase())) &&
+      (!q || inspectionLabel(d).toLowerCase().includes(q.toLowerCase())) &&
       (!kind || d.input_method === kind) &&
       (!target || (d.inspection_target ?? 'unclassified') === target) &&
       (!requirement || d.requirement_tags.includes(requirement)) &&
@@ -147,7 +152,9 @@ export function InspectionHub() {
       {state.draft && (
         <Card className="resume-banner">
           <div>
-            <strong>{state.draft.definition?.name ?? 'Foto alat'}</strong>
+            <strong>
+              {state.draft.definition ? inspectionLabel(state.draft.definition) : 'Foto alat'}
+            </strong>
             <span>
               {' '}
               · Line {state.draft.context.line} · {state.draft.observations.length} sampel
@@ -173,7 +180,7 @@ export function InspectionHub() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Nama pemeriksaan"
+                placeholder="Nomor atau nama pemeriksaan"
               />
             </Field>
             <details className="filter-disclosure">
@@ -243,7 +250,7 @@ export function InspectionHub() {
             {filtered.map((d) => (
               <article className="inspection-option" key={d.id}>
                 <div className="check-number">
-                  {d.check_number ?? d.source_number ?? <ClipboardCheck size={20} />}
+                  {inspectionNumber(d) ?? <ClipboardCheck size={20} />}
                 </div>
                 <div className="inspection-option-body">
                   <h3>{d.name}</h3>

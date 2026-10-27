@@ -22,7 +22,10 @@ afterEach(() => {
   useInspectionStore.getState().reset();
 });
 it('briefing presents canonical numeric standards, method, samples and review notes before input', () => {
-  const definition = fixtureDefinition({ review_notes: ['Verifikasi fixture sebelum dipakai.'] });
+  const definition = fixtureDefinition({
+    check_number: 8,
+    review_notes: ['Verifikasi fixture sebelum dipakai.'],
+  });
   useInspectionStore.getState().start({ ...input, definition });
   renderApp(
     <InspectionGuidance>
@@ -30,6 +33,7 @@ it('briefing presents canonical numeric standards, method, samples and review no
     </InspectionGuidance>,
   );
   const modal = within(screen.getByRole('dialog', { name: 'Pahami standar sebelum mulai' }));
+  expect(modal.getByRole('heading', { name: '8 · EE Cutting' })).toBeVisible();
   const table = within(modal.getByRole('table', { name: 'Standar dan metode pemeriksaan' }));
   expect(table.getByText(definition.standard_text)).toBeVisible();
   expect(table.getByText(definition.method_text)).toBeVisible();
@@ -42,6 +46,7 @@ it('briefing presents canonical numeric standards, method, samples and review no
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Mulai mengisi' })).toBeEnabled();
   expect(screen.getByRole('table')).toBeVisible();
+  expect(screen.getByText('8 · EE Cutting')).toBeVisible();
 });
 it('acknowledgement survives remount and additional samples but resets for another version or session', () => {
   useInspectionStore.getState().start(input);
@@ -121,7 +126,10 @@ it('functional master dimensions and expected NG-master response are displayed w
   expect(modal.queryByLabelText('Batas penerimaan')).not.toBeInTheDocument();
 });
 it('opening confirmation directly still requires the inspection briefing', () => {
-  useInspectionStore.getState().start(input);
+  useInspectionStore.getState().start({
+    ...input,
+    definition: fixtureDefinition({ check_number: 8 }),
+  });
   captureStore.setState({
     instrument: fixtureInstrument(),
     profile: fixtureInstrument().profile,
@@ -148,4 +156,7 @@ it('opening confirmation directly still requires the inspection briefing', () =>
   expect(screen.queryByRole('textbox', { name: /Nilai akhir/ })).not.toBeInTheDocument();
   accept();
   expect(screen.getByLabelText(/Nilai akhir/)).toHaveValue('4.5');
+  expect(
+    screen.getByRole('heading', { name: 'Konfirmasi hasil' }).closest('header'),
+  ).toHaveTextContent('8 · EE Cutting');
 });

@@ -6,6 +6,57 @@ import { renderApp } from '../../../test/render';
 import { envelope, fixtureDefinition, fixtureInstrument } from '../../../test/fixtures';
 import { SettingsPage } from './SettingsPage';
 import { DefinitionEditor } from './DefinitionEditor';
+
+it('shows permanent inspection numbers with the source fallback instead of row positions', async () => {
+  server.use(
+    http.get('/api/v1/auth/me', () =>
+      HttpResponse.json(envelope({ id: 'a', username: 'Admin', role: 'Admin' })),
+    ),
+    http.get('/api/v1/maintenance/settings', () =>
+      HttpResponse.json(
+        envelope({ lines: ['17'], allowed_samplers: ['Ldr'], night_rollover_hour: 12 }),
+      ),
+    ),
+    http.get('/api/v1/maintenance/catalog', () =>
+      HttpResponse.json(
+        envelope({
+          items: [
+            fixtureDefinition({
+              id: 'permanent',
+              name: 'Pemeriksaan tetap',
+              check_number: 42,
+              source_number: 8,
+            }),
+            fixtureDefinition({ id: 'legacy', name: 'Pemeriksaan sumber', source_number: 7 }),
+            fixtureDefinition({ id: 'unnumbered', name: 'Pemeriksaan tanpa nomor' }),
+            fixtureDefinition({
+              id: 'inactive',
+              name: 'Pemeriksaan nonaktif',
+              check_number: 99,
+              active: false,
+            }),
+          ],
+          count: 4,
+          source_gaps: { missing_rows: [], clipped_row: null },
+        }),
+      ),
+    ),
+  );
+  renderApp(<SettingsPage />);
+  const first = (await screen.findByText('Pemeriksaan tetap')).closest('tr')!;
+  expect(screen.getByRole('columnheader', { name: 'No. Pemeriksaan' })).toBeVisible();
+  expect(screen.queryByRole('columnheader', { name: 'PEMERIKSAAN' })).not.toBeInTheDocument();
+  expect(within(first).getByRole('rowheader')).toHaveTextContent(/42\s*Pemeriksaan tetap/);
+  expect(within(first).getByRole('link')).toHaveAttribute('href', '/riwayat/permanent');
+  expect(
+    within(screen.getByText('Pemeriksaan sumber').closest('tr')!).getByRole('rowheader'),
+  ).toHaveTextContent(/7\s*Pemeriksaan sumber/);
+  expect(
+    within(screen.getByText('Pemeriksaan tanpa nomor').closest('tr')!).getByRole('rowheader'),
+  ).toHaveTextContent(/—\s*Pemeriksaan tanpa nomor/);
+  expect(screen.queryByText('Pemeriksaan nonaktif')).not.toBeInTheDocument();
+});
+
 it('settings preserve source guidance without requesting a revision reason', async () => {
   server.use(
     http.get('/api/v1/instruments', () =>
@@ -38,7 +89,7 @@ it('settings preserve source guidance without requesting a revision reason', asy
   expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual([
     'Daftar Pemeriksaan',
     'Peralatan',
-    'Line Produksi',
+    'Line produksi',
   ]);
   expect(await screen.findByText('Periksa jadwal dari sumber')).toBeVisible();
   expect(screen.queryByRole('button', { name: 'Hapus dari pilihan' })).not.toBeInTheDocument();
@@ -234,22 +285,18 @@ it('clearing all occurrence slots explicitly resets the saved rule', async () =>
 });
 
 it('settings accept manually named lines beyond17, reject duplicates and remove lines and samplers', async () => {
-  let saved: { lines: string[]; allowed_samplers: string[] } | undefined;
+  let saved = {
+    lines: ['17'],
+    allowed_samplers: ['Ldr'],
+    night_rollover_hour: 12,
+    product_types: [],
+  };
   server.use(
     http.get('/api/v1/auth/csrf', () => HttpResponse.json(envelope({ csrf_token: 'test-csrf' }))),
     http.get('/api/v1/auth/me', () =>
       HttpResponse.json(envelope({ id: 'a', username: 'Admin', role: 'Admin' })),
     ),
-    http.get('/api/v1/maintenance/settings', () =>
-      HttpResponse.json(
-        envelope({
-          lines: ['17'],
-          allowed_samplers: ['Ldr'],
-          night_rollover_hour: 12,
-          product_types: [],
-        }),
-      ),
-    ),
+    http.get('/api/v1/maintenance/settings', () => HttpResponse.json(envelope(saved))),
     http.get('/api/v1/maintenance/catalog', () =>
       HttpResponse.json(
         envelope({ items: [], count: 0, source_gaps: { missing_rows: [], clipped_row: null } }),
@@ -261,46 +308,47 @@ it('settings accept manually named lines beyond17, reject duplicates and remove 
     }),
   );
   renderApp(<SettingsPage />);
-  fireEvent.click(await screen.findByRole('tab', { name: 'Line Produksi' }));
-  const addLine = await screen.findByLabelText('Tambah line');
-  fireEvent.change(addLine, { target: { value: '18' } });
+  fireEvent.click(await screen.findByRole('tab', { name: 'Line produksi' }));
+  const add = async (name: string, category = 'line') => {
+    fireEvent.click(await screen.findByRole('button', { name: 'Tambah line' }));
+    const popup = within(screen.getByRole('alertdialog', { name: 'Tambah pengaturan' }));
+    fireEvent.change(popup.getByLabelText('Kategori'), { target: { value: category } });
+    fireEvent.change(popup.getByLabelText('Nama'), { target: { value: name } });
+    fireEvent.click(popup.getByRole('button', { name: 'Simpan' }));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+  };
+  const remove = async (label: string) => {
+    fireEvent.click(screen.getByRole('button', { name: 'Edit ' + label }));
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus ' + label }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ya, hapus' }));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+  };
+  await add('18');
+  await add('Line A');
   fireEvent.click(screen.getByRole('button', { name: 'Tambah line' }));
-  expect(screen.getByRole('button', { name: 'Hapus line 18' })).toBeVisible();
-  fireEvent.change(addLine, { target: { value: 'Line A' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Tambah line' }));
-  fireEvent.change(addLine, { target: { value: ' line a ' } });
-  expect(screen.getByRole('button', { name: 'Tambah line' })).toBeDisabled();
-  fireEvent.click(screen.getByRole('button', { name: 'Hapus line 17' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Ya, hapus' }));
-  fireEvent.change(screen.getByLabelText('Tambah sampler'), { target: { value: 'Leader 2' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Tambah sampler' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Hapus sampler Ldr' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Ya, hapus' }));
-  fireEvent.click(screen.getByRole('button', { name: /Simpan pengaturan/ }));
-  fireEvent.click(screen.getByRole('button', { name: 'Ya, simpan' }));
+  fireEvent.change(screen.getByLabelText('Nama'), { target: { value: ' line a ' } });
+  expect(screen.getByRole('button', { name: 'Simpan' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Batal' }));
+  await remove('line 17');
+  await add('Leader 2', 'sampler');
+  await remove('sampler Ldr');
   await waitFor(() => expect(saved?.lines).toEqual(['18', 'Line A']));
   expect(saved?.allowed_samplers).toEqual(['Leader 2']);
 });
 
 it('shows product names alone, mirrors new names internally and preserves distinct legacy product codes', async () => {
-  let saved: { product_types: { id: string; name: string; code: string }[] } | undefined;
+  let saved = {
+    lines: ['17'],
+    allowed_samplers: ['Ldr'],
+    night_rollover_hour: 12,
+    product_types: [{ id: 'legacy', code: 'SP-A', name: 'Sparkplug A', active: true, version: 1 }],
+  };
   server.use(
     http.get('/api/v1/auth/csrf', () => HttpResponse.json(envelope({ csrf_token: 'test-csrf' }))),
     http.get('/api/v1/auth/me', () =>
       HttpResponse.json(envelope({ id: 'a', username: 'Admin', role: 'Admin' })),
     ),
-    http.get('/api/v1/maintenance/settings', () =>
-      HttpResponse.json(
-        envelope({
-          lines: ['17'],
-          allowed_samplers: ['Ldr'],
-          night_rollover_hour: 12,
-          product_types: [
-            { id: 'legacy', code: 'SP-A', name: 'Sparkplug A', active: true, version: 1 },
-          ],
-        }),
-      ),
-    ),
+    http.get('/api/v1/maintenance/settings', () => HttpResponse.json(envelope(saved))),
     http.get('/api/v1/maintenance/catalog', () =>
       HttpResponse.json(envelope({ items: [], count: 0 })),
     ),
@@ -310,16 +358,18 @@ it('shows product names alone, mirrors new names internally and preserves distin
     }),
   );
   renderApp(<SettingsPage />, '/pengaturan?tab=general');
-  const legacy = await screen.findByLabelText('Nama Type legacy');
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit tipe Sparkplug A' }));
+  const legacy = screen.getByLabelText('Nama');
   fireEvent.change(legacy, { target: { value: 'SP-A' } });
   fireEvent.change(legacy, { target: { value: 'Sparkplug A revisi' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Tambah Type' }));
-  const newName = screen.getAllByLabelText(/^Nama Type /).find((input) => input !== legacy)!;
-  fireEvent.change(newName, { target: { value: 'Sparkplug Baru' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
+  fireEvent.click(screen.getByRole('button', { name: 'Tambah line' }));
+  fireEvent.change(screen.getByLabelText('Kategori'), { target: { value: 'product' } });
+  fireEvent.change(screen.getByLabelText('Nama'), { target: { value: 'Sparkplug Baru' } });
   expect(screen.queryByRole('columnheader', { name: 'KODE' })).not.toBeInTheDocument();
   expect(screen.queryByLabelText(/^Kode /)).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Simpan pengaturan' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Ya, simpan' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
   await waitFor(() =>
     expect(saved?.product_types).toEqual([
       expect.objectContaining({ id: 'legacy', name: 'Sparkplug A revisi', code: 'SP-A' }),
@@ -365,12 +415,11 @@ it('keeps all configured lines up to the supported200-line limit without a fixed
     ),
   );
   renderApp(<SettingsPage />, '/pengaturan?tab=general');
-  const field = await screen.findByLabelText('Tambah line');
+  fireEvent.click(await screen.findByText('Tambah line', { selector: 'button' }));
+  const popup = within(screen.getByRole('alertdialog', { name: 'Tambah pengaturan' }));
   expect(screen.getByText('Line 200')).toBeVisible();
-  fireEvent.change(field, { target: { value: '201' } });
-  const addButton = screen.getByText('Tambah line', { selector: 'button' });
-  expect(addButton).toBeDisabled();
-  fireEvent.click(screen.getByLabelText('Hapus line 200'));
-  fireEvent.click(screen.getByRole('button', { name: 'Ya, hapus' }));
-  expect(addButton).toBeEnabled();
+  fireEvent.change(popup.getByLabelText('Nama'), { target: { value: '201' } });
+  expect(popup.getByRole('button', { name: 'Simpan' })).toBeDisabled();
+  fireEvent.change(popup.getByLabelText('Kategori'), { target: { value: 'sampler' } });
+  expect(popup.getByRole('button', { name: 'Simpan' })).toBeEnabled();
 });

@@ -30,7 +30,13 @@ export function useSettings(includeInactive = false) {
   return {
     settings,
     catalog,
-    save: useMutation({ mutationFn: settingsApi.save, onSuccess: refresh }),
+    save: useMutation({
+      mutationFn: settingsApi.save,
+      onSuccess: (saved) => {
+        client.setQueryData(['settings'], saved.value);
+        refresh();
+      },
+    }),
     createDefinition: useMutation({ mutationFn: settingsApi.createDefinition, onSuccess: refresh }),
     setDefinitionStatus: useMutation({
       mutationFn: settingsApi.setDefinitionStatus,

@@ -13,6 +13,7 @@ export function ConfirmationDialog({
   pending = false,
   error,
   children,
+  footerLeading,
   confirmDisabled = false,
   onCancel,
   onConfirm,
@@ -25,6 +26,7 @@ export function ConfirmationDialog({
   pending?: boolean;
   error?: unknown;
   children?: ReactNode;
+  footerLeading?: ReactNode;
   confirmDisabled?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
@@ -114,6 +116,7 @@ export function ConfirmationDialog({
         {children}
         <ErrorMessage error={error} />
         <div className="actions">
+          {footerLeading && <div className="dialog-leading">{footerLeading}</div>}
           <button
             ref={cancel}
             type="button"

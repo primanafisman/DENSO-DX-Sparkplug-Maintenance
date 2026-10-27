@@ -5358,6 +5358,16 @@
             },
             "maxItems": 200
           },
+          "inactive_lines": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 200,
+            "description": "Inactive Line names. Active and inactive names must be unique ignoring case, with at most 200 combined. Omit to preserve existing inactive names."
+          },
           "allowed_samplers": {
             "type": "array",
             "items": {
@@ -5366,6 +5376,16 @@
               "maxLength": 64
             },
             "maxItems": 100
+          },
+          "inactive_samplers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 100,
+            "description": "Inactive Sampler names. Active and inactive names must be unique ignoring case, with at most 100 combined. Omit to preserve existing inactive names."
           },
           "night_rollover_hour": {
             "type": "integer",
@@ -5455,6 +5475,11 @@
       "DefinitionUpdate": {
         "type": "object",
         "properties": {
+          "check_number": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          },
           "inspection_target": {
             "type": "string",
             "enum": [
@@ -5796,6 +5821,11 @@
       "DefinitionCreate": {
         "type": "object",
         "properties": {
+          "check_number": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          },
           "inspection_target": {
             "type": "string",
             "enum": [
@@ -6979,6 +7009,8 @@
           },
           "check_number": {
             "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
             "nullable": true
           },
           "active": {
@@ -7100,6 +7132,16 @@
             },
             "maxItems": 200
           },
+          "inactive_lines": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 200,
+            "description": "Inactive Line names. Active and inactive names must be unique ignoring case, with at most 200 combined. Omit to preserve existing inactive names."
+          },
           "allowed_samplers": {
             "type": "array",
             "items": {
@@ -7108,6 +7150,16 @@
               "maxLength": 64
             },
             "maxItems": 100
+          },
+          "inactive_samplers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 100,
+            "description": "Inactive Sampler names. Active and inactive names must be unique ignoring case, with at most 100 combined. Omit to preserve existing inactive names."
           },
           "night_rollover_hour": {
             "type": "integer",
@@ -7901,6 +7953,12 @@
                 "definition_id": {
                   "type": "string"
                 },
+                "check_number": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000,
+                  "nullable": true
+                },
                 "name": {
                   "type": "string"
                 },
@@ -7912,14 +7970,21 @@
                 },
                 "ng": {
                   "type": "integer"
+                },
+                "latest_checked_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
                 }
               },
               "required": [
                 "definition_id",
+                "check_number",
                 "name",
                 "total",
                 "ok",
-                "ng"
+                "ng",
+                "latest_checked_at"
               ]
             }
           }
@@ -8417,6 +8482,8 @@
               },
               "check_number": {
                 "type": "integer",
+                "minimum": 1,
+                "maximum": 10000,
                 "nullable": true
               },
               "active": {
@@ -8571,6 +8638,8 @@
         "properties": {
           "check_number": {
             "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
             "nullable": true
           },
           "row_id": {

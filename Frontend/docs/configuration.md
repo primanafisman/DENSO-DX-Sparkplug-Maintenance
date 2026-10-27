@@ -65,7 +65,7 @@ Jadwal aktif menunjukkan shift/sesi dari waktu server serta jumlah pemeriksaan s
 
 ## Pengaturan terpadu dan hapus dari pilihan
 
-Navigasi utama berisi Ringkasan, Pemeriksaan, Riwayat dan Pengaturan. Pengaturan memiliki urutan tab Daftar Pemeriksaan, Peralatan, Line Produksi. Tab Line Produksi memuat line, sampler, Type produk dan Detail jadwal shift yang awalnya tertutup. Di sana tersedia dua waktu mulai per shift. Pilihan tab tercermin pada URL (?tab=standards/equipment/general); tautan lama /peralatan diarahkan ke /pengaturan?tab=equipment.
+Navigasi utama berisi Ringkasan, Pemeriksaan, Riwayat dan Pengaturan. Pengaturan memiliki urutan tab Daftar Pemeriksaan, Peralatan, Line produksi. Tab Line produksi memuat tiga kolom daftar Line produksi, Sampler dan Tipe produk, serta Detail jadwal shift yang awalnya tertutup. Tambah line membuka popup kategori; ikon edit tiap item menyediakan nama, status aktif/nonaktif dan hapus. Setiap perubahan disimpan langsung setelah berhasil; tidak ada Simpan pengaturan global. Di sana tersedia dua waktu mulai per shift. Pilihan tab tercermin pada URL (?tab=standards/equipment/general); tautan lama /peralatan diarahkan ke /pengaturan?tab=equipment.
 
 Pada daftar pemeriksaan dan peralatan, buka ikon Edit untuk menambah/mengubah konfigurasi. Hapus dari pilihan tersedia di dalam editor sebagai tombol berikon tempat sampah untuk item yang sudah disimpan, khusus Admin. Tindakan meminta popup konfirmasi dan tidak menyimpan perubahan formulir lain yang belum disimpan. Batal/gagal tetap mempertahankan isian. Setelah berhasil, item tidak lagi muncul di tabel; riwayat, nomor pemeriksaan, tautan dan kalibrasi tetap dipertahankan. API status masih mendukung reaktivasi oleh integrator bila diperlukan.
 

@@ -5,6 +5,7 @@ import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { Card, Button, Badge, ErrorDialog } from '../../../shared/components/ui';
 import { InspectionGuidance } from './InspectionGuidance';
 import { ConfirmationDialog } from '../../../shared/components/ui/ConfirmationDialog';
+import { inspectionLabel } from '../../../shared/lib/inspectionIdentity';
 export function VisualCheckPage() {
   const state = useInspection({ scheduleEnabled: false }),
     [verified, setVerified] = useState(false),
@@ -17,7 +18,7 @@ export function VisualCheckPage() {
   );
   return (
     <>
-      <PageHeader title={d.definition.name} />
+      <PageHeader title={inspectionLabel(d.definition)} />
       <InspectionGuidance>
         <Card>
           <Badge>Visual / fungsi · OK–NG</Badge>
@@ -83,7 +84,7 @@ export function VisualCheckPage() {
       {savePrompt && (
         <ConfirmationDialog
           title="Simpan hasil pemeriksaan?"
-          description={d.definition.name}
+          description={inspectionLabel(d.definition)}
           onCancel={() => setSavePrompt(false)}
           onConfirm={() => {
             state.save.mutate();

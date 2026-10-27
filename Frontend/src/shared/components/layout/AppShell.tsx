@@ -9,6 +9,7 @@ import {
   Menu,
   CheckCircle2,
   UserCircle,
+  Heart,
 } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
@@ -78,6 +79,11 @@ export function AppShell({ serverClock }: { serverClock?: ReactNode }) {
         <main className="page-content">
           <Outlet />
         </main>
+        <footer className="app-footer no-print">
+          <span>© 2026 · Created with</span>
+          <Heart size={12} fill="currentColor" role="img" aria-label="love" />
+          <span>by Magang Nasional Batch 2 2026 · UGM x ITS Boys</span>
+        </footer>
         <nav className="mobile-nav no-print" aria-label="Navigasi HP">
           {links.slice(0, 3).map((l) => (
             <NavLink key={l.to} to={l.to} end={l.to === '/'}>

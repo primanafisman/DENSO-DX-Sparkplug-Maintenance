@@ -2,7 +2,7 @@
 
 ## Siapkan pilihan pada Pengaturan
 
-Urutan tab: Daftar Pemeriksaan, Peralatan, Line Produksi. Line dan sampler ditambah dengan mengetik nama, lalu menekan Tambah; hapus pilihan yang tidak dipakai dan simpan. Line awal1–17 hanya nilai awal, bukan batas maksimum. Sampai200 nama line dapat dikonfigurasi.
+Urutan tab: Daftar Pemeriksaan, Peralatan, Line produksi. Pada Line produksi terdapat tiga kolom berisi daftar **Line produksi, Sampler, Tipe produk** pada desktop dan tablet; pada layar HP kecil, ketiga daftar disusun ke bawah. Tombol **Tambah line** di samping judul membuka popup dengan pilihan kategori, nama dan status aktif. Ikon pensil pada setiap item membuka pengubahan nama, status aktif/nonaktif dan ikon hapus. Simpan langsung menerapkan perubahan setelah server berhasil; kesalahan tetap muncul di popup agar dapat dicoba kembali. Tidak ada tombol Simpan pengaturan terpisah. Pilihan nonaktif tetap terlihat di Pengaturan dan tidak muncul pada isian operator. Line awal 1–17 hanya nilai awal, bukan batas maksimum; batasnya 200 line dan 100 sampler termasuk pilihan nonaktif.
 
 Pada peralatan, Nama Alat menjadi identitas yang ditampilkan. Kode internal dibuat otomatis untuk kompatibilitas integrasi, tanpa kolom kode tambahan. Buka Detail identitas bila alias atau area berbeda. Kondisi wajib dipilih Berfungsi atau Tidak berfungsi. Perubahan konfigurasi dicatat otomatis; operator tidak mengisi alasan. Panel riwayat versi/kalibrasi tidak muncul pada editor harian; catatan backend tetap dipertahankan.
 
@@ -26,21 +26,21 @@ Saat foto diunggah, gauge/label dicari, atau angka dibaca, popup **Analisis foto
 
 ## Progres semua line
 
-Pada Ringkasan, pilihan **Semua line** menampilkan persentase gabungan dan pie kecil untuk setiap line aktif di Pengaturan. Persentase gabungan dihitung dari jumlah pemeriksaan selesai ÷ jumlah seluruh pemeriksaan pada jadwal server yang sama. Indikator **Line belum selesai inspeksi** menampilkan jumlah line yang masih mempunyai pekerjaan, di samping Selesai dan Tersisa. Klik pie line untuk memfilter. Menambah/menghapus line di Pengaturan memperbarui pilihan dan pie tanpa batas tetap17 line. Bila sebagian data gagal atau jadwal berganti, persentase gabungan menunggu data lengkap; gunakan Coba lagi bila diperlukan.
+Pada Ringkasan, pilihan **Semua line** menampilkan persentase gabungan dan pie kecil untuk setiap line aktif di Pengaturan. Persentase gabungan dihitung dari jumlah pemeriksaan selesai ÷ jumlah seluruh pemeriksaan pada jadwal server yang sama. Indikator **Line pemeriksaan tersisa** menampilkan jumlah line yang masih mempunyai pekerjaan, di samping Selesai dan Tersisa. Klik pie line untuk memfilter. Menambah/menghapus line di Pengaturan memperbarui pilihan dan pie tanpa batas tetap17 line. Bila sebagian data gagal atau jadwal berganti, persentase gabungan menunggu data lengkap; gunakan Coba lagi bila diperlukan.
 
-Pada monitor desktop, filter, progres, KPI, grafik hasil per hari dan tabel bulanan disusun rapat dalam satu viewport. Semua baris dan pie line tetap ditampilkan tanpa panel gulir; susunan enam line dan sembilan pemeriksaan telah diuji sampai viewport 1280×600. Tablet/HP memakai alur halaman biasa. Pesan kesalahan dan detail bantuan yang dibuka tetap dapat dibaca meskipun menambah tinggi halaman. Bulan ditampilkan dalam bahasa Indonesia; **Pilih bulan lain…** membuka pilihan nama bulan dan tahun untuk periode lama.
+Ringkasan memakai ukuran judul, subjudul, label dan kontrol yang sama dengan halaman lain. Filter bulan/line/shift sejajar dengan judul; tombol **Mulai pemeriksaan** berada di ujung kanan. KPI menampilkan label dan angka secara sejajar agar grafik lebih tinggi. Grafik hasil per hari menjadi panel utama yang lebih lebar; tabel pemeriksaan lebih sempit dan dapat digulir dengan header kolom tetap terlihat. Nama panjang diringkas secara visual dan dapat dilihat melalui tooltip. Klik baris pemeriksaan untuk membuka riwayat sesuai filter; kolom Waktu menampilkan jam–menit WIB dari catatan terakhir, dengan urutan nomor pemeriksaan dari kecil ke besar. Tabel Riwayat menampilkan seluruh data melalui gulir halaman, dengan gulir horizontal bila diperlukan. Bulan terpilih ditampilkan di samping Total. Detail data dan Catatan laporan tidak ditampilkan. Tablet/HP memakai alur halaman biasa; bulan dan tahun tetap dipilih dalam bahasa Indonesia.
 
 ## Waktu mulai shift
 
-Buka **Pengaturan → Line Produksi → Detail jadwal shift**. Isi Sesi1 dan Sesi2 untuk Shift1, lalu Sesi1 dan Sesi2 untuk Shift2, dalam WIB. Urutan waktunya mengikuti satu siklus24 jam; waktu Shift2 sesi2 boleh melewati tengah malam. Empat waktu wajib berbeda. Tekan **Simpan pengaturan** dan setujui popup. Jadwal server dan kewajiban maintenance langsung mengikuti waktu ini sesuai interval masing-masing pemeriksaan. Catatan lama tetap memakai jadwal saat disimpan. Jika jadwal berubah ketika sebuah foto masih terbuka dan kejadian pemeriksaannya berganti, ambil foto baru.
+Buka **Pengaturan → Line produksi → Detail jadwal shift**. Isi Sesi1 dan Sesi2 untuk Shift1, lalu Sesi1 dan Sesi2 untuk Shift2, dalam WIB. Urutan waktunya mengikuti satu siklus24 jam; waktu Shift2 sesi2 boleh melewati tengah malam. Empat waktu wajib berbeda. Tekan **Simpan jadwal** di dalam Detail jadwal shift dan setujui popup. Perubahan jadwal yang belum disimpan tidak ikut tersimpan ketika menambah atau mengedit line, sampler atau tipe. Jadwal server dan kewajiban maintenance langsung mengikuti waktu ini sesuai interval masing-masing pemeriksaan. Catatan lama tetap memakai jadwal saat disimpan. Jika jadwal berubah ketika sebuah foto masih terbuka dan kejadian pemeriksaannya berganti, ambil foto baru.
 
-Jumlah line dan sampler berada di sebelah kontrol tambah pada masing-masing judul. Menghapus line/sampler meminta popup persetujuan, kemudian simpan pengaturan. Menghapus peralatan atau pemeriksaan melalui Edit menghilangkan barisnya dari tabel saat berhasil; riwayatnya tetap ada. Persetujuan simpan hasil foto, hasil visual, master dan penghapusan memakai popup yang dapat dibatalkan sebelum penulisan.
+Jumlah pilihan ditampilkan di judul masing-masing daftar. Menghapus line, sampler atau tipe melalui ikon sampah di popup Edit meminta persetujuan, lalu langsung disimpan. Ikon sampah berada paling kiri sejajar Batal dan Simpan; pada peralatan dan definisi pemeriksaan juga demikian. Menghapus peralatan atau pemeriksaan melalui Edit menghilangkan barisnya dari tabel saat berhasil; riwayatnya tetap ada. Persetujuan simpan hasil foto, hasil visual, master dan penghapusan memakai popup yang dapat dibatalkan sebelum penulisan.
 
 Pratinjau kamera dibatasi tinggi layar. Border gauge dan label tetap mengikuti bagian video yang terlihat tanpa memotong foto sumber. Kamera bawaan HP mengikuti tampilan sistem HP.
 
 ## Riwayat dan grafik
 
-Tabel bulanan memakai satu baris per nomor pemeriksaan dan judul saja. Hasil dari beberapa shift/alat tetap tersimpan di dalam sel tanggal yang sama. Klik sel untuk melihat setiap kejadian beserta waktu, shift, nilai dan satuannya.
+Tabel bulanan memakai satu baris per nomor pemeriksaan dan judul saja. Sel tanggal menyusun Shift 1 lalu Shift 2 dalam satu kolom. Setiap sesi ditampilkan pada baris tersendiri dengan label Line; beberapa line diurutkan menurut nomor dan sesi menurut waktu. Label shift dan line tetap tampil ketika difilter. Angka X̄/R beserta satuan tetap bersebelahan. Klik sel untuk melihat setiap kejadian beserta waktu, shift, nilai dan satuannya; ikon hapus berada tepat di bawah status OK/NG.
 
 Pilihan **Isi sel tabel** tersedia dalam tiga mode:
 
@@ -73,3 +73,9 @@ Konfirmasi yang sempat selesai sebelum pemeriksaan disimpan dapat dilanjutkan de
 ## CV dan keterbatasan
 
 IMG_0493 sebelumnya memiliki estimasi jarum0,417MPa tetapi tidak lolos verifikasi arah karena OCR angka skala kosong. Pembacaan baru mencoba crop angka skala secara terbatas hanya ketika pivot, enam posisi skala, dan dua metode deteksi jarum sudah sepakat. Nilai jarum tetap berasal dari geometri; perbaikan tidak memasukkan angka referensi operator ke perhitungan. Tiga desimal tetap interpolasi, bukan jaminan ketelitian fisik±0,001MPa. Foto ambigu tetap membutuhkan pemeriksaan operator.
+
+## Nomor pemeriksaan dan footer
+
+Nomor pemeriksaan menjadi identitas tampilan pada daftar, pilihan alat/pemeriksaan, Ringkasan, Riwayat dan halaman pengisian. Admin dapat mengisi atau mengubah nomor 1–10000 melalui Tambah/Edit pemeriksaan; nomor harus unik termasuk pemeriksaan yang diarsipkan. Daftar selalu diurutkan berdasarkan nomor. Perubahan nomor tidak mengganti ID internal, tautan alat atau snapshot data lama.
+
+Footer copyright kecil muncul pada seluruh tab di bawah area konten; pada monitor perlu sedikit menggulir untuk melihatnya sehingga tidak mengambil ruang Ringkasan.

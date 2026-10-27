@@ -25,7 +25,7 @@ export function createReportService({repositories,clock}){
       if(batches.length>1000)throw new AppError(422,'REPORT_TOO_LARGE','Narrow the report range; too many import batches.');
       for(const batch of batches)importManifests.set(batch,await tx.settings.get(xrManifestId(batch)));
       const entries=activeRecords.map(record=>hydrateRecord(record,readings,importManifests)).filter(e=>(!product_type_id||e.occurrence.context?.product_type_id===product_type_id)&&(!instrument_id||e.occurrence.instruments.some(a=>a.id===instrument_id)));
-      entries.sort((a,b)=>a.occurrence.checked_at.localeCompare(b.occurrence.checked_at)||a.occurrence.id.localeCompare(b.occurrence.id));
+      entries.sort((a,b)=>String(a.occurrence.checked_at??'').localeCompare(String(b.occurrence.checked_at??''))||a.occurrence.id.localeCompare(b.occurrence.id));
       return {entries,normalized,meta:{report_version:'1',as_of,scope,scanned_records:activeRecords.length,count_unit:'maintenance_record',warnings:entries.some(e=>e.occurrence.origin?.kind===XR_IMPORT_KIND)?['ILLUSTRATIVE_DATA']:[]}};
     });
   }
@@ -51,10 +51,10 @@ export function createReportService({repositories,clock}){
       const parsed=summaryQuery.safeParse(raw);if(!parsed.success)throw new AppError(422,'REPORT_SCOPE','Invalid summary month/filter.');
       const {month,...filters}=parsed.data,[year,m]=month.split('-').map(Number);
       const input={production_date_from:month+'-01',production_date_to:new Date(Date.UTC(year,m,0)).toISOString().slice(0,10),...filters};
-      const {entries,meta}=await load(input),options=(await repositories.settings.get('maintenance-settings'))?.value??{};
-      return buildSummary(entries,meta,scheduleAt(clock(),options).production_date);
+      const {entries,meta}=await load(input),options=(await repositories.settings.get('maintenance-settings'))?.value??{},numbers=new Map((await createDefinitionService({repositories,clock}).all()).map(d=>[d.id,d.check_number]));
+      return buildSummary(entries,meta,scheduleAt(clock(),options).production_date,numbers);
     },
-    async checksheet(input,options={}){const {entries,meta,normalized}=await load(input,options.cursor),numbers=new Map((await createDefinitionService({repositories,clock}).all()).map(d=>[d.id,d.check_number])),rows=page(buildChecksheet(entries,numbers),normalized,options);return {meta,rows:rows.items,next_cursor:rows.next_cursor};},
+    async checksheet(input,options={}){const {entries,meta,normalized}=await load(input,options.cursor),numbers=new Map((await createDefinitionService({repositories,clock}).all()).map(d=>[d.id,d.check_number])),pagination={...normalized,scope:{...normalized.scope,check_numbers:Object.fromEntries(numbers)}},rows=page(buildChecksheet(entries,numbers),pagination,options);return {meta,rows:rows.items,next_cursor:rows.next_cursor};},
     async spc(input,options){const report=await spc(input,options);return {...report,cohorts:report.cohorts.map(({_groups,...c})=>c)};},
     async subgroups(input,{cohort_id,limit=50,cursor,method}={}){const normalized=normalizeScope(input,clock,cursor);const report=await spc({...normalized.scope,as_of:normalized.as_of},{method});const cohort=report.cohorts.find(c=>c.cohort_id===cohort_id);if(!cohort)throw new AppError(404,'COHORT_NOT_FOUND','Report cohort not found.');const result=page([...cohort._groups,...cohort.incomplete.map(g=>({...g,values:[],xbar:null,r:null}))],{scope:{...normalized.scope,cohort_id},as_of:normalized.as_of},{limit,cursor});return {meta:report.meta,...result};},
   };

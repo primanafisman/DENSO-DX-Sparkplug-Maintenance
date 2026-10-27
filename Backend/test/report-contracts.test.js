@@ -9,6 +9,16 @@ import {cvDouble} from './support.js';
 import {addReportRecord,reportScope,reportClock} from './fixtures/reporting.js';
 import {createApp} from '../src/app.js';
 const params=new URLSearchParams(reportScope).toString();
+test('inspection-number contracts accept optional Admin inputs and expose nullable current summary numbers',async()=>{
+  const doc=JSON.parse(await fs.readFile(new URL('../contracts/openapi.yaml',import.meta.url),'utf8')),schemas=doc.components.schemas;
+  for(const name of ['DefinitionCreate','DefinitionUpdate']){
+    assert.deepEqual(schemas[name].properties.check_number,{type:'integer',minimum:1,maximum:10000});
+    assert.equal(schemas[name].required.includes('check_number'),false);
+  }
+  const group=schemas.MaintenanceSummary.properties.groups.items;
+  assert.deepEqual(group.properties.check_number,{type:'integer',minimum:1,maximum:10000,nullable:true});
+  assert.ok(group.required.includes('check_number'));
+});
 test('report APIs authenticate, enforce roles/CSRF, validate DTOs and export every row safely',async()=>{
   const {repo,close}=await database();
   try{
@@ -24,6 +34,8 @@ test('report APIs authenticate, enforce roles/CSRF, validate DTOs and export eve
     const agent=request.agent(app);await agent.post('/api/v1/auth/login').send({username:'001',password}).expect(200);
     const csrf=(await agent.get('/api/v1/auth/csrf')).body.data.csrf_token;
     const summary=await agent.get('/api/v1/maintenance/summary?month=2026-10').expect(200);assert.equal(summary.body.data.total,103);
+    assert.deepEqual(summary.body.data.groups.map(group=>group.check_number),[1,44]);
+    assert.equal(summary.body.data.groups[0].latest_checked_at,'2026-10-01T08:00:00+07:00');
     const sheet=await agent.get('/api/v1/maintenance/report?'+params+'&limit=1').expect(200);assert.ok(sheet.body.data.next_cursor);
     const spc=await agent.get('/api/v1/maintenance/spc?'+params+'&definition_id=chart_ee_length').expect(200);
     const cohort=spc.body.data.cohorts[0];
@@ -41,6 +53,9 @@ test('report APIs authenticate, enforce roles/CSRF, validate DTOs and export eve
     function draft(v){if(Array.isArray(v))return v.map(draft);if(!v||typeof v!=='object')return v;const r=Object.fromEntries(Object.entries(v).map(([k,x])=>[k,draft(x)]));for(const name of ['Minimum','Maximum'])if(typeof r['exclusive'+name]==='boolean'){if(r['exclusive'+name])r['exclusive'+name]=r[name.toLowerCase()];else delete r['exclusive'+name];}return r;}
     ajv.addSchema(draft(schemaDoc),'report');
     for(const [name,body] of [['MaintenanceSummary',summary.body.data],['ChecksheetPage',sheet.body.data],['SpcReport',spc.body.data],['SubgroupPage',groups.body.data],['SpcBaseline',baseline.body.data]]){const valid=ajv.compile({$ref:'report#/components/schemas/'+name});assert.ok(valid(body),name+JSON.stringify(valid.errors));}
+    const validSummary=ajv.compile({$ref:'report#/components/schemas/MaintenanceSummary'}),unknownTime=structuredClone(summary.body.data);
+    unknownTime.groups[0].latest_checked_at=null;assert.ok(validSummary(unknownTime));
+    unknownTime.groups[0].latest_checked_at=12345;assert.equal(validSummary(unknownTime),false);
     const auth=(await request(app).post('/api/v1/auth/token').send({username:'001',password})).body.data.access_token;
     await repo.users.update('admin',{role:'Viewer'});
     await request(app).post('/api/v1/maintenance/spc-baselines').set('Authorization','Bearer '+auth).send(input).expect(403);

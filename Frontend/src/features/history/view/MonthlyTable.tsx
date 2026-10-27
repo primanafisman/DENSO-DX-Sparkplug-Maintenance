@@ -6,6 +6,7 @@ import { monthlyModeRows, sampleMeasurement } from '../model/monthlyRows';
 import { Empty, Status } from '../../../shared/components/ui';
 import { dateTime, number } from '../../../shared/lib/format';
 import { OccurrenceDrawer } from './OccurrenceDrawer';
+import { monthlyCellGroups } from '../model/monthlyCellGroups';
 export function MonthlyTable({
   rows,
   scope,
@@ -61,49 +62,69 @@ export function MonthlyTable({
                 </th>
                 {dates.map((d) => {
                   const cell = row.cells.find((c) => c.date === d);
+                  const groups = monthlyCellGroups(cell?.items ?? [], scope);
+                  const visible = groups.flatMap((group) => group.items);
                   return (
                     <td key={d} data-testid={'day-' + d}>
-                      {cell?.count ? (
+                      {visible.length ? (
                         <button
                           className="cell-button"
-                          aria-label={cell.count + ' pemeriksaan'}
-                          onClick={() => setSelected(cell.items)}
+                          aria-label={visible.length + ' pemeriksaan'}
+                          onClick={() => setSelected(visible)}
                         >
-                          <span className={'cell-statuses ' + (cell.count > 1 ? 'two-rows' : '')}>
-                            {cell.items.map((item) => {
-                              const { occurrence: o, unit, input_method } = item,
-                                singleValue =
-                                  o.outcomes.length === 1 && typeof o.outcomes[0].value === 'number'
-                                    ? o.outcomes[0].value
-                                    : o.numeric_summary?.xbar;
-                              return (
-                                <span
-                                  className="cell-result"
-                                  key={o.id}
-                                  title={
-                                    'Shift ' +
-                                    (o.context.shift === 'day' ? '1' : '2') +
-                                    ' · ' +
-                                    dateTime(o.checked_at)
-                                  }
-                                >
-                                  {mode !== 'status' && input_method !== 'ok_ng' && (
-                                    <span>
-                                      {sampleMeasurement(item) ? (
-                                        <>
-                                          X̄ {number(o.numeric_summary?.xbar)} · R{' '}
-                                          {number(o.numeric_summary?.r)}
-                                        </>
-                                      ) : (
-                                        number(singleValue)
-                                      )}{' '}
-                                      <small>{unit}</small>
+                          <span className="monthly-cell-groups">
+                            {groups.map((group) => (
+                              <span
+                                className="monthly-cell-shift"
+                                role="group"
+                                aria-label={'Shift ' + (group.shift === 'day' ? '1' : '2')}
+                                key={group.shift}
+                              >
+                                <strong className="cell-shift-label">
+                                  Shift {group.shift === 'day' ? '1' : '2'}:
+                                </strong>
+                                {group.items.map((item) => {
+                                  const { occurrence: o, unit, input_method } = item,
+                                    singleValue =
+                                      o.outcomes.length === 1 &&
+                                      typeof o.outcomes[0].value === 'number'
+                                        ? o.outcomes[0].value
+                                        : o.numeric_summary?.xbar;
+                                  return (
+                                    <span
+                                      className="cell-result"
+                                      key={o.id}
+                                      title={
+                                        'Shift ' +
+                                        (o.context.shift === 'day' ? '1' : '2') +
+                                        ' · ' +
+                                        dateTime(o.checked_at)
+                                      }
+                                    >
+                                      <span className="cell-line-label">
+                                        Line {o.context.line}:
+                                      </span>
+                                      {mode !== 'status' && input_method !== 'ok_ng' && (
+                                        <span className="cell-reading">
+                                          {sampleMeasurement(item) ? (
+                                            <>
+                                              X̄ {number(o.numeric_summary?.xbar)} · R{' '}
+                                              {number(o.numeric_summary?.r)}
+                                            </>
+                                          ) : (
+                                            number(singleValue)
+                                          )}{' '}
+                                          <small>{unit}</small>
+                                        </span>
+                                      )}
+                                      {mode !== 'measurement' && (
+                                        <Status value={o.overall_status} />
+                                      )}
                                     </span>
-                                  )}
-                                  {mode !== 'measurement' && <Status value={o.overall_status} />}
-                                </span>
-                              );
-                            })}
+                                  );
+                                })}
+                              </span>
+                            ))}
                           </span>
                         </button>
                       ) : null}

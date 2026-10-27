@@ -134,7 +134,7 @@ PUT /instruments/:id/status menerima hanya {"active":false} untuk mengeluarkan a
 
 Daftar pemeriksaan tetap memakai PUT /maintenance/definitions/:id/status dengan active dan review_reason otomatis. Konfirmasi UI berada dalam editor dan terpisah dari submit formulir. Gagal/batal mempertahankan draft; sukses menutup editor dan memperbarui daftar. Status ini tidak menghapus riwayat.
 
-Pengaturan memuat tab standards (Daftar Pemeriksaan), equipment (Peralatan) dan general (Line Produksi). /peralatan merupakan tautan kompatibilitas yang redirect replace ke /pengaturan?tab=equipment. Gunakan URL Pengaturan ini untuk integrasi navigasi baru; sidebar tidak lagi memiliki menu Peralatan terpisah.
+Pengaturan memuat tab standards (Daftar Pemeriksaan), equipment (Peralatan) dan general (Line produksi). /peralatan merupakan tautan kompatibilitas yang redirect replace ke /pengaturan?tab=equipment. Gunakan URL Pengaturan ini untuk integrasi navigasi baru; sidebar tidak lagi memiliki menu Peralatan terpisah.
 
 
 ## Operator simplification (2026-10-24)

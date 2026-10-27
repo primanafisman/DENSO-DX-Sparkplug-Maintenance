@@ -1,0 +1,82 @@
+.settings-management > .settings-management-heading {
+  flex-wrap: nowrap;
+}
+.settings-management-heading > .button {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.settings-management-lists {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+.settings-choice-list {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fafbfc;
+}
+.settings-choice-list > .section-heading {
+  margin-bottom: 10px;
+}
+.settings-choice-list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.settings-choice-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 45px;
+  padding: 7px 0;
+  border-top: 1px solid var(--border);
+}
+.settings-choice-list li:first-child {
+  border-top: 0;
+}
+.settings-choice-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.settings-choice-list li > .icon-button {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.settings-choice-list .settings-choice-inactive {
+  color: var(--muted);
+  background: #edf0f4;
+  white-space: nowrap;
+}
+.settings-editor-fields {
+  margin: 20px 0;
+  padding: 0;
+  min-width: 0;
+  border: 0;
+}
+.confirmation-dialog .settings-delete-choice {
+  margin-right: auto;
+  color: var(--ng);
+}
+.settings-management .settings-schedule-details {
+  margin-top: 24px;
+}
+.settings-schedule-actions {
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+@media (max-width: 760px) {
+  .settings-management-lists {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .settings-management > .settings-management-heading {
+    gap: 10px;
+  }
+  .settings-management-heading h2 {
+    font-size: 1rem;
+  }
+  .settings-choice-list {
+    padding: 12px;
+  }
+}

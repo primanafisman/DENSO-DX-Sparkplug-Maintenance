@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form';
 import { useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { Instrument, MaintenanceDefinition } from '../../../shared/lib/contracts';
+import { compareInspections, inspectionLabel } from '../../../shared/lib/inspectionIdentity';
 import { equipmentSchema } from '../model/schemas';
 import type { EquipmentForm } from '../model/schemas';
 import { Button, Field, ErrorMessage, Badge } from '../../../shared/components/ui';
@@ -66,7 +67,7 @@ export function EquipmentEditor({
   const nameField = form.register('name');
   const allowed = definitions
     .filter((d) => (mode === 'visual' ? d.input_method === 'ok_ng' : d.input_method !== 'ok_ng'))
-    .sort((a, b) => a.name.localeCompare(b.name, 'id', { sensitivity: 'base', numeric: true }));
+    .sort(compareInspections);
   return (
     <div className="modal-backdrop">
       <section
@@ -274,7 +275,7 @@ export function EquipmentEditor({
                 <label className="check-label" key={d.id}>
                   <input type="checkbox" value={d.id} {...form.register('check_ids')} />
                   <span>
-                    {d.name}
+                    {inspectionLabel(d)}
                     <small className="muted">
                       {' '}
                       · {d.interval_guide.description} · n{d.sample_count}
@@ -295,6 +296,17 @@ export function EquipmentEditor({
             <ErrorMessage error={error} />
           </fieldset>
           <div className="actions">
+            {equipment && onSetActive && (
+              <AvailabilityAction
+                name={equipment.name}
+                active={equipment.active}
+                confirming={statusPrompt}
+                onPrompt={setStatusPrompt}
+                onConfirm={onSetActive}
+                pending={statusPending || saving}
+                error={statusError}
+              />
+            )}
             <Button type="button" variant="secondary" onClick={onClose} disabled={statusPending}>
               Batal
             </Button>
@@ -303,17 +315,6 @@ export function EquipmentEditor({
             </Button>
           </div>
         </form>
-        {equipment && onSetActive && (
-          <AvailabilityAction
-            name={equipment.name}
-            active={equipment.active}
-            confirming={statusPrompt}
-            onPrompt={setStatusPrompt}
-            onConfirm={onSetActive}
-            pending={statusPending || saving}
-            error={statusError}
-          />
-        )}
       </section>
     </div>
   );

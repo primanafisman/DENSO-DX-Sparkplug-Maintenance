@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   CheckCircle2,
   Clock3,
@@ -6,7 +6,7 @@ import {
   Check,
   X,
   LayoutDashboard,
-  ClipboardList,
+  CalendarDays,
   Gauge,
   TrendingUp,
   ScanLine,
@@ -21,9 +21,17 @@ import { useReportFilters } from '../../../shared/controller/useReportFilters';
 import { ReportFilters } from '../../../shared/components/layout/ReportFilters';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
 import { Card, Loading, ErrorMessage, Empty, Button } from '../../../shared/components/ui';
-import { number } from '../../../shared/lib/format';
+import { dateTime, monthLabel, number } from '../../../shared/lib/format';
 import { ProgressRing } from '../../../shared/components/ui/ProgressRing';
+import { compareInspections, inspectionLabel } from '../../../shared/lib/inspectionIdentity';
+const timeFormat = new Intl.DateTimeFormat('en-GB', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+  timeZone: 'Asia/Jakarta',
+});
 export function SummaryPage() {
+  const navigate = useNavigate();
   const filters = useReportFilters(),
     query = useMonthlySummary(filters),
     current = useCurrentWorkload(filters.line, filters.lines, filters.serverSchedule),
@@ -35,12 +43,14 @@ export function SummaryPage() {
         title="Ringkasan"
         icon={<LayoutDashboard size={23} />}
         actions={
-          <Link className="button button-primary" to="/pemeriksaan">
-            <ScanLine size={19} /> Mulai pemeriksaan <ArrowRight size={16} />
-          </Link>
+          <>
+            <ReportFilters filters={filters} />
+            <Link className="button button-primary" to="/pemeriksaan">
+              <ScanLine size={19} /> Mulai pemeriksaan <ArrowRight size={16} />
+            </Link>
+          </>
         }
       />
-      <ReportFilters filters={filters} />
       <section className="current-workload" aria-label="Jadwal aktif">
         <div className="current-shift">
           <span className="shift-orbit" aria-hidden="true">
@@ -76,7 +86,7 @@ export function SummaryPage() {
             <div
               className="workload-count workload-lines"
               role="group"
-              aria-label="Line belum selesai inspeksi"
+              aria-label="Line pemeriksaan tersisa"
             >
               <strong>
                 {current.countsReady
@@ -84,7 +94,7 @@ export function SummaryPage() {
                   : '—'}
               </strong>
               <span>
-                <Factory size={17} /> Line belum selesai inspeksi
+                <Factory size={17} /> Line pemeriksaan tersisa
               </span>
             </div>
             {(current.isFetching || current.staleOccurrence) && (
@@ -143,10 +153,16 @@ export function SummaryPage() {
           <div className="kpi-grid">
             <Card className="kpi-card kpi-total">
               <span className="metric-symbol" aria-hidden="true">
-                <ClipboardList size={24} />
+                <CalendarDays size={24} />
               </span>
               <p>Total</p>
               <strong>{d.total}</strong>
+              {filters.month && (
+                <span className="total-month">
+                  <span>Bulan</span>
+                  <b>{monthLabel(filters.month)}</b>
+                </span>
+              )}
             </Card>
             <Card className="kpi-card kpi-ok">
               <span className="metric-symbol" aria-hidden="true">
@@ -170,7 +186,7 @@ export function SummaryPage() {
               <span className="metric-symbol" aria-hidden="true">
                 <TrendingUp size={24} />
               </span>
-              <p>OK %</p>
+              <p>% OK</p>
               <strong>{d.ok_ratio === null ? '—' : number(d.ok_ratio * 100, 1) + '%'}</strong>
             </Card>
           </div>
@@ -213,46 +229,64 @@ export function SummaryPage() {
                       <th>Total</th>
                       <th>OK</th>
                       <th>NG</th>
-                      <th />
+                      <th>
+                        Waktu <span className="sr-only">pemeriksaan terbaru WIB</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {d.groups.map((g) => (
-                      <tr key={g.definition_id}>
-                        <th>{g.name}</th>
-                        <td>{g.total}</td>
-                        <td>{g.ok}</td>
-                        <td>{g.ng}</td>
-                        <td>
-                          <Link
-                            to={
-                              '/riwayat/' +
-                              encodeURIComponent(g.definition_id) +
-                              '?' +
-                              new URLSearchParams({
-                                month: filters.month,
-                                ...(filters.line ? { line: filters.line } : {}),
-                              })
-                            }
-                          >
-                            Detail <ArrowRight size={14} />
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
+                    {[...d.groups].sort(compareInspections).map((g) => {
+                      const href =
+                        '/riwayat/' +
+                        encodeURIComponent(g.definition_id) +
+                        '?' +
+                        new URLSearchParams({
+                          month: filters.month,
+                          ...(filters.line ? { line: filters.line } : {}),
+                          ...(filters.shift ? { shift: filters.shift } : {}),
+                        });
+                      const checked =
+                        g.latest_checked_at && Number.isFinite(Date.parse(g.latest_checked_at))
+                          ? g.latest_checked_at
+                          : null;
+                      return (
+                        <tr
+                          key={g.definition_id}
+                          onClick={(event) => {
+                            if (
+                              !event.ctrlKey &&
+                              !event.metaKey &&
+                              !event.shiftKey &&
+                              !(event.target as HTMLElement).closest('a')
+                            )
+                              navigate(href);
+                          }}
+                        >
+                          <th title={inspectionLabel(g)}>
+                            <Link className="summary-inspection-link" to={href}>
+                              {inspectionLabel(g)}
+                            </Link>
+                          </th>
+                          <td>{g.total}</td>
+                          <td>{g.ok}</td>
+                          <td>{g.ng}</td>
+                          <td>
+                            {checked ? (
+                              <time dateTime={checked} title={dateTime(checked) + ' WIB'}>
+                                {timeFormat.format(new Date(checked))}
+                              </time>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </Card>
           </div>
-          {d.meta.warnings.length > 0 && (
-            <details className="data-details">
-              <summary>Detail data</summary>
-              {d.meta.warnings.map((w) => (
-                <p key={w}>{w}</p>
-              ))}
-            </details>
-          )}
         </>
       )}
     </div>

@@ -50,6 +50,7 @@ it('catalog exposes 44 options with requirement filters and Viewer cannot start 
 it('visual samples must all be chosen and explicit save uses the frozen server context', async () => {
   const definition = fixtureDefinition({
     id: 'packing_depth_tool',
+    check_number: 4,
     name: 'Packing Depth Tool',
     kind: 'visual',
     input_method: 'ok_ng',
@@ -88,6 +89,7 @@ it('visual samples must all be chosen and explicit save uses the frozen server c
   expect(screen.getByRole('dialog', { name: 'Pahami standar sebelum mulai' })).toBeVisible();
   expect(screen.queryByRole('button', { name: 'Sampel 1 OK' })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Saya mengerti, mulai pemeriksaan' }));
+  expect(screen.getByRole('heading', { level: 1, name: '4 · Packing Depth Tool' })).toBeVisible();
   expect(screen.getByRole('button', { name: 'Simpan pemeriksaan' })).toBeDisabled();
   fireEvent.click(screen.getByRole('button', { name: 'Sampel 1 OK' }));
   expect(saved).not.toHaveBeenCalled();
@@ -96,6 +98,7 @@ it('visual samples must all be chosen and explicit save uses the frozen server c
   fireEvent.click(screen.getByRole('button', { name: 'Simpan pemeriksaan' }));
   expect(saved).not.toHaveBeenCalled();
   expect(screen.getByRole('alertdialog', { name: 'Simpan hasil pemeriksaan?' })).toBeVisible();
+  expect(screen.getByRole('alertdialog')).toHaveTextContent('4 · Packing Depth Tool');
   fireEvent.click(screen.getByRole('button', { name: 'Ya, simpan' }));
   await waitFor(() => expect(saved).toHaveBeenCalled());
   expect(saved.mock.calls[0][0].context).toEqual(context);
@@ -104,6 +107,65 @@ it('visual samples must all be chosen and explicit save uses the frozen server c
     { sample_id: 'one', status: 'OK' },
     { sample_id: 'two', status: 'NG' },
   ]);
+});
+
+it('orders pending inspections by number and finds a check by its number or name', async () => {
+  const definitions = [
+    fixtureDefinition({ id: 'ten', name: 'Alpha', check_number: 10, display_order: 1 }),
+    fixtureDefinition({ id: 'three', name: 'Gamma', source_number: 3, display_order: 2 }),
+    fixtureDefinition({
+      id: 'two',
+      name: 'Zulu',
+      check_number: 2,
+      source_number: 99,
+      display_order: 3,
+    }),
+  ];
+  server.use(
+    http.get('/api/v1/auth/me', () =>
+      HttpResponse.json(envelope({ id: 'u', username: 'Operator', role: 'Operator' })),
+    ),
+    http.get('/api/v1/maintenance/settings', () =>
+      HttpResponse.json(
+        envelope({ lines: ['17'], allowed_samplers: ['Ldr'], night_rollover_hour: 12 }),
+      ),
+    ),
+    http.get('/api/v1/maintenance/schedule', () => HttpResponse.json(envelope(schedule))),
+    http.get('/api/v1/maintenance/catalog', () =>
+      HttpResponse.json(
+        envelope({
+          items: definitions,
+          count: 3,
+          source_gaps: { missing_rows: [], clipped_row: 45 },
+        }),
+      ),
+    ),
+    http.get('/api/v1/maintenance/due', () =>
+      HttpResponse.json(
+        envelope({
+          schedule,
+          line: '17',
+          items: definitions.map((definition) => ({
+            definition_id: definition.id,
+            state: 'pending',
+          })),
+          pending_count: 3,
+          completed_count: 0,
+        }),
+      ),
+    ),
+  );
+  renderApp(<InspectionHub />);
+  await screen.findByRole('button', { name: 'Mulai Zulu' });
+  expect(
+    screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent),
+  ).toEqual(['Zulu', 'Gamma', 'Alpha']);
+  fireEvent.change(screen.getByLabelText('Cari pemeriksaan'), { target: { value: '2' } });
+  expect(screen.getByRole('button', { name: 'Mulai Zulu' })).toBeVisible();
+  expect(screen.queryByRole('button', { name: 'Mulai Alpha' })).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Cari pemeriksaan'), { target: { value: 'gamma' } });
+  expect(screen.getByRole('button', { name: 'Mulai Gamma' })).toBeVisible();
+  expect(screen.queryByRole('button', { name: 'Mulai Zulu' })).not.toBeInTheDocument();
 });
 
 it('inspection list hides completed checks for the selected line and refreshes from server', async () => {

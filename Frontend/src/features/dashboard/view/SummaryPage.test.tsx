@@ -6,7 +6,117 @@ import { renderApp } from '../../../test/render';
 import { envelope, meta, schedule } from '../../../test/fixtures';
 import { SummaryPage } from './SummaryPage';
 import { chartLayout } from '../../../test/chartLayout';
+import { Routes, Route } from 'react-router-dom';
 chartLayout();
+
+it('shows inspection numbers in numeric order even when the summary arrives newest first', async () => {
+  setup();
+  server.use(
+    http.get('/api/v1/maintenance/summary', () =>
+      HttpResponse.json(
+        envelope({
+          meta,
+          total: 2,
+          ok: 2,
+          ng: 0,
+          ok_ratio: 1,
+          daily: [],
+          groups: [
+            {
+              definition_id: 'ten',
+              name: 'A check',
+              check_number: 10,
+              total: 1,
+              ok: 1,
+              ng: 0,
+              latest_checked_at: '2026-10-25T09:00:00Z',
+            },
+            {
+              definition_id: 'two',
+              name: 'Z check',
+              check_number: 2,
+              total: 1,
+              ok: 1,
+              ng: 0,
+              latest_checked_at: '2026-10-25T08:00:00Z',
+            },
+          ],
+        }),
+      ),
+    ),
+  );
+  renderApp(<SummaryPage />, '/?month=2026-10');
+  const table = await screen.findByRole('table', { name: 'Ringkasan pemeriksaan bulanan' });
+  expect(
+    within(table)
+      .getAllByRole('link')
+      .map((a) => a.textContent),
+  ).toEqual(['2 · Z check', '10 · A check']);
+});
+
+it('shows latest check times in WIB and opens that inspection from the row without a Detail column', async () => {
+  setup();
+  server.use(
+    http.get('/api/v1/maintenance/summary', () =>
+      HttpResponse.json(
+        envelope({
+          meta,
+          total: 3,
+          ok: 3,
+          ng: 0,
+          ok_ratio: 1,
+          daily: [],
+          groups: [
+            {
+              definition_id: 'newest',
+              name: 'Pemeriksaan terbaru',
+              total: 1,
+              ok: 1,
+              ng: 0,
+              latest_checked_at: '2026-10-25T17:15:00Z',
+            },
+            {
+              definition_id: 'older',
+              name: 'Pemeriksaan sebelumnya',
+              total: 1,
+              ok: 1,
+              ng: 0,
+              latest_checked_at: '2026-10-25T06:04:00Z',
+            },
+            {
+              definition_id: 'legacy',
+              name: 'Pemeriksaan lama',
+              total: 1,
+              ok: 1,
+              ng: 0,
+              latest_checked_at: null,
+            },
+          ],
+        }),
+      ),
+    ),
+  );
+  renderApp(
+    <Routes>
+      <Route path="/" element={<SummaryPage />} />
+      <Route path="/riwayat/:id" element={<h1>Riwayat terpilih</h1>} />
+    </Routes>,
+    '/?month=2026-10&line=17&shift=day',
+  );
+  const table = await screen.findByRole('table', { name: 'Ringkasan pemeriksaan bulanan' });
+  expect(within(table).queryByRole('columnheader', { name: 'Detail' })).not.toBeInTheDocument();
+  expect(within(table).getByRole('columnheader', { name: /Waktu/ })).toBeVisible();
+  const latest = within(table).getByRole('row', { name: /Pemeriksaan terbaru/ });
+  expect(within(latest).getByText('00:15')).toHaveAttribute('datetime', '2026-10-25T17:15:00Z');
+  expect(within(table).getByText('13:04')).toBeVisible();
+  expect(within(table).getByRole('row', { name: /Pemeriksaan lama/ })).toHaveTextContent('—');
+  expect(within(latest).getByRole('link')).toHaveAttribute(
+    'href',
+    '/riwayat/newest?month=2026-10&line=17&shift=day',
+  );
+  fireEvent.click(within(latest).getByText('00:15'));
+  expect(screen.getByRole('heading', { name: 'Riwayat terpilih' })).toBeVisible();
+});
 
 const current = {
   ...schedule,
@@ -30,7 +140,15 @@ function setup(lines = ['17']) {
     ),
     http.get('/api/v1/maintenance/summary', () =>
       HttpResponse.json(
-        envelope({ meta, total: 501, ok: 500, ng: 1, ok_ratio: 500 / 501, daily: [], groups: [] }),
+        envelope({
+          meta: { ...meta, warnings: ['ILLUSTRATIVE_DATA'] },
+          total: 501,
+          ok: 500,
+          ng: 1,
+          ok_ratio: 500 / 501,
+          daily: [],
+          groups: [],
+        }),
       ),
     ),
     http.get('/api/v1/maintenance/due', ({ request }) =>
@@ -47,6 +165,9 @@ it('current server shift and due checks stay separate from historical monthly re
   expect(within(active).getByText('3')).toBeVisible();
   expect(within(active).getByText('Line 17')).toBeVisible();
   expect(await screen.findByText('501')).toBeVisible();
+  expect(screen.getByText('501').closest('.kpi-total')).toHaveTextContent('September 2026');
+  expect(screen.queryByText('Detail data')).not.toBeInTheDocument();
+  expect(screen.queryByText('ILLUSTRATIVE_DATA')).not.toBeInTheDocument();
   expect(screen.getByLabelText('Shift')).toHaveValue('day');
   expect(screen.getByLabelText('Bulan')).toHaveValue('2026-09');
   expect(
@@ -62,9 +183,9 @@ it('uses Indonesian month choices and a pending-line metric rather than a long l
   const month = await screen.findByRole('combobox', { name: 'Bulan' });
   expect(within(month).getByRole('option', { name: 'Oktober 2026' })).toHaveValue('2026-10');
   const active = screen.getByRole('region', { name: 'Jadwal aktif' });
-  const lines = await within(active).findByRole('group', { name: 'Line belum selesai inspeksi' });
+  const lines = await within(active).findByRole('group', { name: 'Line pemeriksaan tersisa' });
   expect(await within(lines).findByText('3')).toBeVisible();
-  expect(within(lines).getByText('Line belum selesai inspeksi')).toBeVisible();
+  expect(within(lines).getByText('Line pemeriksaan tersisa')).toBeVisible();
   expect(within(active).queryByText(/^Belum selesai:/)).not.toBeInTheDocument();
 });
 
@@ -97,9 +218,7 @@ it('all configured lines have adaptive rings and weighted total progress with pe
   expect(within(lines).getAllByRole('listitem')).toHaveLength(5);
   expect(within(lines).getByRole('button', { name: 'Lihat Line 1' })).toHaveTextContent('100%');
   expect(
-    within(within(active).getByRole('group', { name: 'Line belum selesai inspeksi' })).getByText(
-      '4',
-    ),
+    within(within(active).getByRole('group', { name: 'Line pemeriksaan tersisa' })).getByText('4'),
   ).toBeVisible();
   expect(calls).toEqual(new Set(['1', '2', '3', '4', '5']));
   expect(screen.queryByText(/^Pilih line$/)).not.toBeInTheDocument();
@@ -115,7 +234,7 @@ it('all-line progress follows added and removed configured lines without hardcod
   const active = screen.getByRole('region', { name: 'Jadwal aktif' });
   await waitFor(() =>
     expect(
-      within(within(active).getByRole('group', { name: 'Line belum selesai inspeksi' })).getByText(
+      within(within(active).getByRole('group', { name: 'Line pemeriksaan tersisa' })).getByText(
         '2',
       ),
     ).toBeVisible(),
@@ -151,7 +270,7 @@ it('an unavailable line cannot produce a misleading partial all-line percentage'
   fireEvent.click(within(active).getByRole('button', { name: 'Coba lagi' }));
   await waitFor(() =>
     expect(
-      within(within(active).getByRole('group', { name: 'Line belum selesai inspeksi' })).getByText(
+      within(within(active).getByRole('group', { name: 'Line pemeriksaan tersisa' })).getByText(
         '0',
       ),
     ).toBeVisible(),
@@ -261,8 +380,6 @@ it('all-line totals never mix old and new occurrences while lines refresh separa
   finishes.get('18')!(HttpResponse.json(envelope({ ...due('18', 0, 5), schedule: next })));
   expect(await within(active).findByRole('img', { name: 'Progres pemeriksaan 50%' })).toBeVisible();
   expect(
-    within(within(active).getByRole('group', { name: 'Line belum selesai inspeksi' })).getByText(
-      '1',
-    ),
+    within(within(active).getByRole('group', { name: 'Line pemeriksaan tersisa' })).getByText('1'),
   ).toBeVisible();
 });

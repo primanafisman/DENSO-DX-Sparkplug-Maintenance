@@ -8,6 +8,7 @@ import { Card, Field, Button, ErrorDialog, Badge } from '../../../shared/compone
 import { number } from '../../../shared/lib/format';
 import { formatAcceptance } from '../../../shared/lib/acceptance';
 import { ConfirmationDialog } from '../../../shared/components/ui/ConfirmationDialog';
+import { inspectionLabel } from '../../../shared/lib/inspectionIdentity';
 export function ConfirmPage() {
   const { state, engine } = useCapture(),
     inspection = useInspection({ scheduleEnabled: false }),
@@ -53,7 +54,7 @@ export function ConfirmPage() {
   };
   return (
     <>
-      <PageHeader title="Konfirmasi hasil" />
+      <PageHeader title="Konfirmasi hasil" description={inspectionLabel(d.definition)} />
       <Card>
         <Badge>{state.instrument.name}</Badge>
         {limits && (
@@ -188,7 +189,7 @@ export function ConfirmPage() {
           description={
             prompt === 'reading'
               ? `${state.instrument.name} · ${value} ${state.profile?.unit ?? ''}`
-              : d.definition.name
+              : inspectionLabel(d.definition)
           }
           confirmLabel={prompt === 'reading' ? 'Ya, konfirmasi' : 'Ya, simpan'}
           onCancel={() => setPrompt(null)}

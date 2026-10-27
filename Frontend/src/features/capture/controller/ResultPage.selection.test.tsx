@@ -73,6 +73,20 @@ function setup(
   return { store, api };
 }
 afterEach(() => useInspectionStore.getState().reset());
+it('numbers inspection choices and orders 2 before 10 while keeping stable IDs', async () => {
+  setup([a, b], null, a.profile!, null, [
+    fixtureDefinition({ id: 'ten', check_number: 10, name: 'A check' }),
+    fixtureDefinition({ id: 'two', check_number: 2, name: 'Z check' }),
+  ]);
+  const select = await screen.findByLabelText('Pemeriksaan');
+  await screen.findByRole('option', { name: '2 · Z check' });
+  expect(
+    [...select.querySelectorAll('option')].slice(1).map((o) => [o.value, o.textContent]),
+  ).toEqual([
+    ['two', '2 · Z check'],
+    ['ten', '10 · A check'],
+  ]);
+});
 it('clearing the inspection offers all equipment, and choosing an inspection filters equipment without rereading', async () => {
   const user = userEvent.setup(),
     { api } = setup();

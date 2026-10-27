@@ -26,6 +26,7 @@ import {
 import { dateTime, monthRange } from '../../../shared/lib/format';
 import { StatusReportPage } from './StatusReportPage';
 import { statusOnlyReport } from '../model/reportMode';
+import { compareInspections, inspectionLabel } from '../../../shared/lib/inspectionIdentity';
 import { cohortAcceptance } from '../model/measurementFacts';
 import { illustrativeOrigin } from '../model/reportOrigin';
 import { OriginBadge } from './OriginBadge';
@@ -141,7 +142,7 @@ function NumericReportPage() {
     <>
       <div className="no-print">
         <PageHeader
-          title={definition?.name ?? 'Laporan pemeriksaan'}
+          title={definition ? inspectionLabel(definition) : 'Laporan pemeriksaan'}
           icon={<Activity />}
           actions={
             <Link
@@ -170,11 +171,14 @@ function NumericReportPage() {
                 navigate('/riwayat/' + encodeURIComponent(e.target.value) + '?' + next);
               }}
             >
-              {catalog.data?.items.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
+              {catalog.data?.items
+                .slice()
+                .sort(compareInspections)
+                .map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {inspectionLabel(d)}
+                  </option>
+                ))}
             </select>
           </Field>
           <Field label="Tanggal awal">
@@ -369,7 +373,7 @@ function NumericReportPage() {
                       {Array.from({ length: Math.ceil(printGroups.length / 8) }, (_, i) => (
                         <section className="print-sheet" key={i}>
                           <h2>
-                            {c.definition_snapshot.name} · data {i * 8 + 1}–
+                            {inspectionLabel(c.definition_snapshot)} · data {i * 8 + 1}–
                             {Math.min(printGroups.length, (i + 1) * 8)}
                           </h2>
                           <p>

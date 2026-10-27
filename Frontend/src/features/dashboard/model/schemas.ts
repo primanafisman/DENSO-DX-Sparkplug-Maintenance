@@ -11,9 +11,11 @@ export const summarySchema = z
       z.object({
         definition_id: z.string(),
         name: z.string(),
+        check_number: z.number().int().positive().nullable().optional(),
         total: z.number(),
         ok: z.number(),
         ng: z.number(),
+        latest_checked_at: z.string().nullable().optional(),
       }),
     ),
   })

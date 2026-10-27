@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, CheckCheck, ShieldCheck } from 'lucide-react';
 import type { MaintenanceDefinition } from '../../../shared/lib/contracts';
+import { inspectionLabel } from '../../../shared/lib/inspectionIdentity';
 import { Card, Button, Badge } from '../../../shared/components/ui';
 import { useInspectionGuidance } from '../controller/useInspectionGuidance';
 import { InspectionStandardTable } from './InspectionStandardTable';
@@ -82,7 +83,7 @@ function BriefingDialog({
         </header>
         <div className="guide-dialog-body">
           <div className="guide-definition-name">
-            <h3>{definition.name}</h3>
+            <h3>{inspectionLabel(definition)}</h3>
             <Badge>{definition.input_method === 'ok_ng' ? 'OK / NG' : 'Pengukuran foto'}</Badge>
           </div>
           <InspectionStandardTable definition={definition} />
@@ -122,7 +123,7 @@ export function InspectionGuidance({ children }: { children: ReactNode }) {
                 <div>
                   <span className="guide-eyebrow">ACUAN PEMERIKSAAN</span>
                   <h2>Standar & metode</h2>
-                  <p>{guide.definition.name}</p>
+                  <p>{inspectionLabel(guide.definition)}</p>
                 </div>
               </div>
               <Button variant="secondary" onClick={() => setReviewKey(guide.key)}>

@@ -23,8 +23,7 @@ export function HistoryPage() {
     [mode, setMode] = useState<MonthlyMode>('all'),
     [error, setError] = useState<unknown>(null);
   const rows = q.data?.rows ?? [],
-    meta = q.data?.meta,
-    warnings = meta?.warnings ?? [];
+    meta = q.data?.meta;
   return (
     <>
       <PageHeader
@@ -75,14 +74,6 @@ export function HistoryPage() {
             <Empty title="Belum ada catatan bulan ini" />
           )}
         </Card>
-      )}
-      {!!warnings.length && (
-        <details className="info-note">
-          <summary>Catatan laporan</summary>
-          {warnings.map((warning) => (
-            <p key={warning}>{warning}</p>
-          ))}
-        </details>
       )}
       <ErrorDialog error={error} onClose={() => setError(null)} />
     </>

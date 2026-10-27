@@ -1,10 +1,33 @@
 import { useRef, useState } from 'react';
-import { Save, Plus, Clock3, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Clock3, Trash2 } from 'lucide-react';
 import type { MaintenanceSettings, ProductType } from '../../../shared/lib/contracts';
 import { Card, Field, Badge, Button } from '../../../shared/components/ui';
 import { ConfirmationDialog } from '../../../shared/components/ui/ConfirmationDialog';
 import { newId } from '../../../shared/lib/id';
 import { DEFAULT_SHIFT_SCHEDULE, validateShiftSchedule } from '../model/shiftSchedule';
+import type { ShiftSchedule } from '../model/shiftSchedule';
+import '../../../styles/settings-management.css';
+
+type Category = 'line' | 'sampler' | 'product';
+type Choice = { id: string; name: string; active: boolean };
+type ChoiceDraft = Choice & { category: Category; creating: boolean };
+const labels = { line: 'line', sampler: 'sampler', product: 'tipe' };
+const limits = { line: 200, sampler: 100, product: 200 };
+const compareNames = (a: string, b: string) =>
+  a.localeCompare(b, 'id', { numeric: true, sensitivity: 'base' });
+const normalized = (name: string) => name.trim().toLocaleLowerCase('id-ID');
+
+function choices(settings: MaintenanceSettings, category: Category): Choice[] {
+  if (category === 'product') return settings.product_types ?? [];
+  const active = category === 'line' ? settings.lines : settings.allowed_samplers;
+  const inactive =
+    category === 'line' ? (settings.inactive_lines ?? []) : (settings.inactive_samplers ?? []);
+  return [
+    ...active.map((name) => ({ id: name, name, active: true })),
+    ...inactive.map((name) => ({ id: name, name, active: false })),
+  ];
+}
+
 export function GeneralSettings({
   initial,
   admin,
@@ -13,24 +36,21 @@ export function GeneralSettings({
 }: {
   initial: MaintenanceSettings;
   admin: boolean;
-  onSave: (body: MaintenanceSettings & { review_reason: string }) => void;
+  onSave: (body: MaintenanceSettings & { review_reason: string }) => Promise<unknown>;
   pending: boolean;
 }) {
-  const [lines, setLines] = useState(initial.lines),
-    [newLine, setNewLine] = useState(''),
-    [samplers, setSamplers] = useState(initial.allowed_samplers),
-    [newSampler, setNewSampler] = useState(''),
-    [shiftSchedule, setShiftSchedule] = useState(() =>
+  const [committed, setCommitted] = useState({ base: initial, value: initial }),
+    [editor, setEditor] = useState<ChoiceDraft | null>(null),
+    [removePrompt, setRemovePrompt] = useState(false),
+    [saving, setSaving] = useState(false),
+    [operationError, setOperationError] = useState<unknown>(null),
+    [shiftSchedule, setShiftSchedule] = useState<ShiftSchedule>(() =>
       structuredClone(initial.shift_schedule ?? DEFAULT_SHIFT_SCHEDULE),
     ),
     [scheduleError, setScheduleError] = useState<string | null>(null),
-    [savePrompt, setSavePrompt] = useState<
-      (MaintenanceSettings & { review_reason: string }) | null
-    >(null),
-    [removePrompt, setRemovePrompt] = useState<{ kind: 'line' | 'sampler'; name: string } | null>(
-      null,
-    ),
-    [products, setProducts] = useState<ProductType[]>(initial.product_types ?? []);
+    [schedulePrompt, setSchedulePrompt] = useState<ShiftSchedule | null>(null);
+  const settings = committed.base === initial ? committed.value : initial;
+  const busy = pending || saving;
   const productCodeFollowsName = useRef(
     new Map(
       (initial.product_types ?? []).map((product) => [
@@ -39,287 +59,335 @@ export function GeneralSettings({
       ]),
     ),
   );
-  const change = (id: string, patch: Partial<ProductType>) =>
-    setProducts(products.map((p) => (p.id === id ? { ...p, ...patch } : p)));
-  const lineAddControls = admin && (
-    <div className="header-actions settings-inline-add">
-      <input
-        aria-label="Tambah line"
-        value={newLine}
-        maxLength={64}
-        placeholder="Nomor atau nama line"
-        onChange={(event) => setNewLine(event.target.value)}
-      />
-      <Button
-        type="button"
-        variant="secondary"
-        disabled={
-          !newLine.trim() ||
-          lines.length >= 200 ||
-          lines.some(
-            (line) => line.toLocaleLowerCase('id-ID') === newLine.trim().toLocaleLowerCase('id-ID'),
-          )
-        }
-        onClick={() => {
-          setLines([...lines, newLine.trim()]);
-          setNewLine('');
-        }}
-      >
-        <Plus size={16} aria-hidden="true" /> Tambah line
-      </Button>
-    </div>
-  );
-  const samplerAddControls = admin && (
-    <div className="header-actions settings-inline-add">
-      <input
-        aria-label="Tambah sampler"
-        placeholder="Nama sampler"
-        value={newSampler}
-        maxLength={64}
-        onChange={(event) => setNewSampler(event.target.value)}
-      />
-      <Button
-        type="button"
-        variant="secondary"
-        disabled={
-          !newSampler.trim() ||
-          samplers.length >= 100 ||
-          samplers.some((sampler) => sampler.toLowerCase() === newSampler.trim().toLowerCase())
-        }
-        onClick={() => {
-          setSamplers([...samplers, newSampler.trim()]);
-          setNewSampler('');
-        }}
-      >
-        <Plus size={16} aria-hidden="true" /> Tambah sampler
-      </Button>
-    </div>
-  );
+  const openEditor = (category: Category, choice?: Choice) => {
+    setOperationError(null);
+    setRemovePrompt(false);
+    if (category === 'product' && choice && !productCodeFollowsName.current.has(choice.id)) {
+      const product = settings.product_types?.find((item) => item.id === choice.id);
+      if (product)
+        productCodeFollowsName.current.set(
+          product.id,
+          !product.code || product.code === product.name,
+        );
+    }
+    setEditor({
+      category,
+      creating: !choice,
+      id: choice?.id ?? 'product-' + newId(),
+      name: choice?.name ?? '',
+      active: choice?.active ?? true,
+    });
+  };
+  const maxNameLength =
+    editor?.category === 'product' &&
+    !editor.creating &&
+    productCodeFollowsName.current.get(editor.id) === false
+      ? 100
+      : 64;
+  const editorItems = editor ? choices(settings, editor.category) : [];
+  const editorIssue = !editor
+    ? null
+    : editor.creating && editorItems.length >= limits[editor.category]
+      ? `Batas ${limits[editor.category]} ${labels[editor.category]} tercapai, termasuk yang nonaktif.`
+      : editor.name.trim().length > maxNameLength
+        ? `Nama maksimal ${maxNameLength} karakter.`
+        : editorItems.some(
+              (item) =>
+                (editor.creating || item.id !== editor.id) &&
+                normalized(item.name) === normalized(editor.name),
+            )
+          ? 'Nama sudah digunakan, termasuk pada pilihan nonaktif.'
+          : null;
+  const persist = async (next: MaintenanceSettings, reason: string) => {
+    if (!admin || busy) return false;
+    setSaving(true);
+    setOperationError(null);
+    try {
+      const result = await onSave({ ...next, review_reason: reason });
+      const response = result as { value?: MaintenanceSettings } | null | undefined;
+      const value = response?.value;
+      setCommitted({
+        base: initial,
+        value:
+          value && Array.isArray(value.lines) && Array.isArray(value.allowed_samplers)
+            ? value
+            : next,
+      });
+      return true;
+    } catch (error) {
+      setOperationError(error);
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+  const changedSettings = (draft: ChoiceDraft, remove = false): MaintenanceSettings => {
+    const name = draft.name.trim();
+    if (draft.category === 'product') {
+      const products = settings.product_types ?? [];
+      if (remove)
+        return {
+          ...settings,
+          product_types: products.filter((product) => product.id !== draft.id),
+        };
+      const previous = products.find((product) => product.id === draft.id);
+      const follows = draft.creating || productCodeFollowsName.current.get(draft.id) !== false;
+      const product: ProductType = {
+        ...(previous ?? { id: draft.id, version: 1 }),
+        name,
+        code: follows ? name : previous!.code,
+        active: draft.active,
+      };
+      return {
+        ...settings,
+        product_types: previous
+          ? products.map((item) => (item.id === draft.id ? product : item))
+          : [...products, product],
+      };
+    }
+    const items = choices(settings, draft.category).filter((item) => item.id !== draft.id);
+    if (!remove) items.push({ id: name, name, active: draft.active });
+    const active = items
+      .filter((item) => item.active)
+      .map((item) => item.name)
+      .sort(compareNames);
+    const inactive = items
+      .filter((item) => !item.active)
+      .map((item) => item.name)
+      .sort(compareNames);
+    return draft.category === 'line'
+      ? { ...settings, lines: active, inactive_lines: inactive }
+      : { ...settings, allowed_samplers: active, inactive_samplers: inactive };
+  };
+  const saveChoice = async () => {
+    if (!editor || !editor.name.trim() || editorIssue) return;
+    if (await persist(changedSettings(editor), 'Pembaruan pilihan operasional.')) {
+      if (editor.category === 'product' && editor.creating)
+        productCodeFollowsName.current.set(editor.id, true);
+      setEditor(null);
+    }
+  };
+  const originalName = editorItems.find((item) => item.id === editor?.id)?.name ?? '';
+  const editorLabel = editor ? labels[editor.category] + ' ' + originalName : '';
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        const invalid = validateShiftSchedule(shiftSchedule);
-        setScheduleError(invalid);
-        if (invalid) return;
-        setSavePrompt({
-          lines: [...lines].sort((a, b) =>
-            a.localeCompare(b, 'id', { numeric: true, sensitivity: 'base' }),
-          ),
-          allowed_samplers: samplers,
-          night_rollover_hour: initial.night_rollover_hour,
-          ...(initial.shift_schedule ||
-          JSON.stringify(shiftSchedule) !== JSON.stringify(DEFAULT_SHIFT_SCHEDULE)
-            ? { shift_schedule: shiftSchedule }
-            : {}),
-          product_types: products,
-          review_reason: 'Pembaruan pengaturan operasional.',
-        });
-      }}
-    >
-      <Card>
-        <div className="section-heading">
-          <div className="section-heading-title">
-            <h2>Line Produksi</h2>
-          </div>
-        </div>
-        <div className="field-row">
-          <section aria-label="Line aktif">
-            <div className="section-heading">
-              <h3>Line aktif</h3>
-              <div className="choice-add-row">
-                <Badge>{lines.length} line</Badge>
-                {lineAddControls}
+    <Card className="settings-management">
+      <div className="section-heading settings-management-heading">
+        <h2>Line produksi</h2>
+        {admin && (
+          <Button variant="secondary" disabled={busy} onClick={() => openEditor('line')}>
+            <Plus size={17} aria-hidden="true" /> Tambah line
+          </Button>
+        )}
+      </div>
+      <div className="settings-management-lists">
+        {(['line', 'sampler', 'product'] as const).map((category) => {
+          const items = choices(settings, category)
+            .slice()
+            .sort((a, b) => compareNames(a.name, b.name));
+          const title =
+            category === 'line'
+              ? 'Line produksi'
+              : category === 'sampler'
+                ? 'Sampler'
+                : 'Tipe produk';
+          return (
+            <section className="settings-choice-list" aria-label={title} key={category}>
+              <div className="section-heading">
+                <h3>{title}</h3>
+                <Badge>
+                  {items.length} {category === 'sampler' ? 'orang' : labels[category]}
+                </Badge>
               </div>
-            </div>
-            <div className="sampler-options">
-              {lines.map((line) => (
-                <div className="row between" key={line}>
-                  <span>Line {line}</span>
-                  {admin && (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      aria-label={'Hapus line ' + line}
-                      onClick={() => setRemovePrompt({ kind: 'line', name: line })}
-                    >
-                      <Trash2 size={16} aria-hidden="true" />
-                    </Button>
-                  )}
-                </div>
+              {items.length ? (
+                <ul>
+                  {items.map((item) => (
+                    <li key={item.id}>
+                      <span className="settings-choice-name">
+                        {category === 'line' ? 'Line ' + item.name : item.name}
+                      </span>
+                      {!item.active && (
+                        <span className="badge badge-neutral settings-choice-inactive">
+                          Nonaktif
+                        </span>
+                      )}
+                      {admin && (
+                        <button
+                          type="button"
+                          className="icon-button"
+                          aria-label={'Edit ' + labels[category] + ' ' + item.name}
+                          onClick={() => openEditor(category, item)}
+                          disabled={busy}
+                        >
+                          <Pencil size={16} aria-hidden="true" />
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted">Belum ada {labels[category]}.</p>
+              )}
+            </section>
+          );
+        })}
+      </div>
+      <details className="settings-details settings-schedule-details">
+        <summary>Detail jadwal shift</summary>
+        <div className="shift-time-grid">
+          {(['day', 'night'] as const).map((shift, i) => (
+            <fieldset key={shift} disabled={!admin || busy}>
+              <legend>
+                <Clock3 size={17} /> Shift {i + 1}
+              </legend>
+              {shiftSchedule[shift].map((time, index) => (
+                <Field key={index} label={'Sesi ' + (index + 1)}>
+                  <input
+                    aria-label={`Shift ${i + 1} · Sesi ${index + 1}`}
+                    type="time"
+                    value={time}
+                    required
+                    onChange={(event) => {
+                      const next = structuredClone(shiftSchedule);
+                      next[shift][index] = event.target.value;
+                      setShiftSchedule(next);
+                      setScheduleError(null);
+                    }}
+                  />
+                </Field>
               ))}
-            </div>
-            {!lines.length && <p className="info-note">Belum ada line aktif.</p>}
-            {lines.length >= 200 && (
-              <small className="source-note">Batas 200 line aktif tercapai.</small>
-            )}
-          </section>
-          <section aria-label="Sampler aktif">
-            <div className="section-heading">
-              <h3>Sampler aktif</h3>
-              <div className="choice-add-row">
-                <Badge>{samplers.length} orang</Badge>
-                {samplerAddControls}
-              </div>
-            </div>
-            <div className="sampler-options">
-              {samplers.map((s) => (
-                <div className="row between" key={s}>
-                  <span>{s}</span>
-                  {admin && (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      aria-label={'Hapus sampler ' + s}
-                      onClick={() => setRemovePrompt({ kind: 'sampler', name: s })}
-                    >
-                      <Trash2 size={16} aria-hidden="true" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
-            {!samplers.length && <p className="info-note">Belum ada sampler aktif.</p>}
-          </section>
+            </fieldset>
+          ))}
         </div>
-        <details className="settings-details">
-          <summary>Detail jadwal shift</summary>
-          <div className="shift-time-grid">
-            {(['day', 'night'] as const).map((shift, i) => (
-              <fieldset key={shift}>
-                <legend>
-                  <Clock3 size={17} /> Shift {i + 1}
-                </legend>
-                {shiftSchedule[shift].map((time, index) => (
-                  <Field key={index} label={'Sesi ' + (index + 1)}>
-                    <input
-                      aria-label={`Shift ${i + 1} · Sesi ${index + 1}`}
-                      type="time"
-                      value={time}
-                      disabled={!admin}
-                      required
-                      onChange={(event) => {
-                        const next = structuredClone(shiftSchedule);
-                        next[shift][index] = event.target.value;
-                        setShiftSchedule(next);
-                        setScheduleError(null);
-                      }}
-                    />
-                  </Field>
-                ))}
-              </fieldset>
-            ))}
-          </div>
-          <small className="muted">WIB · Jadwal maintenance mengikuti waktu mulai sesi.</small>
-        </details>
+        <small className="muted">WIB · Jadwal maintenance mengikuti waktu mulai sesi.</small>
         {scheduleError && (
           <p role="alert" className="source-note">
             {scheduleError}
           </p>
         )}
-      </Card>
-      <Card>
-        <div className="section-heading">
-          <div className="section-heading-title">
-            <h2>Type produk</h2>
-          </div>
-          {admin && (
-            <div className="header-actions">
-              <Button
-                variant="secondary"
-                type="button"
-                onClick={() => {
-                  const id = 'product-' + newId();
-                  productCodeFollowsName.current.set(id, true);
-                  setProducts([...products, { id, code: '', name: '', active: true, version: 1 }]);
-                }}
-              >
-                <Plus size={17} />
-                Tambah Type
-              </Button>
-            </div>
-          )}
-        </div>
-        {products.length ? (
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>NAMA TYPE</th>
-                  <th>AKTIF</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((p) => (
-                  <tr key={p.id}>
-                    <td>
-                      <input
-                        aria-label={'Nama Type ' + p.id}
-                        maxLength={productCodeFollowsName.current.get(p.id) ? 64 : 100}
-                        value={p.name}
-                        onChange={(e) =>
-                          change(p.id, {
-                            name: e.target.value,
-                            ...(productCodeFollowsName.current.get(p.id)
-                              ? { code: e.target.value }
-                              : {}),
-                          })
-                        }
-                        required
-                        readOnly={!admin}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        aria-label={'Type aktif ' + p.name}
-                        type="checkbox"
-                        checked={p.active}
-                        onChange={(e) => change(p.id, { active: e.target.checked })}
-                        disabled={!admin}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="info-note">Belum ada Type produk.</p>
-        )}
         {admin && (
-          <div className="header-actions">
-            <Button type="submit" disabled={pending}>
-              <Save size={17} />
-              {pending ? 'Menyimpan…' : 'Simpan pengaturan'}
+          <div className="actions settings-schedule-actions">
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() => {
+                const invalid = validateShiftSchedule(shiftSchedule);
+                setScheduleError(invalid);
+                if (invalid) return;
+                setOperationError(null);
+                setSchedulePrompt(structuredClone(shiftSchedule));
+              }}
+            >
+              Simpan jadwal
             </Button>
           </div>
         )}
-      </Card>
-      {savePrompt && (
+      </details>
+      {editor && !removePrompt && (
         <ConfirmationDialog
-          title="Simpan pengaturan?"
-          description="Perubahan jadwal berlaku untuk pemeriksaan berikutnya."
-          onCancel={() => setSavePrompt(null)}
-          onConfirm={() => {
-            onSave(savePrompt);
-            setSavePrompt(null);
-          }}
-        />
+          title={editor.creating ? 'Tambah pengaturan' : 'Edit ' + editorLabel}
+          confirmLabel="Simpan"
+          pending={busy}
+          error={operationError}
+          confirmDisabled={!editor.name.trim() || !!editorIssue}
+          footerLeading={
+            !editor.creating && (
+              <button
+                type="button"
+                className="icon-button settings-delete-choice"
+                aria-label={'Hapus ' + editorLabel}
+                disabled={busy}
+                onClick={() => {
+                  setOperationError(null);
+                  setRemovePrompt(true);
+                }}
+              >
+                <Trash2 size={18} aria-hidden="true" />
+              </button>
+            )
+          }
+          onCancel={() => setEditor(null)}
+          onConfirm={() => void saveChoice()}
+        >
+          <fieldset className="settings-editor-fields" disabled={busy}>
+            {editor.creating && (
+              <Field label="Kategori">
+                <select
+                  value={editor.category}
+                  onChange={(event) =>
+                    setEditor({ ...editor, category: event.target.value as Category })
+                  }
+                >
+                  <option value="line">Line</option>
+                  <option value="sampler">Sampler</option>
+                  <option value="product">Tipe produk</option>
+                </select>
+              </Field>
+            )}
+            <Field label="Nama">
+              <input
+                value={editor.name}
+                maxLength={maxNameLength}
+                required
+                onChange={(event) => setEditor({ ...editor, name: event.target.value })}
+              />
+            </Field>
+            <label className="check-label">
+              <input
+                type="checkbox"
+                checked={editor.active}
+                onChange={(event) => setEditor({ ...editor, active: event.target.checked })}
+              />
+              Aktif
+            </label>
+            {editorIssue && (
+              <p role="alert" className="source-note">
+                {editorIssue}
+              </p>
+            )}
+          </fieldset>
+        </ConfirmationDialog>
       )}
-      {removePrompt && (
+      {editor && removePrompt && (
         <ConfirmationDialog
-          title={`Hapus ${removePrompt.kind} ${removePrompt.name}?`}
+          title={'Hapus ' + editorLabel + '?'}
+          description="Pilihan dihapus dari pengaturan. Riwayat yang sudah tersimpan tetap ada."
           confirmLabel="Ya, hapus"
           danger
-          onCancel={() => setRemovePrompt(null)}
+          pending={busy}
+          error={operationError}
+          onCancel={() => {
+            setOperationError(null);
+            setRemovePrompt(false);
+          }}
           onConfirm={() => {
-            if (removePrompt.kind === 'line')
-              setLines(lines.filter((value) => value !== removePrompt.name));
-            else setSamplers(samplers.filter((value) => value !== removePrompt.name));
-            setRemovePrompt(null);
+            void persist(changedSettings(editor, true), 'Penghapusan pilihan operasional.').then(
+              (saved) => {
+                if (saved) {
+                  setRemovePrompt(false);
+                  setEditor(null);
+                }
+              },
+            );
           }}
         />
       )}
-    </form>
+      {schedulePrompt && (
+        <ConfirmationDialog
+          title="Simpan jadwal shift?"
+          description="Perubahan jadwal berlaku untuk pemeriksaan berikutnya."
+          pending={busy}
+          error={operationError}
+          onCancel={() => setSchedulePrompt(null)}
+          onConfirm={() => {
+            void persist(
+              { ...settings, shift_schedule: schedulePrompt },
+              'Pembaruan jadwal shift.',
+            ).then((saved) => {
+              if (saved) setSchedulePrompt(null);
+            });
+          }}
+        />
+      )}
+    </Card>
   );
 }

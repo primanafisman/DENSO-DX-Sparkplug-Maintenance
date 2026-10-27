@@ -13,6 +13,49 @@
   flex: 0 1 215px;
   margin: 0;
 }
+.monthly-cell-groups,
+.monthly-cell-shift {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+}
+.monthly-cell-groups {
+  gap: 9px;
+  text-align: left;
+}
+.monthly-cell-shift + .monthly-cell-shift {
+  padding-top: 7px;
+  border-top: 1px solid var(--border);
+}
+.cell-shift-label {
+  font-weight: 700;
+  color: var(--muted);
+}
+.monthly-table .cell-result {
+  flex-wrap: nowrap;
+  gap: 5px;
+}
+.cell-line-label,
+.monthly-table .cell-reading {
+  white-space: nowrap;
+}
+.monthly-table .cell-reading {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+}
+.monthly-table .cell-reading small {
+  display: inline;
+  white-space: nowrap;
+}
+.occurrence-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+}
 @media (max-width: 700px) {
   .sm-history-toolbar > .field {
     flex-basis: 100%;

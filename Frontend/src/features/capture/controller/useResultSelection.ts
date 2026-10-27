@@ -4,11 +4,13 @@ import { useCatalog } from '../../settings/controller/useSettings';
 import { useInspectionStore } from '../../maintenance/model/inspectionStore';
 import { useMaintenanceDue } from '../../maintenance/controller/useInspection';
 import { machineDueState, usesMachineTools } from '../model/equipmentDue';
+import { compareInspections } from '../../../shared/lib/inspectionIdentity';
 export function useResultSelection() {
   const { state, engine } = useCapture(),
     catalog = useCatalog(),
     store = useInspectionStore();
-  const checks = catalog.data?.items.filter((d) => d.input_method !== 'ok_ng') ?? [];
+  const checks =
+    catalog.data?.items.filter((d) => d.input_method !== 'ok_ng').sort(compareInspections) ?? [];
   const equipment = state.instruments.filter(
     (a) =>
       a.active && a.profile && a.measurement_mode !== 'visual' && a.condition !== 'not_working',

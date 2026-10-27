@@ -11,6 +11,7 @@ import { statusOnlyReport } from '../model/reportMode';
 import { measurementUnit, occurrenceAcceptance } from '../model/measurementFacts';
 import { illustrativeOrigin } from '../model/reportOrigin';
 import { OriginBadge } from './OriginBadge';
+import { inspectionLabel } from '../../../shared/lib/inspectionIdentity';
 function Acceptance({ occurrence, unit }: { occurrence: Occurrence; unit?: string | null }) {
   const limits = occurrenceAcceptance(occurrence, unit),
     labels = [...new Set(limits.map((item) => item.label))];
@@ -62,10 +63,43 @@ export function OccurrenceDrawer({
           </div>
           {items.map((o) => (
             <article className="occurrence" key={o.id}>
+              {o.definition_snapshot && <h3>{inspectionLabel(o.definition_snapshot)}</h3>}
               <div className="row between">
                 <h3>{dateTime(o.checked_at)}</h3>
                 <OriginBadge origin={o.origin} />
-                <Status value={o.overall_status} />
+                <div className="occurrence-status">
+                  <Status value={o.overall_status} />
+                  {user?.role === 'Admin' &&
+                    (confirming === o.id ? (
+                      <ConfirmationDialog
+                        title="Hapus catatan pemeriksaan ini?"
+                        description="Catatan tidak lagi ditampilkan; pemeriksaan pada jadwal yang sama dapat diisi kembali."
+                        danger
+                        pending={deletion.isPending}
+                        error={deletion.error}
+                        confirmLabel="Ya, hapus catatan"
+                        cancelLabel="Batal hapus"
+                        onCancel={() => {
+                          setConfirming(null);
+                          deletion.reset();
+                        }}
+                        onConfirm={() => deletion.mutate(o.id, { onSuccess: onClose })}
+                      />
+                    ) : (
+                      <Button
+                        variant="danger"
+                        className="icon-button"
+                        aria-label="Hapus catatan pemeriksaan"
+                        disabled={deletion.isPending}
+                        onClick={() => {
+                          deletion.reset();
+                          setConfirming(o.id);
+                        }}
+                      >
+                        <Trash2 size={18} aria-hidden="true" />
+                      </Button>
+                    ))}
+                </div>
               </div>
               <p>
                 Line {o.context.line} · Shift {o.context.shift === 'day' ? '1' : '2'} ·{' '}
@@ -111,35 +145,6 @@ export function OccurrenceDrawer({
                     </Button>
                   ))}
               </div>
-              {user?.role === 'Admin' &&
-                (confirming === o.id ? (
-                  <ConfirmationDialog
-                    title="Hapus catatan pemeriksaan ini?"
-                    description="Catatan tidak lagi ditampilkan; pemeriksaan pada jadwal yang sama dapat diisi kembali."
-                    danger
-                    pending={deletion.isPending}
-                    error={deletion.error}
-                    confirmLabel="Ya, hapus catatan"
-                    cancelLabel="Batal hapus"
-                    onCancel={() => {
-                      setConfirming(null);
-                      deletion.reset();
-                    }}
-                    onConfirm={() => deletion.mutate(o.id, { onSuccess: onClose })}
-                  />
-                ) : (
-                  <Button
-                    variant="danger"
-                    aria-label="Hapus catatan pemeriksaan"
-                    disabled={deletion.isPending}
-                    onClick={() => {
-                      deletion.reset();
-                      setConfirming(o.id);
-                    }}
-                  >
-                    <Trash2 size={18} aria-hidden="true" /> Hapus catatan
-                  </Button>
-                ))}
             </article>
           ))}
         </section>

@@ -18,6 +18,14 @@ const busyReader: UserError = {
   action: 'Tunggu sebentar lalu coba lagi.',
 };
 const messages: Record<string, UserError> = {
+  CHECK_NUMBER_CONFLICT: {
+    message: 'Nomor pemeriksaan sudah digunakan.',
+    action: 'Pilih nomor lain; setiap pemeriksaan harus memiliki nomor yang berbeda.',
+  },
+  CHECK_NUMBER_INVALID: {
+    message: 'Nomor pemeriksaan tidak valid.',
+    action: 'Gunakan bilangan bulat dari 1 sampai 10000.',
+  },
   EVIDENCE_ALREADY_CONFIRMED: reusedPhoto,
   EVIDENCE_REVIEW_CONFLICT: {
     message: 'Foto ini sudah dikonfirmasi dengan angka berbeda.',

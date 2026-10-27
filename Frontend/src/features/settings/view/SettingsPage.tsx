@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Plus, Pencil, ClipboardList, Wrench, Factory } from 'lucide-react';
 import type { MaintenanceDefinition } from '../../../shared/lib/contracts';
 import { useSession } from '../../auth/controller/useSession';
@@ -12,14 +12,8 @@ import { GeneralSettings } from './GeneralSettings';
 import { ConfirmationDialog } from '../../../shared/components/ui/ConfirmationDialog';
 import { shiftSlots } from '../model/shiftSchedule';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
-import {
-  Card,
-  Button,
-  Badge,
-  Loading,
-  ErrorMessage,
-  ErrorDialog,
-} from '../../../shared/components/ui';
+import { compareInspections, nextInspectionNumber } from '../../../shared/lib/inspectionIdentity';
+import { Card, Button, Badge, Loading, ErrorMessage } from '../../../shared/components/ui';
 export function SettingsPage() {
   const state = useSettings(true),
     { user } = useSession(),
@@ -27,12 +21,13 @@ export function SettingsPage() {
     [selected, setSelected] = useState<MaintenanceDefinition | null>(null),
     [savePrompt, setSavePrompt] = useState<(() => void) | null>(null);
   const admin = user?.role === 'Admin';
+  const nextNumber = nextInspectionNumber(state.catalog.data?.items ?? []);
   const requested = params.get('tab'),
     tab = ['standards', 'equipment', 'general'].includes(requested ?? '') ? requested : 'standards';
   const tabs = [
     { id: 'standards', label: 'Daftar Pemeriksaan', icon: ClipboardList },
     { id: 'equipment', label: 'Peralatan', icon: Wrench },
-    { id: 'general', label: 'Line Produksi', icon: Factory },
+    { id: 'general', label: 'Line produksi', icon: Factory },
   ];
   const setTab = (value: string) => {
     const next = new URLSearchParams(params);
@@ -89,7 +84,7 @@ export function SettingsPage() {
           <GeneralSettings
             initial={state.settings.data}
             admin={admin}
-            onSave={(body) => state.save.mutate(body)}
+            onSave={(body) => state.save.mutateAsync(body)}
             pending={state.save.isPending}
           />
         ) : (
@@ -106,10 +101,11 @@ export function SettingsPage() {
                 <div className="header-actions">
                   <Button
                     variant="secondary"
+                    disabled={state.catalog.isPending || nextNumber === null}
                     onClick={() => {
                       state.createDefinition.reset();
                       state.setDefinitionStatus.reset();
-                      setSelected(newDefinition());
+                      if (nextNumber !== null) setSelected(newDefinition(nextNumber));
                     }}
                   >
                     <Plus size={17} />
@@ -122,7 +118,7 @@ export function SettingsPage() {
               <table className="settings-catalog-table">
                 <thead>
                   <tr>
-                    <th>PEMERIKSAAN</th>
+                    <th>No. Pemeriksaan</th>
                     <th>STANDAR</th>
                     <th>METODE / SAMPEL</th>
                     <th>INTERVAL</th>
@@ -132,17 +128,23 @@ export function SettingsPage() {
                 <tbody>
                   {state.catalog.data?.items
                     .filter((d) => d.active !== false)
+                    .sort(compareInspections)
                     .map((d) => (
                       <tr key={d.id}>
-                        <td>
-                          <strong>{d.name}</strong>
+                        <th scope="row">
+                          <div className="settings-check-label">
+                            <span className="history-check-number">
+                              {d.check_number ?? d.source_number ?? '—'}
+                            </span>
+                            <Link to={'/riwayat/' + encodeURIComponent(d.id)}>{d.name}</Link>
+                          </div>
                           {d.active === false && <Badge>Nonaktif</Badge>}
                           {d.review_notes.map((note) => (
                             <p className="source-note" key={note}>
                               {note}
                             </p>
                           ))}
-                        </td>
+                        </th>
                         <td>
                           <StandardItems definition={d} />
                         </td>
@@ -243,7 +245,6 @@ export function SettingsPage() {
           }}
         />
       )}
-      <ErrorDialog error={state.save.error} onClose={() => state.save.reset()} />
     </>
   );
 }
