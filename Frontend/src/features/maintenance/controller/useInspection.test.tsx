@@ -1,6 +1,6 @@
 import { it, expect, beforeEach, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
-import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { server } from '../../../test/server';
 import { renderApp } from '../../../test/render';
 import { fixtureDefinition, envelope, schedule } from '../../../test/fixtures';
@@ -168,7 +168,7 @@ it('orders pending inspections by number and finds a check by its number or name
   expect(screen.queryByRole('button', { name: 'Mulai Zulu' })).not.toBeInTheDocument();
 });
 
-it('inspection list hides completed checks for the selected line and refreshes from server', async () => {
+it('keeps completed checks visible with a completed status and restores pending actions for another line', async () => {
   const defs = [
     fixtureDefinition({ id: 'done', name: 'Packing Depth Tool' }),
     fixtureDefinition({ id: 'todo', name: 'Talc Tool' }),
@@ -197,6 +197,13 @@ it('inspection list hides completed checks for the selected line and refreshes f
           items: defs.map((d) => ({
             definition_id: d.id,
             state: line === '1' && d.id === 'done' ? 'completed' : 'pending',
+            equipment:
+              d.id === 'todo'
+                ? [
+                    { instrument_id: 'one', state: 'completed' },
+                    { instrument_id: 'two', state: 'pending' },
+                  ]
+                : [],
           })),
           pending_count: line === '1' ? 1 : 2,
           completed_count: line === '1' ? 1 : 0,
@@ -207,9 +214,19 @@ it('inspection list hides completed checks for the selected line and refreshes f
   renderApp(<InspectionHub />);
   fireEvent.change(await screen.findByLabelText('Line'), { target: { value: '1' } });
   expect(await screen.findByRole('button', { name: 'Mulai Talc Tool' })).toBeVisible();
+  const completed = screen.getByRole('heading', { name: 'Packing Depth Tool' }).closest('article')!;
+  expect(within(completed).getByRole('status')).toHaveTextContent('Selesai');
+  expect(completed).toHaveClass('inspection-option-completed');
   expect(
-    screen.queryByRole('button', { name: 'Mulai Packing Depth Tool' }),
-  ).not.toBeInTheDocument();
+    within(completed).getByRole('button', { name: 'Selesai Packing Depth Tool' }),
+  ).toBeDisabled();
+  fireEvent.click(within(completed).getByText('Standar & metode', { selector: 'summary' }));
+  expect(within(completed).getByText('Dalam batas standar')).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Mulai Talc Tool' })).toBeEnabled();
+  expect(screen.getByText('1/2 alat')).toBeVisible();
   fireEvent.change(screen.getByLabelText('Line'), { target: { value: '2' } });
-  expect(await screen.findByRole('button', { name: 'Mulai Packing Depth Tool' })).toBeVisible();
+  expect(await screen.findByRole('button', { name: 'Mulai Packing Depth Tool' })).toBeEnabled();
+  expect(
+    screen.getByRole('heading', { name: 'Packing Depth Tool' }).closest('article'),
+  ).not.toHaveClass('inspection-option-completed');
 });

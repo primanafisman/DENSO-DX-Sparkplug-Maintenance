@@ -97,24 +97,61 @@ html {
   flex: 1;
   min-width: 0;
 }
+/* Fit the available height after the backdrop padding, including short landscape screens. */
+.modal-backdrop {
+  --modal-edge: clamp(8px, 2dvh, 20px);
+  height: 100dvh;
+  padding: var(--modal-edge);
+  align-items: safe center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.modal-backdrop > .modal {
+  max-height: calc(100dvh - var(--modal-edge) * 2);
+  min-height: 0;
+}
+/* A tall briefing must scroll its heading too, rather than squeezing its body to zero. */
+.guide-dialog-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.guide-dialog-body {
+  overflow: visible;
+}
 .confirmation-backdrop {
   z-index: 250;
   background: #171b32a8;
   backdrop-filter: blur(4px);
 }
 .confirmation-dialog {
+  display: flex;
+  flex-direction: column;
   width: min(440px, 100%);
+  padding: 0;
+  overflow: hidden;
   border: 1px solid #fff;
   border-radius: 20px;
   box-shadow: 0 22px 70px #11152c45;
 }
-.confirmation-dialog > p {
+.confirmation-dialog-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 22px;
+  overflow-wrap: anywhere;
+}
+.confirmation-dialog-body > p {
   color: var(--muted);
   margin: 12px 0;
 }
-.confirmation-dialog .actions {
+.confirmation-dialog > .confirmation-dialog-actions {
+  flex-shrink: 0;
   justify-content: flex-end;
-  margin-top: 20px;
+  margin: 0;
+  padding: 14px 22px;
+  border-top: 1px solid var(--border);
+  background: #fff;
 }
 .confirmation-symbol {
   display: grid;
@@ -222,11 +259,34 @@ html {
 
 /* Inspection lists grow with their content; wide history keeps horizontal scrolling. */
 .inspection-list-panel .inspection-list {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr));
   max-height: none;
   overflow: visible;
 }
 .inspection-list-panel .inspection-option {
   border: 1px solid #adb8c9;
+}
+.inspection-list-panel .inspection-option-completed {
+  border-color: #86b99a;
+  background: #edf8f0;
+}
+.inspection-option-completed .check-number {
+  border-color: #add1b9;
+  color: var(--ok);
+  background: #d8efdf;
+}
+.inspection-completed-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ok);
+  font-weight: 700;
+}
+.inspection-option-completed > .button:disabled {
+  color: var(--ok);
+  border-color: #add1b9;
+  background: #e0f1e5;
+  opacity: 1;
 }
 .table-scroll.monthly-scroll {
   max-height: none;

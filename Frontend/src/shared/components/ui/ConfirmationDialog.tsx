@@ -108,14 +108,25 @@ export function ConfirmationDialog({
         aria-modal="true"
         aria-labelledby={heading}
       >
-        <span className={'confirmation-symbol ' + (danger ? 'danger' : '')} aria-hidden="true">
-          <CircleHelp size={28} />
-        </span>
-        <h2 id={heading}>{title}</h2>
-        {description && <p>{description}</p>}
-        {children}
-        <ErrorMessage error={error} />
-        <div className="actions">
+        <div
+          className="confirmation-dialog-body"
+          role="region"
+          aria-labelledby={heading}
+          tabIndex={0}
+        >
+          <span className={'confirmation-symbol ' + (danger ? 'danger' : '')} aria-hidden="true">
+            <CircleHelp size={28} />
+          </span>
+          <h2 id={heading}>{title}</h2>
+          {description && <p>{description}</p>}
+          {children}
+          <ErrorMessage error={error} />
+        </div>
+        <div
+          className="actions confirmation-dialog-actions"
+          role="group"
+          aria-label="Tindakan konfirmasi"
+        >
           {footerLeading && <div className="dialog-leading">{footerLeading}</div>}
           <button
             ref={cancel}

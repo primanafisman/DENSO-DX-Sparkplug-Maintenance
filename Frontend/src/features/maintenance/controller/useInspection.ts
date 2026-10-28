@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { inspectionApi } from '../model/api';
 import { useInspectionStore } from '../model/inspectionStore';
 import type { InspectionDraft } from '../model/inspectionStore';
@@ -8,6 +8,8 @@ import type { MaintenanceDefinition } from '../../../shared/lib/contracts';
 import { contextFormSchema } from '../model/schemas';
 import { settingsApi } from '../../settings/model/api';
 import { ApiError } from '../../../shared/lib/api';
+import { dueRefreshInterval } from '../model/dueFreshness';
+import { useDueExpiry } from './useDueExpiry';
 export function useInspection({ scheduleEnabled = true } = {}) {
   const schedule = useQuery({
       queryKey: ['schedule'],
@@ -115,16 +117,17 @@ export function useInspection({ scheduleEnabled = true } = {}) {
 }
 
 export function useMaintenanceDue(line: string, product_type_id?: string) {
-  return useQuery({
+  const query = useQuery({
     queryKey: ['maintenance-due', line, product_type_id ?? ''],
     queryFn: () => inspectionApi.due(line, product_type_id),
     enabled: !!line,
     refetchOnWindowFocus: true,
-    refetchInterval: (q) => {
-      const s = q.state.data?.schedule;
-      return s
-        ? Math.max(1000, Math.min(60000, Date.parse(s.next_starts_at) - Date.parse(s.server_time)))
-        : 60000;
-    },
+    refetchInterval: (q) => dueRefreshInterval(q.state.data, q.state.dataUpdatedAt),
   });
+  const [expired] = useDueExpiry([query]);
+  const refetch = query.refetch;
+  useEffect(() => {
+    if (line && expired) void refetch();
+  }, [line, expired, refetch]);
+  return { ...query, expired };
 }

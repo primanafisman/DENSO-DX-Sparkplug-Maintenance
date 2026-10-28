@@ -72,8 +72,11 @@ export function InspectionHub() {
   const filtered = defs.filter(
     (d) =>
       !!selection.line &&
-      due.data?.items.some((i) => i.definition_id === d.id && i.state === 'pending') === true &&
+      due.data?.items.some(
+        (i) => i.definition_id === d.id && (i.state === 'pending' || i.state === 'completed'),
+      ) === true &&
       !due.isError &&
+      !due.expired &&
       (!q || inspectionLabel(d).toLowerCase().includes(q.toLowerCase())) &&
       (!kind || d.input_method === kind) &&
       (!target || (d.inspection_target ?? 'unclassified') === target) &&
@@ -89,6 +92,7 @@ export function InspectionHub() {
     !!selection.line &&
     !!due.data &&
     !due.isError &&
+    !due.expired &&
     (!state.schedule.data || due.data.schedule.starts_at === state.schedule.data.starts_at);
   return (
     <div className="inspection-page">
@@ -243,76 +247,96 @@ export function InspectionHub() {
             <strong>Pilih line</strong>
           </div>
         )}
-        {settings.catalog.isPending || (!!selection.line && due.isPending) ? (
+        {settings.catalog.isPending || (!!selection.line && (due.isPending || due.expired)) ? (
           <Loading />
         ) : (
           <div className="inspection-list">
-            {filtered.map((d) => (
-              <article className="inspection-option" key={d.id}>
-                <div className="check-number">
-                  {inspectionNumber(d) ?? <ClipboardCheck size={20} />}
-                </div>
-                <div className="inspection-option-body">
-                  <h3>{d.name}</h3>
-                  <div className="inspection-facts">
-                    <span>
-                      {d.input_method === 'ok_ng'
-                        ? 'OK / NG'
-                        : d.input_method === 'photo_difference'
-                          ? 'Foto sebelum / sesudah'
-                          : 'Foto'}
-                    </span>
-                    <span>{d.sample_count} sampel</span>
-                    {!!due.data?.items.find((item) => item.definition_id === d.id)?.equipment
-                      ?.length && (
-                      <span className="tool-progress">
-                        {
-                          due.data.items
-                            .find((item) => item.definition_id === d.id)!
-                            .equipment.filter((item) => item.state === 'completed').length
-                        }
-                        /
-                        {
-                          due.data.items.find((item) => item.definition_id === d.id)!.equipment
-                            .length
-                        }{' '}
-                        alat
-                      </span>
-                    )}
-                    <span>{d.interval_guide.description}</span>
-                  </div>
-                  <details className="inspection-guide">
-                    <summary>Standar & metode</summary>
-                    <ul>
-                      {d.requirements.length ? (
-                        d.requirements.map((r) => <li key={r.id}>{r.label}</li>)
-                      ) : (
-                        <li>{d.standard_text}</li>
-                      )}
-                    </ul>
-                    {d.limits && (
-                      <strong>
-                        {d.limits.minimum}–{d.limits.maximum} {d.unit}
-                      </strong>
-                    )}
-                    <p>{d.method_text}</p>
-                    {d.review_notes.map((n) => (
-                      <p key={n} className="source-note">
-                        {n}
-                      </p>
-                    ))}
-                  </details>
-                </div>
-                <Button
-                  variant="secondary"
-                  aria-label={'Mulai ' + d.name}
-                  disabled={!canWrite}
-                  onClick={() => start(d, selection)}
+            {filtered.map((d) => {
+              const completed =
+                due.data?.items.find((item) => item.definition_id === d.id)?.state === 'completed';
+              return (
+                <article
+                  className={
+                    'inspection-option' + (completed ? ' inspection-option-completed' : '')
+                  }
+                  key={d.id}
                 >
-                  Mulai <ArrowRight size={16} />
-                </Button>
-              </article>
-            ))}
+                  <div className="check-number">
+                    {inspectionNumber(d) ?? <ClipboardCheck size={20} />}
+                  </div>
+                  <div className="inspection-option-body">
+                    <h3>{d.name}</h3>
+                    <div className="inspection-facts">
+                      {completed && (
+                        <span className="inspection-completed-status" role="status">
+                          <CheckCircle2 size={15} aria-hidden="true" /> Selesai
+                        </span>
+                      )}
+                      <span>
+                        {d.input_method === 'ok_ng'
+                          ? 'OK / NG'
+                          : d.input_method === 'photo_difference'
+                            ? 'Foto sebelum / sesudah'
+                            : 'Foto'}
+                      </span>
+                      <span>{d.sample_count} sampel</span>
+                      {!!due.data?.items.find((item) => item.definition_id === d.id)?.equipment
+                        ?.length && (
+                        <span className="tool-progress">
+                          {
+                            due.data.items
+                              .find((item) => item.definition_id === d.id)!
+                              .equipment.filter((item) => item.state === 'completed').length
+                          }
+                          /
+                          {
+                            due.data.items.find((item) => item.definition_id === d.id)!.equipment
+                              .length
+                          }{' '}
+                          alat
+                        </span>
+                      )}
+                      <span>{d.interval_guide.description}</span>
+                    </div>
+                    <details className="inspection-guide">
+                      <summary>Standar & metode</summary>
+                      <ul>
+                        {d.requirements.length ? (
+                          d.requirements.map((r) => <li key={r.id}>{r.label}</li>)
+                        ) : (
+                          <li>{d.standard_text}</li>
+                        )}
+                      </ul>
+                      {d.limits && (
+                        <strong>
+                          {d.limits.minimum}–{d.limits.maximum} {d.unit}
+                        </strong>
+                      )}
+                      <p>{d.method_text}</p>
+                      {d.review_notes.map((n) => (
+                        <p key={n} className="source-note">
+                          {n}
+                        </p>
+                      ))}
+                    </details>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    aria-label={(completed ? 'Selesai ' : 'Mulai ') + d.name}
+                    disabled={!canWrite || completed}
+                    onClick={() => start(d, selection)}
+                  >
+                    {completed ? (
+                      'Selesai'
+                    ) : (
+                      <>
+                        Mulai <ArrowRight size={16} />
+                      </>
+                    )}
+                  </Button>
+                </article>
+              );
+            })}
           </div>
         )}
         {selection.line && !due.isPending && !due.isError && !filtered.length && (

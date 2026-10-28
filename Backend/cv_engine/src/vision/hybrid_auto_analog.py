@@ -198,7 +198,7 @@ def select_six_ticks(ticks):
                     'sweep_degrees':round(sweep,2),'ticks':ticks}
 
 
-def _major_scale(mask, pivot, radius, low=.78, high=.94):
+def _major_scale(mask, pivot, radius, low=.78, high=.94, *, allow_subsets=True):
     # Locate tick *ends*, beyond the printed labels and normal needle tip.
     # The old inner annulus could mistake a gray needle itself for a main tick.
     angles, hits, distances = _polar(mask, pivot, radius, low, high, 65)
@@ -243,7 +243,7 @@ def _major_scale(mask, pivot, radius, low=.78, high=.94):
             possibilities.append((separation, ordered, float(360 - gaps[gap_index])))
         if possibilities: break
     if not possibilities:
-        selected, selected_info = select_six_ticks(ticks)
+        selected, selected_info = select_six_ticks(ticks) if allow_subsets else (None,{})
         if selected is not None:
             return selected, {**selected_info, 'annulus':[low,high]}
         return None, {'reason': 'Garis utama belum terpisah dari garis kecil secara konsisten.', 'ticks': ticks}
@@ -267,7 +267,31 @@ def detect_scale(mask,relaxed,pivot,radius):
                 # gap away from its true location when one major is faded.
                 recovery=info['method'].startswith('six observed major')
                 choices.append(((int(recovery),cost),major,info))
-    if not choices:return None,info
+    if not choices:
+        # Some housings extend well beyond the printed scale. Search inward
+        # only after the established outer bands abstain. Printed text and a
+        # moving needle occupy this region too, so an arbitrary six-stroke
+        # subset is insufficient: complete width-separated sets must agree
+        # across two adjacent radial bands, with no competing complete set.
+        bands=((.55,.72),(.58,.75),(.61,.78),(.63,.78))
+        inward=[]
+        for index,(low,high) in enumerate(bands):
+            for variant in (mask,relaxed):
+                major,details=_major_scale(variant,pivot,radius,low,high,allow_subsets=False)
+                if major and not any(t['long_trace']>.58 for t in major):
+                    inward.append((index,major,details))
+        if not inward:return None,info
+        reference=np.array([t['angle'] for t in inward[0][1]])
+        disagreement=[float(np.max(np.abs((np.array([t['angle'] for t in major])-reference+180)%360-180)))
+                      for _,major,_ in inward]
+        if max(disagreement)>3:return None,info
+        observed={index for index,_,_ in inward}
+        if not any(index+1 in observed for index in observed):return None,info
+        _,major,details=inward[0]
+        details['inward_recovery']={'method':'complete width-separated strokes agree in adjacent radial bands',
+                                   'corroborating_annuli':[list(bands[index]) for index in sorted(observed)],
+                                   'maximum_angle_disagreement':round(max(disagreement),3)}
+        return major,details
     _,major,info=min(choices,key=lambda p:p[0])
     return major,info
 

@@ -128,6 +128,35 @@ def led_grid_tokens(mask):
     return raw if re.fullmatch(r'-?\d+(?:\.\d+)?',raw) else None
 
 
+def aligned_led_tokens(image):
+    """Align observed italic bars; require agreement without drawing segments.
+
+    Nearest-neighbour sampling keeps binary punctuation intact. Each existing
+    high-brightness mask must independently contain the entire same reading;
+    lower thresholds can illuminate inactive ghost bars and are not used here.
+    The caller still checks sign and decimal evidence in the original image.
+    """
+    hsv=cv2.cvtColor(image,cv2.COLOR_BGR2HSV)
+    found=[]
+    for index,(saturation,brightness) in enumerate(((80,150),(90,170))):
+        mask=(((hsv[:,:,0]>=30)&(hsv[:,:,0]<=95)&(hsv[:,:,1]>saturation)&(hsv[:,:,2]>brightness)).astype(np.uint8)*255)
+        h,w=mask.shape
+        for shear in (.05,.10,.15,.20):
+            aligned=cv2.warpAffine(mask,np.float32([[1,shear,10],[0,1,10]]),
+                                   (w+round(shear*h)+20,h+20),flags=cv2.INTER_NEAREST)
+            for decoder in (led_tokens,led_grid_tokens):
+                raw=decoder(aligned)
+                if raw:found.append({'mask':index,'shear':shear,'raw_text':raw})
+    if not found:return None
+    # A conflicting complete digit sequence cannot be outvoted by transforms.
+    if len({f['raw_text'].replace('.','') for f in found})!=1:return None
+    punctuated={f['raw_text'] for f in found if '.' in f['raw_text']}
+    if len(punctuated)>1:return None
+    raw=next(iter(punctuated)) if punctuated else found[0]['raw_text']
+    if {f['mask'] for f in found if f['raw_text']==raw}!={0,1}:return None
+    return {'raw_text':raw,'variants':[f for f in found if f['raw_text']==raw]}
+
+
 class _OfflineReader:
     def __init__(self,reader):
         self.reader=reader
@@ -271,6 +300,16 @@ def _read_view(data,profile,text_ocr=None,*,lcd_line=False,glass_margin=False,up
             'candidate':{'readable':True,'kind':'digital','value':float(Decimal(raw)),'unit':profile.unit,'raw_text':raw,
                          'reason':'Tinggi baris segmen diukur bersama; dua mask warna sepakat, titik/tanda tetap diperiksa pada piksel asli.'}}
         if _safe_result(result_grid,profile):return result_grid
+    if not lcd_possible:
+        aligned=aligned_led_tokens(image)
+        if aligned:
+            raw=aligned['raw_text']
+            result_aligned={'accepted':True,'method':'hybrid-green-aligned-strokes-v1',
+                'probability_correct':None,'variants':aligned['variants'],'unit_source':'profile',
+                'candidate':{'readable':True,'kind':'digital','value':float(Decimal(raw)),
+                    'unit':profile.unit,'raw_text':raw,
+                    'reason':'Kemiringan segmen disejajarkan tanpa menambah piksel; dua mask terang sepakat, titik/tanda diperiksa pada foto asli.'}}
+            if _safe_result(result_aligned,profile):return result_aligned
     if result.get('original_pixels_incomplete'):
         return _reject(result,'Digit/tanda pada tepi atau bagian baris tidak lengkap; sertakan seluruh display sebelum membaca.')
     if text_ocr:

@@ -67,26 +67,33 @@ function BriefingDialog({
           }
         }}
       >
-        <header className="guide-dialog-heading">
-          <span className="guide-icon">
-            <ShieldCheck size={27} />
-          </span>
-          <div>
-            <span className="guide-eyebrow">SEBELUM MULAI PEMERIKSAAN</span>
-            <h2 ref={heading} tabIndex={-1} id={title}>
-              Pahami standar sebelum mulai
-            </h2>
-            <p id={description}>
-              Baca batas penerimaan dan metode di bawah, lalu pastikan Anda memahaminya.
-            </p>
+        <div
+          className="guide-dialog-scroll"
+          role="region"
+          aria-label="Standar dan metode pemeriksaan"
+          tabIndex={0}
+        >
+          <header className="guide-dialog-heading">
+            <span className="guide-icon">
+              <ShieldCheck size={27} />
+            </span>
+            <div>
+              <span className="guide-eyebrow">SEBELUM MULAI PEMERIKSAAN</span>
+              <h2 ref={heading} tabIndex={-1} id={title}>
+                Pahami standar sebelum mulai
+              </h2>
+              <p id={description}>
+                Baca batas penerimaan dan metode di bawah, lalu pastikan Anda memahaminya.
+              </p>
+            </div>
+          </header>
+          <div className="guide-dialog-body">
+            <div className="guide-definition-name">
+              <h3>{inspectionLabel(definition)}</h3>
+              <Badge>{definition.input_method === 'ok_ng' ? 'OK / NG' : 'Pengukuran foto'}</Badge>
+            </div>
+            <InspectionStandardTable definition={definition} />
           </div>
-        </header>
-        <div className="guide-dialog-body">
-          <div className="guide-definition-name">
-            <h3>{inspectionLabel(definition)}</h3>
-            <Badge>{definition.input_method === 'ok_ng' ? 'OK / NG' : 'Pengukuran foto'}</Badge>
-          </div>
-          <InspectionStandardTable definition={definition} />
         </div>
         <footer className="guide-dialog-footer">
           <p>Gunakan standar ini saat memeriksa. Konfirmasi hasil setelah pengisian selesai.</p>

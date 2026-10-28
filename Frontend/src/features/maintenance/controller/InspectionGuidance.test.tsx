@@ -89,7 +89,18 @@ it('quick photo can start without an identified check; its later briefing preser
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   fireEvent.change(field, { target: { value: '0.428' } });
   act(() => useInspectionStore.getState().setDefinition(input.definition));
-  expect(screen.getByRole('dialog')).toBeVisible();
+  const popup = screen.getByRole('dialog');
+  expect(popup).toBeVisible();
+  const content = within(popup).getByRole('region', { name: 'Standar dan metode pemeriksaan' });
+  expect(content).toContainElement(
+    within(popup).getByRole('heading', { name: 'Pahami standar sebelum mulai' }),
+  );
+  expect(
+    within(content).getByRole('table', { name: 'Standar dan metode pemeriksaan' }),
+  ).toBeVisible();
+  expect(content).not.toContainElement(
+    within(popup).getByRole('button', { name: 'Saya mengerti, mulai pemeriksaan' }),
+  );
   accept();
   expect(screen.getByLabelText('Hasil foto')).toBe(field);
   expect(field).toHaveValue('0.428');

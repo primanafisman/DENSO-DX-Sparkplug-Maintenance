@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
-import type { Query } from '@tanstack/react-query';
 import { inspectionApi } from '../../maintenance/model/api';
-import type { MaintenanceDue, ServerSchedule } from '../../../shared/lib/contracts';
+import type { ServerSchedule } from '../../../shared/lib/contracts';
+import { dueRefreshInterval } from '../../maintenance/model/dueFreshness';
+import { useDueExpiry } from '../../maintenance/controller/useDueExpiry';
 export function useCurrentWorkload(line: string, lines: string[], serverSchedule?: ServerSchedule) {
   const activeLine = line || (lines.length === 1 ? lines[0] : '');
   const selectedLines = [...new Set(activeLine ? [activeLine] : lines)];
@@ -12,20 +13,10 @@ export function useCurrentWorkload(line: string, lines: string[], serverSchedule
       queryKey: ['maintenance-due', currentLine, ''],
       queryFn: () => inspectionApi.due(currentLine),
       refetchOnWindowFocus: true,
-      refetchInterval: (query: Query<MaintenanceDue>) => {
-        const schedule = query.state.data?.schedule;
-        return schedule
-          ? Math.max(
-              1000,
-              Math.min(
-                60000,
-                Date.parse(schedule.next_starts_at) - Date.parse(schedule.server_time),
-              ),
-            )
-          : 60000;
-      },
+      refetchInterval: (query) => dueRefreshInterval(query.state.data, query.state.dataUpdatedAt),
     })),
   });
+  const expired = useDueExpiry(queries);
   const schedule = queries.reduce((latest, query) => {
     const next = query.data?.schedule;
     return next && (!latest || Date.parse(next.server_time) > Date.parse(latest.server_time))
@@ -41,12 +32,15 @@ export function useCurrentWorkload(line: string, lines: string[], serverSchedule
       !!query.data &&
       !query.isError &&
       !query.isFetching &&
+      !expired[index] &&
       query.data.schedule.starts_at === schedule?.starts_at,
   }));
   const staleLines = selectedLines
     .filter((_, index) => {
       const dueSchedule = queries[index].data?.schedule;
-      return dueSchedule && schedule && dueSchedule.starts_at !== schedule.starts_at;
+      return (
+        expired[index] || (dueSchedule && schedule && dueSchedule.starts_at !== schedule.starts_at)
+      );
     })
     .join('\0');
   useEffect(() => {
