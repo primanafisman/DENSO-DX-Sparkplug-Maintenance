@@ -6,7 +6,11 @@ type Snapshot = { data?: MaintenanceDue; dataUpdatedAt: number };
 
 export function useDueExpiry(snapshots: Snapshot[]) {
   const [observedAt, setObservedAt] = useState(() => Date.now());
-  const now = Math.max(observedAt, ...snapshots.map((snapshot) => snapshot.dataUpdatedAt));
+  const now = Math.max(
+    observedAt,
+    Date.now(),
+    ...snapshots.map((snapshot) => snapshot.dataUpdatedAt),
+  );
   const deadlines = snapshots.map((snapshot) =>
     dueExpiresAt(snapshot.data, snapshot.dataUpdatedAt),
   );

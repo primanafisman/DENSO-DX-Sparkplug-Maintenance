@@ -2,7 +2,9 @@
 
 Source delivery: clone/download this repository, then open **Backend/**. An internal transfer bundle **sparkplug-maintenance-1.0.0-bundle.zip** can also be generated and supplied separately; release archives are excluded from Git. Node.js 22 public API, private Python 3.12 local CV, three hash-verified offline OCR models, adapter-based persistence, 44 source catalog definitions, tests and simple test UI. No Cloudflare/domain/Gemini dependency.
 
-Current local reader is **hybrid-cv-v0.2.4**; API contract version remains1.0.0. Runtime relocation tests cover nested folders, saved runtime paths and Windows PowerShell5/7. See [verification scope](../verification/README.md). Stop the old server before replacing the bundle, then start and upload a fresh photo; temporary analysis IDs are not migrated.
+Current local reader is **hybrid-cv-v0.2.6**; API contract version remains1.0.0. Runtime relocation tests cover nested folders, saved runtime paths and Windows PowerShell5/7. See [verification scope](../verification/README.md). Stop the old server before replacing the bundle, then start and upload a fresh photo; temporary analysis IDs are not migrated.
+
+See [dataset and manual teaching guide](cv-teaching.md) and [new-photo evaluation](cv-new-gauge-2026-10-29.md) for the current algorithm changes and remaining unreadable cases.
 
 ## Receiving checklist
 

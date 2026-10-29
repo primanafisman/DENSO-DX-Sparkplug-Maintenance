@@ -9,7 +9,7 @@ from .hybrid_digital import read_local_digital,_OfflineReader
 from .images import assess_quality
 from .models import Candidate
 
-VERSION='hybrid-cv-v0.2.5'
+VERSION='hybrid-cv-v0.2.6'
 
 
 class OfflineOCR(_OfflineReader):

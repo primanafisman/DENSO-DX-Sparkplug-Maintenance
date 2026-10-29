@@ -221,6 +221,24 @@ def numeric_line_crop(image):
     return choices[0] if choices else None
 
 
+def _lcd_glyph_anchors(parts,height):
+    """Group overlapping upper/lower bars without joining neighbouring ink."""
+    anchors=[]
+    for part in sorted(parts,key=lambda s:s[0]):
+        if anchors:
+            previous=anchors[-1]
+            overlap=min(previous[0]+previous[2],part[0]+part[2])-max(previous[0],part[0])
+            gap=max(0,previous[1]-part[1]-part[3],part[1]-previous[1]-previous[3])
+            if overlap>min(previous[2],part[2])*.12 and gap<height*.12:
+                left=min(previous[0],part[0]);top=min(previous[1],part[1])
+                right=max(previous[0]+previous[2],part[0]+part[2])
+                bottom=max(previous[1]+previous[3],part[1]+part[3])
+                anchors[-1]=np.array([left,top,right-left,bottom-top,previous[4]+part[4]])
+                continue
+        anchors.append(part)
+    return anchors
+
+
 def _numeric_line_crop(image,mask=None):
     """Locate a complete dark LCD row, including isolated punctuation pixels."""
     gray=cv2.cvtColor(image,cv2.COLOR_BGR2GRAY);h,w=gray.shape
@@ -234,6 +252,9 @@ def _numeric_line_crop(image,mask=None):
     parts=[s for s in stats[1:] if s[4]>max(6,h*.025) and s[0]>0 and s[1]>0
            and s[0]+s[2]<w and s[1]+s[3]<h]
     tall=[s for s in parts if h*.25<s[3]<h*.86 and s[2]<w*.55]
+    # Disconnected bars can overlap in x while belonging to the same glyph.
+    # Only the anchor boxes are grouped; mask pixels, dots and signs stay intact.
+    tall=_lcd_glyph_anchors(tall,h)
     if len(tall)<2:return None
     reference=max(s[3] for s in tall)
     full=[s for s in tall if s[3]>reference*.7]
@@ -269,11 +290,13 @@ def lcd_decimal_evidence(row):
     if len(centres)<2:return None
     gaps=np.diff(centres);pitch=float(np.median(gaps))
     if pitch<=0:return None
-    # JPEG can detach a rounded foot inside the first glyph. That position is
-    # before its centre and inside its measured body, not between characters.
+    # JPEG can detach a rounded foot inside the first/last glyph. A point on
+    # its outside half and inside its body is not between characters.
     # Extra points elsewhere remain ambiguous and are never silently removed.
     boxes=row.get('digit_boxes',[])
-    if boxes:dots=[d for d in dots if not boxes[0][0]+pitch*.06<d<centres[0]]
+    if boxes:
+        dots=[d for d in dots if not boxes[0][0]+pitch*.06<d<centres[0]
+              and not centres[-1]<d<boxes[-1][1]-pitch*.06]
     if len(dots)!=1:return None
     left,right=row['digit_extent']
     # A complete narrow "1" shifts its component centre: the centres need not
@@ -334,6 +357,32 @@ def lcd_decimal_observation(image):
     if len({(e['index'],e['decimals']) for e,_ in supported})!=1:return None
     evidence,row=max(supported,key=lambda item:item[1]['roi']['width'])
     return {**evidence,'roi':row['roi']}
+
+
+def distinct_display_candidates(candidates):
+    """Retain complete windows and remove tiny dim patches sharing LED pixels.
+
+    A gray caption/edge at the top of a luminous row can pass the LCD proposal
+    test too. It must be under a tenth of the measured row, mostly overlap its
+    pixels, and have its centre inside that row's quadrilateral. Separate
+    screens and high-contrast LCD candidates retain the multiple-display veto.
+    """
+    unique=[]
+    for candidate in sorted(candidates,key=lambda c:-c['box'][2]*c['box'][3]):
+        duplicate=False
+        x,y,w,h=candidate['box']
+        for other in unique:
+            overlap=_overlap(candidate['box'],other['box'])
+            if overlap>.7:
+                duplicate=True;break
+            if (candidate['display_type']=='lcd' and candidate.get('low_contrast')
+                    and other['display_type']=='green-led' and overlap>.65
+                    and w*h<other['box'][2]*other['box'][3]*.1
+                    and cv2.pointPolygonTest(np.asarray(other['quad'],np.float32),
+                                              (x+w/2,y+h/2),False)>=0):
+                duplicate=True;break
+        if not duplicate:unique.append(candidate)
+    return unique
 
 
 def display_candidates(image):
@@ -440,11 +489,7 @@ def display_candidates(image):
                            'display_type':'green-led','evidence':'visible green LED digit row'})
     # Retain the complete window across threshold levels; smaller partial
     # windows can clip a faint leading sign or edge digit under a reflection.
-    candidates.sort(key=lambda c:-c['box'][2]*c['box'][3])
-    unique=[]
-    for candidate in candidates:
-        if any(_overlap(candidate['box'],other['box'])>.7 for other in unique):continue
-        unique.append(candidate)
+    unique=distinct_display_candidates(candidates)
     return sorted(unique,key=lambda c:(c['box'][1],c['box'][0]))[:12]
 
 

@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
+import type { Query } from '@tanstack/react-query';
 import { inspectionApi } from '../../maintenance/model/api';
 import type { ServerSchedule } from '../../../shared/lib/contracts';
 import { dueRefreshInterval } from '../../maintenance/model/dueFreshness';
+import type { TimedDue } from '../../maintenance/model/dueFreshness';
 import { useDueExpiry } from '../../maintenance/controller/useDueExpiry';
 export function useCurrentWorkload(line: string, lines: string[], serverSchedule?: ServerSchedule) {
   const activeLine = line || (lines.length === 1 ? lines[0] : '');
@@ -13,7 +15,8 @@ export function useCurrentWorkload(line: string, lines: string[], serverSchedule
       queryKey: ['maintenance-due', currentLine, ''],
       queryFn: () => inspectionApi.due(currentLine),
       refetchOnWindowFocus: true,
-      refetchInterval: (query) => dueRefreshInterval(query.state.data, query.state.dataUpdatedAt),
+      refetchInterval: (query: Query<TimedDue>) =>
+        dueRefreshInterval(query.state.data, query.state.dataUpdatedAt),
     })),
   });
   const expired = useDueExpiry(queries);

@@ -25,8 +25,9 @@ See [Operator workflow and classification](Frontend/docs/operator-workflows.md) 
 
 ## Handover
 
-Pada Pemeriksaan, pilih line untuk melihat item yang belum selesai pada jadwal server. Item OK maupun NG yang tersimpan lengkap tersembunyi hingga jadwal berikutnya, dan tetap tersedia di Riwayat. Admin dapat menambah pemeriksaan, menghubungkannya ke alat, serta menonaktifkan/mengaktifkannya kembali melalui Pengaturan tanpa menghapus riwayat. Rincian frekuensi dan aturan slot dijelaskan pada panduan konfigurasi.
+Pada Pemeriksaan, pilih line untuk melihat item yang belum selesai pada jadwal server. Item yang selesai tetap terlihat hijau sampai jadwal pemeriksaan berikutnya, lalu status aktif dihitung ulang sesuai frekuensi masing-masing. Hasil sebelumnya tetap tersedia di Riwayat. Admin dapat menambah pemeriksaan, menghubungkannya ke alat, serta menonaktifkan/mengaktifkannya kembali melalui Pengaturan tanpa menghapus riwayat. Rincian frekuensi dan aturan slot dijelaskan pada panduan konfigurasi.
 
+- [Dataset dan teaching CV lokal](Backend/docs/integration/cv-teaching.md)
 - [Installation](Frontend/docs/installation.md)
 - [Configuration and statistics](Frontend/docs/configuration.md)
 - [Frontend input/output contract](Frontend/docs/frontend-integration.md)

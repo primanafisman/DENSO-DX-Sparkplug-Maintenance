@@ -240,7 +240,7 @@ def _read_lcd_line(image,profile,ocr):
     return result if _safe_result(result,profile) else None
 
 
-def _read_view(data,profile,text_ocr=None,*,lcd_line=False,glass_margin=False,upright_ocr=False):
+def _read_view(data,profile,text_ocr=None,*,lcd_line=False,led_line=False,glass_margin=False,upright_ocr=False):
     result=read_digital(data,profile)
     if glass_margin and result.get('original_pixel_issues')==['crop_edge_mark']:
         # The source crop extends beyond a fully measured LCD window. Its far
@@ -252,7 +252,9 @@ def _read_view(data,profile,text_ocr=None,*,lcd_line=False,glass_margin=False,up
     legacy_valid=_safe_result(result,profile) and not result.get('original_pixels_incomplete')
     # A global threshold can erase a faded complete edge digit. Before accepting
     # even a safe-looking raw row, compare measured local-lighting alternatives.
-    lcd_possible=lcd_line or (profile.kind=='digital' and not _green_row_evidence(green_mask,minimum_digits=2))
+    # A measured luminous window retains LED routing even when dim ghost bars
+    # make the whole-crop column heuristic fail on this particular view.
+    lcd_possible=lcd_line or (not led_line and profile.kind=='digital' and not _green_row_evidence(green_mask,minimum_digits=2))
     if lcd_possible or (legacy_valid and not _green_row_evidence(green_mask,minimum_digits=2)):
         lines=[(line,decode_lcd_line(line['image'])) for line in numeric_line_crops(image)]
         usable=[(line,r) for line,r in lines if r is not None]
@@ -349,7 +351,9 @@ def _exclude_display_captions(candidates, output):
     for span in output.get('spans',[]):
         text=span.get('text','').strip()
         if span.get('ocr_score',0)<.9:continue
-        if not (VISIBLE_UNIT.fullmatch(text) or re.fullmatch(r'OUT[ ._-]*[12]',text,re.IGNORECASE)):continue
+        if not (VISIBLE_UNIT.fullmatch(text)
+                or re.fullmatch(r'OUT[ ._-]*[12]',text,re.IGNORECASE)
+                or re.fullmatch(r'SMC(?:\s+PRESSURE)?',text,re.IGNORECASE)):continue
         roi=span.get('roi',{})
         if not all(key in roi for key in ('x','y','width','height')):continue
         labels.append((text,roi))
@@ -385,6 +389,7 @@ def read_local_digital(data,profile,text_ocr=None):
     # no housing was located, require independent dark-digit/point geometry
     # before allowing the LCD fallback. Explicit LED detections keep LED rules.
     lcd_hint=bool(candidates and candidates[0]['display_type']=='lcd')
+    led_hint=bool(candidates and candidates[0]['display_type']=='green-led')
     if not candidates:
         hsv=cv2.cvtColor(image,cv2.COLOR_BGR2HSV)
         green_mask=(((hsv[:,:,0]>=30)&(hsv[:,:,0]<=95)&(hsv[:,:,1]>50)&(hsv[:,:,2]>65)).astype(np.uint8)*255)
@@ -414,7 +419,7 @@ def read_local_digital(data,profile,text_ocr=None):
     glass_margin=bool(candidates and candidates[0]['display_type']=='lcd'
         and min(p[0] for p in candidates[0]['quad'])>1/image.shape[1])
     for name,view in views:
-        result=_read_view(view,profile,None,lcd_line=lcd_hint,glass_margin=glass_margin and name=='original')
+        result=_read_view(view,profile,None,lcd_line=lcd_hint,led_line=led_hint,glass_margin=glass_margin and name=='original')
         attempts.append((name,result))
     valid=[(name,result) for name,result in attempts if _safe_result(result,profile)]
     # Segment readers run first across measured views. General text recognition
@@ -422,7 +427,7 @@ def read_local_digital(data,profile,text_ocr=None):
     if not valid and ocr:
         attempts=[]
         for name,view in views:
-            result=_read_view(view,profile,ocr,lcd_line=lcd_hint,glass_margin=glass_margin and name=='original',
+            result=_read_view(view,profile,ocr,lcd_line=lcd_hint,led_line=led_hint,glass_margin=glass_margin and name=='original',
                               upright_ocr=bool(name=='rectified-display' and candidates and candidates[0]['display_type']=='green-led'))
             attempts.append((name,result))
         valid=[(name,result) for name,result in attempts if _safe_result(result,profile)]

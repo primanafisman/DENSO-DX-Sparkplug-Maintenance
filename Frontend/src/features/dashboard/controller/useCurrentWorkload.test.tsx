@@ -32,15 +32,19 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.useRealTimers();
 });
-function show(lines: string[], age = 12000) {
+function show(lines: string[], age = 12000, clientRequestedAt?: number) {
   vi.useFakeTimers();
   // The operator device's calendar differs; elapsed response age must still work.
   vi.setSystemTime(new Date('2030-01-01T00:00:00Z'));
   client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 60000 } } });
   for (const line of lines)
-    client.setQueryData(['maintenance-due', line, ''], due(line), { updatedAt: Date.now() - age });
-  function Host() {
-    const current = useCurrentWorkload('', lines, previous);
+    client.setQueryData(
+      ['maintenance-due', line, ''],
+      { ...due(line), client_requested_at: clientRequestedAt },
+      { updatedAt: Date.now() - age },
+    );
+  function Host({ selected }: { selected: string[] }) {
+    const current = useCurrentWorkload('', selected, previous);
     return (
       <>
         <output data-testid="total">
@@ -54,11 +58,17 @@ function show(lines: string[], age = 12000) {
       </>
     );
   }
-  render(
+  const view = render(
     <QueryClientProvider client={client}>
-      <Host />
+      <Host selected={lines} />
     </QueryClientProvider>,
   );
+  return (selected: string[]) =>
+    view.rerender(
+      <QueryClientProvider client={client}>
+        <Host selected={selected} />
+      </QueryClientProvider>,
+    );
 }
 
 it('expires a remounted cached completion at the real boundary before a delayed response returns', async () => {
@@ -115,5 +125,20 @@ it('does not mix refreshed zero counts with expired completion from another line
 it('rejects already expired cache immediately on return to the page', () => {
   vi.spyOn(inspectionApi, 'due').mockImplementation(() => new Promise(() => {}));
   show(['1'], 50000);
+  expect(screen.getByTestId('total')).toHaveTextContent('waiting');
+});
+
+it('does not extend an old-period response by the time spent waiting for it', () => {
+  vi.spyOn(inspectionApi, 'due').mockImplementation(() => new Promise(() => {}));
+  show(['1'], 0, Date.parse('2030-01-01T00:00:00Z') - 50000);
+  expect(screen.getByTestId('total')).toHaveTextContent('waiting');
+});
+
+it('rejects a newly selected cached line that expired while this page stayed mounted', () => {
+  vi.spyOn(inspectionApi, 'due').mockImplementation(() => new Promise(() => {}));
+  const select = show(['1'], 0);
+  client.setQueryData(['maintenance-due', '2', ''], due('2'), { updatedAt: Date.now() - 20000 });
+  vi.setSystemTime(Date.now() + 30000);
+  select(['2']);
   expect(screen.getByTestId('total')).toHaveTextContent('waiting');
 });

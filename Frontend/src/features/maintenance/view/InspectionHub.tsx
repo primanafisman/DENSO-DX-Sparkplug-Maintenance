@@ -339,7 +339,7 @@ export function InspectionHub() {
             })}
           </div>
         )}
-        {selection.line && !due.isPending && !due.isError && !filtered.length && (
+        {selection.line && !due.isPending && !due.isError && !due.expired && !filtered.length && (
           <div className="compact-empty">
             <CheckCircle2 size={25} />
             <strong>{due.data?.pending_count === 0 ? 'Selesai' : 'Tidak ada hasil'}</strong>
