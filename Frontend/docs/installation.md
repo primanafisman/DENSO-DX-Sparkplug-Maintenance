@@ -47,3 +47,10 @@ Jika port8100/8101/8443 sedang dipakai aplikasi lain, launcher menjelaskan konfl
 ## Isi paket
 
 Arsip `release/sparkplug-maintenance-1.1.0-application.zip` mencakup Backend, Frontend source/lock/build, tiga model OCR yang diverifikasi, serta APPLICATION-MANIFEST.json berisi ukuran/SHA256. Paket tidak berisi data aktual, akun/password, konfigurasi privat, foto, sertifikat atau pustaka yang sudah terinstal. Tiga model OCR yang telah tercatat di source backend tetap disertakan sesuai permintaan portabilitas; setup memverifikasi hash dan berhenti jika model hilang atau tidak sesuai.
+
+
+## Vite untuk pengembangan melalui LAN
+
+`npm run dev` memakai port5173 dan mendengarkan alamat LAN. Untuk operator gunakan root `start.cmd` seperti biasa; mode pengembangan ini terpisah dari server aplikasi8100/8443. Vite memakai HTTPS jika pasangan `../certs/denso-cert.pem`/`denso-key.pem` tersedia, atau memakai `../Backend/runtime/tls/server-cert.pem`/`server-key.pem` dari setup kamera lokal. Jika tidak ada pasangan lengkap, Vite berjalan dengan HTTP dan build tetap dapat dibuat tanpa sertifikat.
+
+Pasangan khusus dapat dipilih lewat `SPM_DEV_HTTPS_CERT` dan `SPM_DEV_HTTPS_KEY` dalam `.env.local` Frontend. Isi path, bukan isi private key. Path relatif dihitung dari Frontend. Konfigurasi eksplisit yang setengah/tidak ditemukan menghasilkan pesan error; jangan salin private key antar laptop. Sertifikat harus mencakup IP LAN yang digunakan dan CA harus dipercaya perangkat. Tambahkan origin pengembangan yang benar (misalnya `https://127.0.0.1:5173` dan alamat LAN5173 yang digunakan) ke CORS_ORIGINS Backend sebelum menguji login/penyimpanan melalui Vite. Tidak ada perubahan konfigurasi backend otomatis. File sertifikat tidak masuk `dist` atau paket frontend.

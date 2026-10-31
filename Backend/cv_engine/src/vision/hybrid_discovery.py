@@ -1,13 +1,31 @@
 """Additional local LED crop proposals; shared label association is unchanged."""
+import io
+
 import cv2
 import numpy as np
+from PIL import Image, ImageOps
 
 from .discovery import gauge_rois,overlap,rectangle
 from .hybrid_auto_analog import read_auto_analog, _dial_ellipse
 from .images import crop_image
 from .models import ROI
-from .hybrid_geometry import red_bezel_arcs
+from .hybrid_geometry import red_bezel_arcs, neutral_dial_ellipses
 from .hybrid_display import propose_digital_displays
+
+
+def _native_discovery_thumbnail(prepared):
+    """Locate edges before prepared-JPEG resizing/recompression breaks them."""
+    def thumbnail(source):
+        ratio=min(1.,1400/max(source.size))
+        # Area averaging avoids sharpening halos and preserves continuous rim
+        # edges before Canny; recognition still uses the original crop pixels.
+        small=source.resize((round(source.width*ratio),round(source.height*ratio)),Image.Resampling.BOX) if ratio<1 else source
+        if small.mode!='RGB':small=small.convert('RGB')
+        return cv2.cvtColor(np.asarray(small),cv2.COLOR_RGB2BGR)
+    if prepared._decoded is not None:
+        return thumbnail(prepared._decoded)
+    with Image.open(io.BytesIO(prepared.original or prepared.jpeg)) as source:
+        return thumbnail(ImageOps.exif_transpose(source))
 
 
 def hybrid_gauge_rois(prepared,spans):
@@ -31,7 +49,17 @@ def hybrid_gauge_rois(prepared,spans):
         x*=ratio;y*=ratio;radius=max(axes)*ratio/2
         if min(axes)*ratio/2<min(h,w)*.07 or radius>min(h,w)*.48: continue
         locations.insert(0,(x,y,radius))
-    candidates=[p['roi'] for p in proposals if p['kind_hint']=='analog']
+    # Neutral faces can be small, off-centre ellipses with no red annulus.
+    # Keep these as proposals only: the unchanged native-pixel scale/shaft
+    # checks below still decide whether an analog ROI can be offered.
+    neutral_image=_native_discovery_thumbnail(prepared)
+    full_h,full_w=neutral_image.shape[:2]
+    candidates=[]
+    for (x,y),axes,_ in neutral_dial_ellipses(neutral_image):
+        radius=max(axes)/2*1.10
+        candidates.append(rectangle((x-radius)/full_w,(y-radius)/full_h,
+                                    (x+radius)/full_w,(y+radius)/full_h))
+    candidates.extend(p['roi'] for p in proposals if p['kind_hint']=='analog')
     candidates.extend(rectangle((x-radius*1.20)/w,(y-radius*1.20)/h,
                                 (x+radius*1.20)/w,(y+radius*1.20)/h)
                       for x,y,radius in locations)

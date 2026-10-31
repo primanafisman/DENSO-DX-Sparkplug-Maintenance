@@ -45,6 +45,29 @@ def test_smooth_gradient_without_digits_cannot_bypass_digital_quality_gate():
     assert result['candidate']['value'] is None and not result['confidence']['valid'],result
 
 
+def test_complete_led_pixels_can_prove_a_number_despite_a_low_global_sharpness_score(monkeypatch):
+    from src.vision.images import assess_quality
+    data=seven_segment('.525',led=True)
+    quality=assess_quality(data)
+    quality.update(usable=False,sharpness=1.)
+    monkeypatch.setattr('src.vision.hybrid.assess_quality',lambda _:quality)
+    result=analyze_hybrid(data,Profile(kind='digital',unit='MPa',maximum=1,decimals=3))
+    assert result['validated_prediction']==.525,result
+    assert result['local_ocr']['green_punctuation']
+
+
+def test_ocr_acceptance_alone_cannot_override_a_low_sharpness_score(monkeypatch):
+    from src.vision.images import assess_quality
+    data=seven_segment('.525',led=True)
+    quality=assess_quality(data);quality.update(usable=False,sharpness=1.)
+    monkeypatch.setattr('src.vision.hybrid.assess_quality',lambda _:quality)
+    monkeypatch.setattr('src.vision.hybrid.read_local_digital',lambda *args:{
+        'accepted':True,'method':'local-text-digital-v1-upright',
+        'candidate':{'readable':True,'kind':'digital','value':.525,'unit':'MPa','raw_text':'0.525','reason':''}})
+    result=analyze_hybrid(data,Profile(kind='digital',unit='MPa',maximum=1,decimals=3))
+    assert result['validated_prediction'] is None
+
+
 def test_template_registration_does_not_prove_identity_or_hide_label_conflict():
     class OCR:
         def read(self,_): return {'text':'OTHER GAUGE','spans':[]}

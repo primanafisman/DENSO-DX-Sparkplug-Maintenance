@@ -16,7 +16,7 @@
 
 ## Global Constraints
 
-- Work in `D:\ChatGPT Projects\Sparkplug Maintenance`; `Frontend/` is beside `Backend/`. Paths below are relative to that root. Do not duplicate the old PanelReader project, installed CV environment, OCR models or training corpus.
+- Work in the repository root; `Frontend/` is beside `Backend/`. Paths below are relative to that root. Do not duplicate the old PanelReader project, installed CV environment, OCR models or training corpus.
 - Feature MVC: views render, controllers orchestrate, models own DTO/schema/API/state. Views never import Axios or make raw HTTP calls. Frontend never connects to SQL, Python or secret files.
 - Use HttpOnly cookie sessions, credentialed requests and signed CSRF for mutations. No JWT, photos or confirmed-record shadow database in localStorage. Preserve Viewer/Operator/Admin authorization on the server.
 - Keep LOCAL_CV only, current OCR/model assets, automatic analog/digital detection and the black-needle 0–1 MPa analog family. No Gemini, cloud tunnel or algorithm retraining in this work.

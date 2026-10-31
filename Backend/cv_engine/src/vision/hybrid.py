@@ -5,11 +5,11 @@ from datetime import datetime, timezone
 from .hybrid_analog import read_calibrated_analog
 from .hybrid_auto_analog import read_auto_analog
 from .hybrid_scale_ocr import recover_scale_direction
-from .hybrid_digital import read_local_digital,_OfflineReader
+from .hybrid_digital import read_local_digital,verified_led_pixels,_OfflineReader
 from .images import assess_quality
 from .models import Candidate
 
-VERSION='hybrid-cv-v0.2.6'
+VERSION='hybrid-cv-v0.2.8'
 
 
 class OfflineOCR(_OfflineReader):
@@ -30,7 +30,8 @@ def analyze_hybrid(crop,profile,calibration_record=None,text_ocr=None,label_crop
     candidate=Candidate(readable=False,kind=profile.kind if profile.kind!='auto' else 'unknown',reason='')
     reason=''; valid=False
     # Flat dark LCD glass can score below the general Laplacian blur threshold
-    # while every digit/point is intact. For an explicitly digital ROI with
+    # while every digit/point is intact. The same applies to flat LED glass.
+    # For an explicitly digital ROI with
     # remaining contrast, let the local reader prove those pixels; blank images
     # still fail quality, and analog keeps its existing quality gate.
     inspect_digital=profile.kind=='digital' and quality['contrast']>=8
@@ -38,7 +39,7 @@ def analyze_hybrid(crop,profile,calibration_record=None,text_ocr=None,label_crop
         status='RETAKE_REQUIRED'; reason='Foto buram/kontras rendah atau ada silau pusat; ambil ulang, jangan menebak jarum/digit.'
     else:
         if profile.kind!='analog': local=read_local_digital(crop,profile,text_ocr)
-        if local and local['accepted'] and (quality['usable'] or local.get('lcd_point_verified',False)):
+        if local and local['accepted'] and (quality['usable'] or local.get('lcd_point_verified',False) or verified_led_pixels(local)):
             candidate=Candidate.model_validate(local['candidate']); valid=True; reason=candidate.reason
             if not quality['usable']:
                 reason+=' Skor ketajaman foto rendah, tetapi digit/titik lolos pemeriksaan lokal; periksa hasil sebelum konfirmasi.'

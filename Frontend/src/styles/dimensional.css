@@ -853,3 +853,38 @@ tbody tr:hover {
     padding: 0;
   }
 }
+
+/* Inspection sample progress: red = empty, yellow = partial, green = complete. */
+.check-number.check-number--empty {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  box-shadow: inset 0 1px 0 #fff;
+}
+.check-number.check-number--partial {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+  box-shadow: inset 0 1px 0 #fff;
+}
+.check-number.check-number--complete {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+  box-shadow: inset 0 1px 0 #fff;
+}
+.sample-progress {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+.sample-progress--partial {
+  background: #fffbeb;
+  color: #b45309;
+}
+.sample-progress--complete {
+  background: #f0fdf4;
+  color: #166534;
+}

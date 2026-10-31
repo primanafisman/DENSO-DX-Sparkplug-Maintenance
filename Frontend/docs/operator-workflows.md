@@ -83,3 +83,8 @@ Footer copyright kecil muncul pada seluruh tab di bawah area konten; pada monito
 ## Pemeriksaan selesai
 
 Daftar Pemeriksaan tetap menampilkan item yang sudah dikerjakan, dengan warna hijau, ikon dan penanda **Selesai**. Tombol mulai dinonaktifkan selama periode pemeriksaan itu masih berlaku. Item kembali dapat dimulai saat periode berikutnya dibuka server atau saat memilih line lain yang belum diperiksa. Jika pemeriksaan membutuhkan beberapa alat, status baru selesai setelah seluruh alat wajib diperiksa. Hasil ukur OK/NG tersimpan di Riwayat.
+
+
+## Indikator sampel pemeriksaan
+
+Nomor pemeriksaan berwarna merah jika belum terisi, kuning jika sebagian sampel/alat sudah terisi, dan hijau jika sampel lengkap. Label jumlah sampel tetap terlihat agar warna bukan satu-satunya penanda. Sampel lengkap pada draft ditandai **Belum disimpan**; status **Selesai** hanya mengikuti hasil yang sudah tersimpan pada jadwal server. Pemeriksaan selesai tetap terlihat hijau. Perpindahan line, tipe produk atau periode jadwal tidak mewarisi warna draft yang tidak sesuai. Pemeriksaan sebelum/sesudah memerlukan kedua pembacaan untuk dihitung satu sampel.

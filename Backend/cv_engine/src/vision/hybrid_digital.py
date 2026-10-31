@@ -16,6 +16,15 @@ from .segment_reader import decode_lcd_line
 VISIBLE_UNIT=re.compile(r'(?<![A-Za-z])(?:mpa|kpa|psi|inch|bar|mm|cm|pa|in)(?![A-Za-z])',re.IGNORECASE)
 
 
+def _canonical_led_text(text):
+    # A measured leading point is a valid numeric spelling: .525 == 0.525.
+    # This never inserts a point or uses a profile to choose its position.
+    if not re.fullmatch(r'-?(?:\d+(?:\.\d+)?|\.\d+)',text):return None
+    if text.startswith('.'):return '0'+text
+    if text.startswith('-.'):return '-0'+text[1:]
+    return text
+
+
 def led_tokens(mask):
     """Group separated LED strokes by columns, retaining isolated decimal dots.
 
@@ -58,12 +67,12 @@ def led_tokens(mask):
             char=PATTERNS.get(''.join('1' if s>=.35 else '0' for s in scores))
         if char is None: return None
         tokens.append(((left+right)/2,char))
-    # A sign must lead the row and the decimal must fall within digit bounds.
+    # A point immediately before the first digit is retained as observed.
     if any(x>=ranges[0][0] for x,_ in signs) or len(dots)>1 or len(signs)>1: return None
-    tokens+=signs+[p for p in dots if ranges[0][0]<p[0]<ranges[-1][1]+reference*.15]
+    tokens+=signs+[p for p in dots if ranges[0][0]-reference*.3<p[0]<ranges[-1][1]+reference*.15]
     tokens.sort()
     text=''.join(c for _,c in tokens)
-    return text if re.fullmatch(r'-?\d+(?:\.\d+)?',text) else None
+    return _canonical_led_text(text)
 
 
 def _safe_result(result,profile):
@@ -123,9 +132,80 @@ def led_grid_tokens(mask):
         if char is None:return None
         result.append(((left+right)/2,char))
     if any(x>=ranges[0][0] for x,_ in signs):return None
-    result+=signs+[p for p in dots if ranges[0][0]<p[0]<ranges[-1][1]+reference*.15]
+    result+=signs+[p for p in dots if ranges[0][0]-reference*.3<p[0]<ranges[-1][1]+reference*.15]
     result.sort();raw=''.join(char for _,char in result)
-    return raw if re.fullmatch(r'-?\d+(?:\.\d+)?',raw) else None
+    return _canonical_led_text(raw)
+
+
+def verified_led_pixels(result):
+    """Complete independent LED masks and original punctuation, not OCR alone."""
+    if not result or not result.get('accepted'):return False
+    if result.get('method') not in ('hybrid-green-seven-segment-v0.1',
+                                    'hybrid-green-row-grid-v1','hybrid-green-aligned-strokes-v1'):return False
+    texts=[item.get('raw_text') for item in result.get('variants',[]) if item.get('raw_text')]
+    if not any(texts.count(text)>=2 for text in texts):return False
+    raw=result.get('candidate',{}).get('raw_text','')
+    leading=result.get('green_leading_evidence')
+    evidence=result.get('green_punctuation',[])
+    return bool(leading is not None and not leading.get('clipped_leading_mark',True)
+                and leading.get('minus_signs')==int(raw.startswith('-'))
+                and evidence and not any(item is not None and item.get('clipped_leading_mark',True) for item in evidence)
+                and _green_points_agree(evidence,int('.' in raw)))
+
+
+def _green_points_agree(evidence,expected):
+    matches=[item for item in evidence if item is not None and item['decimal_dots']==expected]
+    extras=[item for item in evidence if item is not None and item['decimal_dots']>expected]
+    if len(matches)<2:return False
+    if not expected:return not extras
+    position_key='decimal_row_positions' if all('decimal_row_positions' in item for item in matches+extras) else 'decimal_positions'
+    positions=[item.get(position_key,[]) for item in matches]
+    if any(len(points)!=1 for points in positions):return False
+    observed=sorted((item.get(position_key,[])[0],index) for index,item in enumerate(evidence)
+                    if item is not None and item['decimal_dots']==1)
+    clusters=[observed[start:end] for start in range(len(observed)) for end in range(start+2,len(observed)+1)
+              if observed[end-1][0]-observed[start][0]<=.12]
+    if not clusters:return False
+    cluster=max(clusters,key=len)
+    same_size=[group for group in clusters if len(group)==len(cluster)]
+    if any(abs(float(np.median([p for p,_ in group]))-float(np.median([p for p,_ in cluster])))>.12 for group in same_size):return False
+    stable_indices={index for _,index in cluster}
+    competing=[(index,item) for index,item in enumerate(evidence)
+               if item is not None and item['decimal_dots']>0 and index not in stable_indices]
+    if not competing:return True
+    # A dim mask may merge the true point into a glyph or illuminate noise.
+    # Three brighter original observations must agree before ignoring exactly
+    # one such lower-threshold observation. A bright-only competing point is
+    # never outvoted, even if three dimmer masks appear to agree.
+    if len(competing)!=1:return False
+    index,item=competing[0]
+    # Faint fallback masks are appended after the bright masks. List order is
+    # not brightness order; require explicit source thresholds for exceptions.
+    brightness=item.get('brightness_threshold')
+    stable_brightness=[evidence[i].get('brightness_threshold') for i in stable_indices]
+    if (brightness is None or any(value is None for value in stable_brightness)
+            or brightness>=min(stable_brightness) or item['decimal_dots']>2):return False
+    if len(cluster)<3:
+        # Extending support to leading decimals exposes tiny marks outside the
+        # digit quad. One dim off-row hypothesis is not a leading decimal:
+        # it needs a second positional witness. Preserve the established two
+        # original witnesses for an internal point; in-row conflicts still fail.
+        return (item['decimal_dots']==1 and len(item.get(position_key,[]))==1
+                and item[position_key][0]<0 and min(p for p,_ in cluster)>.1)
+    return item['decimal_dots']==1 or any(abs(point-float(np.median([p for p,_ in cluster])))<=.12
+                                         for point in item.get(position_key,[]))
+
+
+def _observed_leading_decimal(raw,image):
+    if '.' in raw or not re.fullmatch(r'-?\d+',raw):return raw
+    evidence=green_punctuation(image,[[0,0],[1,0],[1,1],[0,1]])
+    if not _green_points_agree(evidence,1):return raw
+    positions=[item['decimal_positions'][0] for item in evidence
+               if item is not None and item['decimal_dots']==1]
+    if not positions or not all(-.3<point<.2 for point in positions):return raw
+    # The point is measured before the first digit; zero is only a normalized
+    # numeric spelling. Digits and point position do not come from the profile.
+    return ('-0.'+raw[1:]) if raw.startswith('-') else ('0.'+raw)
 
 
 def aligned_led_tokens(image):
@@ -278,11 +358,15 @@ def _read_view(data,profile,text_ocr=None,*,lcd_line=False,led_line=False,glass_
     result['candidate'].update(readable=False,value=None)
     # Two green LED masks must agree. Neither inserts a missing decimal point.
     variants=[]
-    for saturation,brightness in ((80,150),(90,170)):
+    for saturation,brightness in ((80,125),(80,150),(90,170)):
         mask=(((hsv[:,:,0]>=30)&(hsv[:,:,0]<=95)&(hsv[:,:,1]>saturation)&(hsv[:,:,2]>brightness)).astype(np.uint8)*255)
         variants.append(led_tokens(mask))
-    if all(variants) and len(set(variants))==1:
-        raw=variants[0]
+    # Some photographed LEDs have moderate saturation, so the S90 mask can
+    # erase genuine segments. Two different brightness masks may establish a
+    # row; every complete observation must agree rather than being outvoted.
+    complete=[_observed_leading_decimal(raw,image) for raw in variants if raw]
+    if len(complete)>=2 and len(set(complete))==1:
+        raw=complete[0]
         if (re.fullmatch(r'-?\d+(?:\.\d+)?',raw) and len(raw.partition('.')[2])==profile.decimals
                 and Decimal(str(profile.minimum))<=Decimal(raw)<=Decimal(str(profile.maximum))):
             return {'accepted':True,'method':'hybrid-green-seven-segment-v0.1','probability_correct':None,
@@ -296,7 +380,7 @@ def _read_view(data,profile,text_ocr=None,*,lcd_line=False,led_line=False,glass_
         mask=(((hsv[:,:,0]>=30)&(hsv[:,:,0]<=95)&(hsv[:,:,1]>saturation)&(hsv[:,:,2]>125)).astype(np.uint8)*255)
         grid.append(led_grid_tokens(mask))
     if all(grid) and len(set(grid))==1:
-        raw=grid[0]
+        raw=_observed_leading_decimal(grid[0],image)
         result_grid={'accepted':True,'method':'hybrid-green-row-grid-v1','probability_correct':None,
             'variants':[{'name':'shared-row-green-mask','raw_text':text} for text in grid],
             'candidate':{'readable':True,'kind':'digital','value':float(Decimal(raw)),'unit':profile.unit,'raw_text':raw,
@@ -455,15 +539,13 @@ def read_local_digital(data,profile,text_ocr=None):
         # A rectified-only success cannot discard a sign present in the original
         # pixels, even when the signed value lies outside the profile's range.
         # Glow can merge a real dot into its neighbour at a low threshold;
-        # faint dots can vanish at a high threshold. Two distinct masks must
-        # explicitly see the same dot count. Extra dots, a conflicting sign or
-        # clipping remain a veto on every usable mask, including dim fallback.
-        matching_dots=sum(item is not None and item['decimal_dots']==dot for item in evidence)
+        # faint dots can vanish at a high threshold. Original masks must agree
+        # on a point position; one dim-only extra mark needs three witnesses.
         # Unavailable independent leading evidence is not evidence of no minus.
         # Tinted glass can merge a dim sign into the background mask.
         if (leading is None or leading['minus_signs']!=sign or leading['clipped_leading_mark']
-                or any(item is not None and (item['minus_signs']!=sign or item['clipped_leading_mark'] or item['decimal_dots']>dot) for item in evidence)
-                or matching_dots<2):
+                or any(item is not None and (item['minus_signs']!=sign or item['clipped_leading_mark']) for item in evidence)
+                or not _green_points_agree(evidence,dot)):
             return _reject(result,'Tanda minus/titik pada piksel asli tidak lengkap atau berbeda dari crop terkoreksi; pilih crop lengkap atau foto ulang.')
     if valid and not is_green and any(name=='original' and item.get('original_pixels_incomplete') for name,item in attempts):
         return _reject(result,'Digit/tanda pada foto asli tidak lengkap; crop terkoreksi/OCR tidak boleh membuangnya.')

@@ -83,17 +83,30 @@ def _row_punctuation(mask,points):
     if min(cw,ch)<12:return None
     target=np.float32([[0,0],[cw,0],[cw,ch],[0,ch]])
     matrix=cv2.getPerspectiveTransform(points,target)
-    _,_,stats,_=cv2.connectedComponentsWithStats(mask)
+    _,labels,stats,_=cv2.connectedComponentsWithStats(mask)
     parts=[]
-    for sx,sy,sw,sh,area in stats[1:]:
+    for index,(sx,sy,sw,sh,area) in enumerate(stats[1:],1):
         if area<max(3,ch*.04):continue
-        corners=np.float32([[sx,sy],[sx+sw,sy],[sx+sw,sy+sh],[sx,sy+sh]])
-        projected=cv2.perspectiveTransform(corners[None],matrix)[0]
+        # Project measured row endpoints rather than every foreground pixel.
+        # A homography is monotonic along each row if it has no pole there;
+        # these actual endpoints preserve its extrema with O(height) points.
+        # Projecting boxes inflates tilted glyphs, while projecting all pixels
+        # of a green background could allocate over 1 GiB on a large photo.
+        component=labels[sy:sy+sh,sx:sx+sw]==index
+        yy=np.flatnonzero(component.any(axis=1))
+        left=component.argmax(axis=1)[yy]
+        right=sw-1-component[:,::-1].argmax(axis=1)[yy]
+        pixels=np.concatenate((np.column_stack((left+sx,yy+sy)),
+                               np.column_stack((right+sx,yy+sy)))).astype(np.float32)
+        denominator=pixels@matrix[2,:2]+matrix[2,2]
+        if np.any(np.abs(denominator)<1e-8) or np.any(denominator[:len(yy)]*denominator[len(yy):]<=0):continue
+        projected=cv2.perspectiveTransform(pixels[None],matrix)[0]
         x,y=projected.min(axis=0);x2,y2=projected.max(axis=0)
+        x2+=1;y2+=1
         if x2<-ch*2 or x>cw+ch*.2 or y2<-ch*.3 or y>ch*1.4:continue
         parts.append({'x':float(x),'y':float(y),'right':float(x2),'bottom':float(y2),
                       'width':float(x2-x),'height':float(y2-y),'area':int(area),
-                      'clipped':sx==0 or sx+sw>=mask.shape[1]})
+                      'clipped':sx==0 or sx+sw>=mask.shape[1] or sy==0 or sy+sh>=mask.shape[0]})
     tall=[p for p in parts if ch*.2<p['height']<ch*1.4 and p['width']<ch*1.2
           and 0<=p['x']+p['width']/2<=cw and p['bottom']>0 and p['y']<ch
           and p['y']+p['height']/2<ch*.85]
@@ -108,18 +121,22 @@ def _row_punctuation(mask,points):
     dots=[p for p in parts if reference*.035<p['height']<reference*.15 and reference*.035<p['width']<reference*.15
           and p['height']>0 and .6<p['width']/p['height']<1.6
           and p['area']>reference*.25 and p['area']/(p['width']*p['height'])>.45
-          and left+reference*.1<p['x']+p['width']/2<right+reference*.15
+          and left-reference*.3<p['x']+p['width']/2<right+reference*.15
           and bottom-reference*.15<p['y'] and p['y']+p['height']/2<bottom+reference*.04]
     # Add the actually measured sign extent. Padding a digit-only rectangle is
     # insufficient for a sign before a narrow leading "1".
-    measured_left=min([0.]+[p['x'] for p in signs])
+    measured_left=min([0.]+[p['x'] for p in signs]+[p['x'] for p in dots])
     measured_top=min([0.]+[p['y'] for p in dots])
     measured_bottom=max([ch]+[p['bottom'] for p in dots])
     extended=np.float32([[measured_left,measured_top],[cw,measured_top],
                          [cw,measured_bottom],[measured_left,measured_bottom]])
     expanded=cv2.perspectiveTransform(extended[None],np.linalg.inv(matrix))[0]
     return {'minus_signs':len(signs),'decimal_dots':len(dots),
-            'clipped_leading_mark':any(p['clipped'] for p in leading),'expanded_quad':expanded}
+            'decimal_positions':[float((p['x']+p['width']/2-left)/reference) for p in dots],
+            # A threshold can merge the leading glyph and move the inferred
+            # row's left edge. Agreement must use the fixed observed quad.
+            'decimal_row_positions':[float((p['x']+p['width']/2)/ch) for p in dots],
+            'clipped_leading_mark':any(p['clipped'] for p in leading+dots),'expanded_quad':expanded}
 
 
 def green_punctuation(image,quad):
@@ -129,7 +146,17 @@ def green_punctuation(image,quad):
     for saturation,brightness in ((65,110),(80,125),(80,150),(90,170)):
         mask=(((hsv[:,:,0]>=30)&(hsv[:,:,0]<=95)&(hsv[:,:,1]>saturation)&(hsv[:,:,2]>brightness)).astype(np.uint8)*255)
         measured=_row_punctuation(mask,points)
-        evidence.append(None if measured is None else {key:value for key,value in measured.items() if key!='expanded_quad'})
+        evidence.append(None if measured is None else {**{key:value for key,value in measured.items() if key!='expanded_quad'},
+                                                        'brightness_threshold':brightness})
+    # A genuinely faint leading point can be below every bright digit mask.
+    # Spend two lower-threshold measurements only when the original masks do
+    # not already provide two point witnesses; no point is inserted here.
+    if sum(item is not None and item['decimal_dots']==1 for item in evidence)<2:
+        for saturation,brightness in ((45,80),(50,95)):
+            mask=(((hsv[:,:,0]>=30)&(hsv[:,:,0]<=95)&(hsv[:,:,1]>saturation)&(hsv[:,:,2]>brightness)).astype(np.uint8)*255)
+            measured=_row_punctuation(mask,points)
+            evidence.append(None if measured is None else {**{key:value for key,value in measured.items() if key!='expanded_quad'},
+                                                            'brightness_threshold':brightness})
     return evidence
 
 

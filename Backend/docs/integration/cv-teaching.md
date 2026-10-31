@@ -1,6 +1,6 @@
 # Panduan dataset dan teaching CV lokal
 
-Panduan untuk operator dan developer, 29 Oktober 2026.
+Panduan untuk operator dan developer, diperbarui 30 Oktober 2026.
 
 ## Yang digunakan saat ini
 
@@ -8,20 +8,23 @@ Pembacaan menggunakan OpenCV, aturan geometri/segmen, dan OCR lokal dengan model
 
 Mengoreksi hasil pengamatan atau mengganti batas OK/NG tidak melatih OCR. Nilai acuan hanya untuk membandingkan hasil setelah pembacaan; jangan memasukkannya sebagai jawaban yang diharapkan oleh pengenal.
 
-## Lokasi pada komputer pengembangan
+## Lokasi dataset dan kode
 
 | Isi | Lokasi |
 | --- | --- |
-| 24 foto pengujian baru | `D:\ChatGPT Projects\New Gauge Training` |
-| Contoh foto sebelumnya | `D:\ChatGPT Projects\AnalogGauge Example` |
-| Proyek backend | `D:\ChatGPT Projects\Sparkplug Maintenance\Backend` |
+| Foto pengujian baru (24 foto 28 Oktober + 68 foto 30 Oktober) | Folder privat `New Gauge Training`, di luar repositori |
+| Contoh foto sebelumnya | Folder privat `AnalogGauge Example`, di luar repositori |
+| Proyek backend | `Backend/` |
 | Kode pembacaan | `Backend/cv_engine/src/vision/` |
 | Pengujian regresi | `Backend/cv_engine/tests/` |
 | Model OCR yang ikut workspace | `Backend/cv_engine/models/ocr/` |
 | Manifest integritas model | `Backend/docs/governance/ocr-artifacts.json` |
 | Laporan lokal pengujian baru | `Backend/runtime/new-gauge/` |
+| Daftar koreksi dan evaluasi 30 Oktober | `Backend/runtime/gauge-ai-review-2026-10-30/` |
 
 Path relatif di tabel dihitung dari folder Sparkplug Maintenance. Folder foto berada di luar repositori. `runtime/` berisi hasil pengujian privat dan tidak ikut Git/paket publik. Model OCR bukan dataset foto perusahaan; ada tiga berkas ONNX deteksi, pengenalan, dan orientasi. Jangan mengedit isi biner ONNX secara manual.
+
+Pada folder evaluasi 30 Oktober, `operator-confirmed-references.csv` menyimpan nama foto, nilai, satuan, status skip, hash foto, dan pembagian pengujian. `operator-feedback.json` mempertahankan estimasi awal serta koreksi operator; `koreksi-operator.md` adalah tabel yang mudah dibaca. Sebanyak 58 nilai telah disetujui operator dan 10 foto diminta skip. Angka acuan tidak dimuat oleh layanan pembaca produksi. Lihat [evaluasi 30 Oktober](cv-new-gauge-2026-10-30.md).
 
 ## Memilih bagian yang perlu diubah
 

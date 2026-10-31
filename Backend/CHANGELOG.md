@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-30 · CV lokal v0.2.8
+
+- Menambah proposal ellipse dial netral pada foto asli berorientasi EXIF; pencarian memakai thumbnail BOX terbatas dan decode yang digunakan bersama.
+- Memulihkan kandidat skala dengan outlier pada pita dalam hanya untuk pemeriksaan manual, sambil mempertahankan penerimaan pola skala lengkap sebelumnya.
+- Menambah regresi untuk crop kecil/miring, kehilangan detail pratinjau, EXIF, garis utama tipis, serta pemisahan kandidat manual dari nilai tervalidasi.
+- Mempertahankan bukti titik LED miring/redup, mendukung desimal awal yang terlihat, dan menolak titik terpotong/ganda yang persisten.
+- Menyaring kombinasi sudut secara vektor sebelum pemeriksaan scalar lama, mempertahankan hasil dan mengurangi pengulangan komputasi.
+- Nilai acuan foto disimpan terpisah dari layanan pembaca. Model OCR dan kontrak API tidak berubah. Lihat evaluasi 30 Oktober pada docs/integration.
+
 ## 2026-10-16 · Relokasi Backend dan instalasi lokal
 
 - Launcher mencari Node22 pada folder aplikasi/induk yang bertingkat dan menyimpan lokasi runtime yang telah diverifikasi setelah setup berhasil.

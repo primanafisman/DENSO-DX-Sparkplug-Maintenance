@@ -15,6 +15,7 @@ import {
 import { useSession } from '../../auth/controller/useSession';
 import { useSettings } from '../../settings/controller/useSettings';
 import { useInspection, useMaintenanceDue } from '../controller/useInspection';
+import { inspectionSampleProgress } from '../model/sampleProgress';
 import { InspectionContextForm } from './InspectionContextForm';
 import type { ContextSelection } from './InspectionContextForm';
 import { PageHeader } from '../../../shared/components/layout/PageHeader';
@@ -252,8 +253,9 @@ export function InspectionHub() {
         ) : (
           <div className="inspection-list">
             {filtered.map((d) => {
-              const completed =
-                due.data?.items.find((item) => item.definition_id === d.id)?.state === 'completed';
+              const dueItem = due.data!.items.find((item) => item.definition_id === d.id)!;
+              const progress = inspectionSampleProgress(d, state.draft, selection, dueItem);
+              const completed = progress.saved;
               return (
                 <article
                   className={
@@ -261,7 +263,10 @@ export function InspectionHub() {
                   }
                   key={d.id}
                 >
-                  <div className="check-number">
+                  <div
+                    className={`check-number check-number--${progress.state}`}
+                    aria-label={`${inspectionNumber(d) ?? 'Pemeriksaan'}: ${completed ? 'pemeriksaan selesai' : `${progress.filled} dari ${progress.total} sampel terisi`}`}
+                  >
                     {inspectionNumber(d) ?? <ClipboardCheck size={20} />}
                   </div>
                   <div className="inspection-option-body">
@@ -280,20 +285,18 @@ export function InspectionHub() {
                             : 'Foto'}
                       </span>
                       <span>{d.sample_count} sampel</span>
-                      {!!due.data?.items.find((item) => item.definition_id === d.id)?.equipment
-                        ?.length && (
+                      {progress.filled > 0 && (
+                        <span className={`sample-progress sample-progress--${progress.state}`}>
+                          {progress.filled}/{progress.total} sampel terisi
+                          {!completed && progress.filled === progress.total
+                            ? ' · Belum disimpan'
+                            : ''}
+                        </span>
+                      )}
+                      {!!dueItem.equipment?.length && (
                         <span className="tool-progress">
-                          {
-                            due.data.items
-                              .find((item) => item.definition_id === d.id)!
-                              .equipment.filter((item) => item.state === 'completed').length
-                          }
-                          /
-                          {
-                            due.data.items.find((item) => item.definition_id === d.id)!.equipment
-                              .length
-                          }{' '}
-                          alat
+                          {dueItem.equipment.filter((item) => item.state === 'completed').length}/
+                          {dueItem.equipment.length} alat
                         </span>
                       )}
                       <span>{d.interval_guide.description}</span>

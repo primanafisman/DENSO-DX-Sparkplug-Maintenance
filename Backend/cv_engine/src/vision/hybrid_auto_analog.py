@@ -6,6 +6,7 @@ fit. Affine dial rectification does not remove mechanical needle parallax.
 """
 import math
 import re
+from functools import lru_cache
 from itertools import combinations
 
 import cv2
@@ -14,7 +15,7 @@ import numpy as np
 from .hybrid_analog import _decode, interpolate_angle
 from .hybrid_geometry import red_bezel_arcs
 
-VERSION = 'hybrid-per-photo-needle-v0.2'
+VERSION = 'hybrid-per-photo-needle-v0.3'
 
 
 def _illumination(image):
@@ -160,13 +161,43 @@ def _runs(values):
     return [(np.arange(a, b) + start) % len(values) for a, b in zip(np.flatnonzero(edges == 1), np.flatnonzero(edges == -1))]
 
 
+@lru_cache(maxsize=11)
+def _six_tick_combinations(count):
+    # The candidate pool is capped at 16; all 6..16 index tables total 228 KiB.
+    indices=np.asarray(list(combinations(range(count),6)),dtype=np.int16)
+    indices.setflags(write=False)
+    return indices
+
+
+def _six_tick_candidate_indices(pool):
+    """Batch only the existing angular gate, preserving combination order."""
+    if len(pool)<6:return np.empty((0,6),dtype=np.int16)
+    indices=_six_tick_combinations(len(pool))
+    values=np.asarray([tick['angle'] for tick in pool],dtype=np.float64)[indices]
+    gaps=np.diff(np.concatenate((values,values[:,:1]+360),axis=1),axis=1)
+    gap_index=gaps.argmax(axis=1)
+    columns=(np.arange(6)[None,:]+gap_index[:,None]+1)%6
+    ordered=np.take_along_axis(values,columns,axis=1)
+    # Keep unwrap and the exact conversion order used by the scalar gate.
+    angles=np.unwrap(np.deg2rad(ordered),axis=1)*180/math.pi
+    intervals=np.diff(angles,axis=1)
+    median=np.median(intervals,axis=1)
+    maximum=intervals.max(axis=1)
+    minimum=intervals.min(axis=1)
+    with np.errstate(divide='ignore',invalid='ignore'):
+        possible=((35<median)&(median<61)&(maximum/minimum<1.30)
+                  &(gaps[np.arange(len(indices)),gap_index]>maximum*1.35))
+    return indices[possible]
+
+
 def select_six_ticks(ticks):
     """Recover six observed majors amidst paint/text outliers, never invent one."""
     pool = [t for t in ticks if t['strength'] >= .25 and t['width'] >= .75]
     pool = sorted(pool, key=lambda t: t['strength'] * t['width'], reverse=True)[:16]
     pool.sort(key=lambda t: t['angle'])
     choices=[]
-    for chosen in combinations(pool, 6):
+    for indices in _six_tick_candidate_indices(pool):
+        chosen=tuple(pool[int(index)] for index in indices)
         gaps=np.diff([t['angle'] for t in chosen]+[chosen[0]['angle']+360])
         gap_index=int(gaps.argmax())
         ordered=list(chosen[gap_index+1:])+list(chosen[:gap_index+1])
@@ -270,16 +301,21 @@ def detect_scale(mask,relaxed,pivot,radius):
     if not choices:
         # Some housings extend well beyond the printed scale. Search inward
         # only after the established outer bands abstain. Printed text and a
-        # moving needle occupy this region too, so an arbitrary six-stroke
-        # subset is insufficient: complete width-separated sets must agree
-        # across two adjacent radial bands, with no competing complete set.
+        # moving needle occupy this region too. Prefer complete width-separated
+        # sets; a paint/text outlier may be discarded only when all six thick
+        # observed strokes agree across adjacent bands, without a competing set.
         bands=((.55,.72),(.58,.75),(.61,.78),(.63,.78))
         inward=[]
-        for index,(low,high) in enumerate(bands):
-            for variant in (mask,relaxed):
-                major,details=_major_scale(variant,pivot,radius,low,high,allow_subsets=False)
-                if major and not any(t['long_trace']>.58 for t in major):
-                    inward.append((index,major,details))
+        for allow_subsets in (False,True):
+            for index,(low,high) in enumerate(bands):
+                for variant in (mask,relaxed):
+                    major,details=_major_scale(variant,pivot,radius,low,high,allow_subsets=allow_subsets)
+                    if major and not any(t['long_trace']>.58 for t in major):
+                        # A thin subdivision must never fill in a missing major.
+                        widths=[t['width'] for t in major]
+                        if details['method'].startswith('six observed major') and min(widths)<float(np.median(widths))*.70:continue
+                        inward.append((index,major,details))
+            if inward:break
         if not inward:return None,info
         reference=np.array([t['angle'] for t in inward[0][1]])
         disagreement=[float(np.max(np.abs((np.array([t['angle'] for t in major])-reference+180)%360-180)))
@@ -288,7 +324,11 @@ def detect_scale(mask,relaxed,pivot,radius):
         observed={index for index,_,_ in inward}
         if not any(index+1 in observed for index in observed):return None,info
         _,major,details=inward[0]
-        details['inward_recovery']={'method':'complete width-separated strokes agree in adjacent radial bands',
+        # Paint can make a subdivision as wide as a missing major. Even a
+        # cross-band-consistent subset is not enough to certify that identity.
+        # Keep its useful crop/needle estimate, but require an operator review.
+        details['requires_manual_confirmation']=details['method'].startswith('six observed major')
+        details['inward_recovery']={'method':'six observed thick strokes agree in adjacent radial bands',
                                    'corroborating_annuli':[list(bands[index]) for index in sorted(observed)],
                                    'maximum_angle_disagreement':round(max(disagreement),3)}
         return major,details
@@ -462,6 +502,6 @@ def read_auto_analog(data, ocr_output=None, *, clockwise=None):
     if value is None:
         return {**failure, 'needle_detection': needle_info, 'reason': needle_info['reason']}
     overlay['tip'] = mapped(pivot + radius * .72 * np.array([math.cos(math.radians(value['angle'])), math.sin(math.radians(value['angle']))]))
-    return {**failure, **value, 'requires_manual':ambiguous or scale_contaminated,'needle_detection': {**needle_info, 'contrast_variants_agree': len(variants) == 2}, 'overlay': overlay,
+    return {**failure, **value, 'requires_manual':ambiguous or scale_contaminated or scale_info.get('requires_manual_confirmation',False),'needle_detection': {**needle_info, 'contrast_variants_agree': len(variants) == 2}, 'overlay': overlay,
             'calibration_source': 'per-photo major strokes; profile 0-1 MPa',
             'reason': 'Skala dan jarum dihitung dari foto ini setelah koreksi cahaya/bidang dial. Periksa overlay dan konfirmasi.'}
